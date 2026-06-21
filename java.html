@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Java / JVM 高频问题整理</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-category="java">
+  <div class="layout">
+    <aside>
+      <a class="home-link" href="index.html">返回首页</a>
+<div id="categoryStats" class="category-stats"></div>
+      <details class="toc-group active" data-filter="java" open>
+        <summary>Java / JVM</summary>
+      </details>
+    </aside>
+
+    <main>
+      <div class="study-tools" aria-label="学习工具">
+        <div class="tool-row">
+          <div class="search-wrap">
+            <input id="searchInput" class="search-box" type="search" placeholder="当前主题搜索关键词" autocomplete="off">
+            <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
+          </div>
+          <button id="compactBtn" class="tool-btn" type="button">核心速览</button>
+          <button id="darkBtn" class="tool-btn" type="button">深色模式</button>
+        </div>
+        <div class="tool-row" id="filterBar">
+          <button class="filter-btn" type="button" data-filter="python" data-page="python.html">Python</button>
+          <button class="filter-btn active" type="button" data-filter="java" data-page="java.html">Java / JVM</button>
+          <button class="filter-btn" type="button" data-filter="spring" data-page="spring.html">Spring Boot</button>
+          <button class="filter-btn" type="button" data-filter="mysql" data-page="mysql.html">MySQL</button>
+          <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
+          <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
+          <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
+          <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
+          <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <span id="studyStats" class="study-stats"></span>
+        </div>
+      </div>
+
+      <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
+
+
+<section id="jvm-memory">
+        <h2>6. JVM 运行时内存结构</h2>
+        <pre><code>线程共享：
+- 堆
+- 方法区 / 元空间
+
+线程私有：
+- 虚拟机栈
+- 本地方法栈
+- 程序计数器</code></pre>
+        <h3>堆</h3>
+        <p>存放对象实例，是垃圾回收的主要区域。</p>
+        <pre><code class="language-java">User user = new User();</code></pre>
+
+        <h3>方法区 / 元空间</h3>
+        <p>存放类信息、常量、静态变量、方法元数据等。JDK 8 之后，方法区的实现主要是 Metaspace 元空间，使用本地内存。</p>
+
+        <h3>虚拟机栈</h3>
+        <p>每个线程私有。每次方法调用都会创建一个栈帧，包含局部变量表、操作数栈、方法返回地址、动态链接等。</p>
+
+        <h3>本地方法栈与程序计数器</h3>
+        <p>本地方法栈用于执行 Native 方法。程序计数器记录当前线程执行到哪一条字节码指令。</p>
+      </section>
+
+<section id="jvm-heap">
+        <h2>7. JVM 堆里面年轻代、老年代是什么？</h2>
+        <p>JVM 堆通常分为年轻代和老年代。</p>
+
+        <h3>年轻代</h3>
+        <p>新对象大多数先进入年轻代。年轻代又分为：</p>
+        <pre><code>Eden 区
+Survivor From 区
+Survivor To 区</code></pre>
+        <p>对象一般先分配到 Eden 区。当年轻代空间不足时，会触发 Minor GC。存活下来的对象会进入 Survivor 区，多次存活后晋升到老年代。</p>
+
+        <h3>老年代</h3>
+        <p>老年代存放生命周期较长的对象，例如长期存在的缓存对象、Spring 单例 Bean、大集合、多次 GC 后仍存活的对象。</p>
+        <pre><code>新对象 -> Eden
+Minor GC 后存活 -> Survivor
+多次存活 -> 老年代
+老年代不足 -> Major GC / Full GC</code></pre>
+      </section>
+
+<section id="volatile">
+        <h2>8. volatile 作用</h2>
+        <p><code>volatile</code> 是 Java 中的轻量级同步机制，主要解决变量在多线程之间的可见性和指令重排序问题。它适合状态标记、配置开关、单例双重检查等场景，但不能替代锁。</p>
+        <pre><code>保证可见性
+禁止指令重排序
+不保证复合操作的原子性</code></pre>
+
+        <h3>保证可见性</h3>
+        <p>普通变量可能被线程缓存到工作内存中，一个线程修改后，另一个线程不一定立刻看到。<code>volatile</code> 会要求写入及时刷新到主内存，读取时从主内存获取最新值。</p>
+        <pre><code class="language-java">private volatile boolean running = true;</code></pre>
+        <p>这类写法常用于线程停止标记：一个线程把 <code>running</code> 改成 false，另一个循环线程能尽快感知。</p>
+
+        <h3>禁止指令重排序</h3>
+        <p><code>volatile</code> 会在读写前后加入内存屏障，限制编译器和 CPU 对相关指令进行危险重排。经典例子是双重检查单例，避免对象引用先暴露、构造尚未完成的问题。</p>
+        <pre><code class="language-java">public class Singleton {
+    private static volatile Singleton instance;
+
+    private Singleton() {}
+
+    public static Singleton getInstance() {
+        if (instance == null) {
+            synchronized (Singleton.class) {
+                if (instance == null) {
+                    instance = new Singleton();
+                }
+            }
+        }
+        return instance;
+    }
+}</code></pre>
+
+        <h3>不保证原子性</h3>
+        <pre><code class="language-java">volatile int count = 0;
+count++;</code></pre>
+        <p><code>count++</code> 包含读取、加一、写回三个步骤，<code>volatile</code> 不能保证整体原子性。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>需求</th>
+              <th>推荐方式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>状态开关、配置刷新</td><td><code>volatile</code></td></tr>
+            <tr><td>计数自增、复合更新</td><td><code>AtomicInteger</code>、<code>LongAdder</code> 或锁</td></tr>
+            <tr><td>多个变量保持一致</td><td><code>synchronized</code>、<code>ReentrantLock</code> 或事务性设计</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+<section id="locks">
+        <h2>9. synchronized 和 ReentrantLock 区别</h2>
+        <p><code>synchronized</code> 和 <code>ReentrantLock</code> 都能实现互斥访问，并且都是可重入锁。区别在于：<code>synchronized</code> 是 JVM 关键字，写法简单、自动释放；<code>ReentrantLock</code> 是 JUC 工具类，功能更灵活，但必须手动释放。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>synchronized</th>
+              <th>ReentrantLock</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>类型</td><td>JVM 关键字</td><td>JDK 类</td></tr>
+            <tr><td>释放锁</td><td>自动释放</td><td>手动释放</td></tr>
+            <tr><td>可中断</td><td>不支持等待中断</td><td>支持</td></tr>
+            <tr><td>尝试加锁</td><td>不支持</td><td>支持 <code>tryLock()</code></td></tr>
+            <tr><td>公平锁</td><td>不支持配置</td><td>支持公平 / 非公平</td></tr>
+            <tr><td>条件队列</td><td>单一条件</td><td>多个 <code>Condition</code></td></tr>
+            <tr><td>使用复杂度</td><td>简单</td><td>更灵活但更容易写错</td></tr>
+          </tbody>
+        </table>
+
+        <pre><code class="language-java">public synchronized void method() {
+    // 临界区
+}</code></pre>
+
+        <pre><code class="language-java">private final ReentrantLock lock = new ReentrantLock();
+
+public void method() {
+    lock.lock();
+    try {
+        // 临界区
+    } finally {
+        lock.unlock();
+    }
+}</code></pre>
+
+        <p>一般优先使用 <code>synchronized</code>。需要尝试加锁、可中断锁、公平锁、多条件队列或复杂同步控制时，再使用 <code>ReentrantLock</code>。</p>
+        <h3>选择建议</h3>
+        <ul>
+          <li>普通临界区保护、代码简单优先用 <code>synchronized</code>。</li>
+          <li>需要 <code>tryLock()</code> 避免长时间等待，或需要等待可中断时，用 <code>ReentrantLock</code>。</li>
+          <li>需要多个条件队列，例如生产者消费者中“队列非空”和“队列未满”分别唤醒时，用 <code>Condition</code> 更合适。</li>
+          <li>使用 <code>ReentrantLock</code> 必须在 <code>finally</code> 中释放锁，否则异常路径容易死锁。</li>
+        </ul>
+      </section>
+
+<section id="proxy">
+        <h2>10. Java 动态代理是什么？</h2>
+        <p>代理模式是在不直接访问目标对象的情况下，通过代理对象间接访问目标对象，并在调用前后增强额外逻辑。Java 动态代理是在运行时生成代理对象，常见用途包括 AOP、日志、权限校验、事务管理、RPC、MyBatis Mapper 代理。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>代理类型</th>
+              <th>生成时机</th>
+              <th>特点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>静态代理</td><td>编码阶段</td><td>代理类手写，结构直观，但类数量膨胀。</td></tr>
+            <tr><td>动态代理</td><td>运行阶段</td><td>运行时生成代理类或子类，适合框架统一增强。</td></tr>
+          </tbody>
+        </table>
+
+        <h3>JDK 动态代理</h3>
+        <p>JDK 动态代理要求目标类实现接口，底层通过 <code>Proxy</code> 和 <code>InvocationHandler</code> 拦截接口方法调用。</p>
+        <pre><code class="language-java">interface UserService {
+    void save();
+}</code></pre>
+        <pre><code class="language-java">InvocationHandler handler = (proxy, method, args) -> {
+    System.out.println("before");
+    Object result = method.invoke(target, args);
+    System.out.println("after");
+    return result;
+};</code></pre>
+
+        <h3>CGLIB 动态代理</h3>
+        <p>通过生成目标类的子类实现代理。不要求接口，但不能代理 <code>final</code> 类和 <code>final</code> 方法。</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>原理</th>
+              <th>是否需要接口</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>JDK 动态代理</td><td>基于接口生成代理类</td><td>是</td></tr>
+            <tr><td>CGLIB</td><td>生成目标类子类</td><td>否</td></tr>
+          </tbody>
+        </table>
+        <p>面试里可以补一句：Spring AOP 默认有接口时倾向使用 JDK 动态代理，没有接口时通常使用 CGLIB。动态代理解决的是“统一横切增强”的问题，不适合把复杂业务逻辑藏进代理层。</p>
+      </section>
+
+<section id="hashmap-principle">
+        <h2>23. HashMap 原理是什么？</h2>
+        <p><code>HashMap</code> 是基于数组、链表和红黑树实现的 key-value 容器。核心思路是先通过 key 的 <code>hashCode()</code> 计算哈希值，再定位到数组桶位；如果多个 key 落到同一个桶，就通过链表或红黑树解决哈希冲突。</p>
+        <pre><code>put 流程：
+计算 key 的 hash
+-> 定位数组下标
+-> 桶为空：直接放入
+-> 桶不为空：比较 hash 和 equals
+-> key 已存在：覆盖 value
+-> key 不存在：追加到链表或红黑树
+-> 元素数量超过阈值：触发扩容</code></pre>
+        <h3>JDK 8 后的结构变化</h3>
+        <p>JDK 8 之后，桶内元素较少时使用链表；当链表长度达到阈值且数组容量足够大时，会转成红黑树，把极端冲突下的查询复杂度从 O(n) 降到 O(log n)。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>点</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>默认容量</td><td>常见默认初始容量为 16，容量通常保持 2 的幂，方便用位运算定位桶位。</td></tr>
+            <tr><td>负载因子</td><td>默认 0.75，在空间占用和冲突概率之间做平衡。</td></tr>
+            <tr><td>扩容</td><td>元素数量超过容量乘负载因子后扩容，扩容会重新分布节点。</td></tr>
+            <tr><td>null</td><td>允许一个 null key，也允许 null value。</td></tr>
+          </tbody>
+        </table>
+        <p>面试里要强调：自定义对象作为 key 时必须正确重写 <code>equals()</code> 和 <code>hashCode()</code>；<code>HashMap</code> 本身不是线程安全的，并发写入要使用外部锁或并发容器。</p>
+      </section>
+
+<section id="hashmap-vs-concurrenthashmap">
+        <h2>24. HashMap 和 ConcurrentHashMap 区别？</h2>
+        <p>二者都用于保存 key-value 映射，但核心差异是并发语义。<code>HashMap</code> 适合单线程或外部同步场景，<code>ConcurrentHashMap</code> 面向多线程并发读写。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>HashMap</th>
+              <th>ConcurrentHashMap</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>线程安全</td><td>否</td><td>是</td></tr>
+            <tr><td>null</td><td>允许 null key / value</td><td>不允许 null key / value</td></tr>
+            <tr><td>并发控制</td><td>没有内置同步</td><td>通过 CAS、synchronized、volatile 等机制控制并发</td></tr>
+            <tr><td>读操作</td><td>并发修改时结果不可靠</td><td>读操作通常不加全局锁，弱一致但可用</td></tr>
+            <tr><td>适用场景</td><td>局部变量、单线程缓存、请求内临时 Map</td><td>共享缓存、在线状态表、计数映射、高并发读写表</td></tr>
+          </tbody>
+        </table>
+        <p>JDK 8 的 <code>ConcurrentHashMap</code> 不再使用分段锁 Segment，而是以数组桶为粒度进行并发控制。桶为空时常用 CAS 放入节点，桶不为空时对桶头节点加锁，降低全表锁竞争。</p>
+        <p>它不允许 null 的原因也常被问到：并发场景下 <code>map.get(key) == null</code> 无法区分“key 不存在”和“value 本身就是 null”，会造成语义歧义。</p>
+      </section>
+
+<section id="thread-pool-params">
+        <h2>25. Java 线程池核心参数有哪些？</h2>
+        <p><code>ThreadPoolExecutor</code> 通过线程数、队列和拒绝策略共同控制任务执行能力。核心参数不是孤立配置，而是决定“任务来了以后先创建线程、先排队，还是直接拒绝”。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>参数</th>
+              <th>作用</th>
+              <th>面试关注点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>corePoolSize</code></td><td>核心线程数</td><td>长期保留的基础处理能力。</td></tr>
+            <tr><td><code>maximumPoolSize</code></td><td>最大线程数</td><td>队列满后还能扩展到的上限。</td></tr>
+            <tr><td><code>keepAliveTime</code></td><td>空闲线程存活时间</td><td>通常作用于非核心线程，也可配置核心线程超时。</td></tr>
+            <tr><td><code>workQueue</code></td><td>任务队列</td><td>决定削峰能力，也决定任务堆积风险。</td></tr>
+            <tr><td><code>threadFactory</code></td><td>线程工厂</td><td>用于命名线程、设置优先级、异常处理等。</td></tr>
+            <tr><td><code>handler</code></td><td>拒绝策略</td><td>线程数和队列都满时如何处理新任务。</td></tr>
+          </tbody>
+        </table>
+        <h3>常见队列和拒绝策略</h3>
+        <ul>
+          <li><code>ArrayBlockingQueue</code>：有界队列，容量明确，生产环境更容易控制风险。</li>
+          <li><code>LinkedBlockingQueue</code>：可指定容量，不指定时容量很大，容易造成任务堆积。</li>
+          <li><code>SynchronousQueue</code>：不存储任务，提交任务必须直接交给工作线程。</li>
+          <li><code>AbortPolicy</code>：直接抛异常；<code>CallerRunsPolicy</code>：由提交任务的线程执行，能形成一定反压。</li>
+        </ul>
+        <p>生产环境不要只背参数名，还要能说出配置原则：CPU 密集型线程数接近 CPU 核心数；IO 密集型可以适当增大；队列要有界；线程名要可观测；拒绝策略要结合业务可降级、可重试或可失败的语义设计。</p>
+      </section>
+
+<section id="thread-pool-flow">
+        <h2>26. Java 线程池执行流程是什么？</h2>
+        <p>线程池提交任务后，不是直接无限创建线程，而是按照核心线程、任务队列、最大线程、拒绝策略的顺序控制资源。</p>
+        <pre><code>提交任务
+-> 核心线程未满：创建核心线程执行
+-> 核心线程已满：进入任务队列
+-> 队列已满：创建非核心线程
+-> 线程达到最大值且队列仍满：执行拒绝策略</code></pre>
+        <h3>配置思路</h3>
+        <ul>
+          <li>CPU 密集型任务：线程数通常接近 CPU 核心数，避免过多上下文切换。</li>
+          <li>IO 密集型任务：线程数可以适当增大，但要结合下游连接池、限流和超时。</li>
+          <li>队列建议有界，避免请求堆积导致 OOM。</li>
+          <li>拒绝策略要和业务语义匹配：可失败、可降级、可重试或调用方反压。</li>
+        </ul>
+        <p>排查线程池问题时，重点看活跃线程数、队列长度、拒绝次数、任务耗时和下游阻塞情况。</p>
+      </section>
+
+<section id="threadlocal">
+        <h2>27. ThreadLocal 原理和风险？</h2>
+        <p><code>ThreadLocal</code> 的作用是让每个线程拥有一份独立变量副本，避免多个线程共享同一个变量。常见场景包括用户上下文、traceId、租户信息、数据库连接、事务上下文等。</p>
+        <pre><code>Thread
+-> ThreadLocalMap
+-> Entry(ThreadLocal 弱引用, value 强引用)</code></pre>
+        <p>它并不是把数据存在 <code>ThreadLocal</code> 对象里，而是存在当前线程的 <code>ThreadLocalMap</code> 中，<code>ThreadLocal</code> 只是访问这个 Map 的 key。</p>
+        <h3>主要风险</h3>
+        <ul>
+          <li>线程池线程会被复用，如果请求结束不清理，旧上下文可能污染下一个请求。</li>
+          <li><code>ThreadLocalMap</code> 的 key 是弱引用，但 value 是强引用；key 被回收后 value 仍可能留在线程里，造成内存泄漏。</li>
+          <li>异步执行或线程切换后，原线程的 ThreadLocal 值不会自动传递到新线程。</li>
+        </ul>
+        <pre><code class="language-java">try {
+    context.set(userId);
+    // business
+} finally {
+    context.remove();
+}</code></pre>
+        <p>所以使用原则很简单：谁设置，谁清理；线程池、Web 请求拦截器、异步任务尤其要放在 <code>finally</code> 中调用 <code>remove()</code>。</p>
+      </section>
+
+<section id="class-loading">
+        <h2>28. Java 类加载过程是什么？</h2>
+        <p>类加载是 JVM 把 <code>.class</code> 字节码变成运行时 <code>Class</code> 对象的过程。完整过程通常分为加载、验证、准备、解析、初始化，其中验证、准备、解析合称连接。</p>
+        <pre><code>加载：读取 class 字节码
+验证：校验字节码安全性
+准备：为静态变量分配内存并设置默认值
+解析：符号引用转直接引用
+初始化：执行静态变量赋值和 static 代码块</code></pre>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>重点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>加载</td><td>通过类加载器读取字节码，生成 <code>java.lang.Class</code> 对象。</td></tr>
+            <tr><td>验证</td><td>检查文件格式、元数据、字节码和符号引用是否安全合法。</td></tr>
+            <tr><td>准备</td><td>为类变量分配内存并赋默认值，例如 <code>static int a = 1</code> 先得到默认值 0。</td></tr>
+            <tr><td>解析</td><td>把常量池中的符号引用转换成直接引用。</td></tr>
+            <tr><td>初始化</td><td>执行静态变量显式赋值和 <code>static</code> 代码块。</td></tr>
+          </tbody>
+        </table>
+        <p>类初始化通常发生在首次主动使用时，例如 <code>new</code> 对象、访问静态字段、调用静态方法、反射调用等。双亲委派模型可以避免核心类被重复或恶意替换，例如应用自定义的 <code>java.lang.String</code> 不应该覆盖 JDK 自带类。</p>
+      </section>
+
+<section id="gc-roots">
+        <h2>29. Java 常见 GC Roots 有哪些？</h2>
+        <p>JVM 判断对象是否存活主要使用可达性分析：从一组根对象 GC Roots 出发，沿引用链向下搜索；能够被搜索到的对象是可达的，不可达对象才可能被回收。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>GC Roots 类型</th>
+              <th>例子</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>虚拟机栈引用</td><td>当前正在执行的方法中的局部变量、参数引用。</td></tr>
+            <tr><td>静态字段引用</td><td>类的 <code>static</code> 字段指向的对象。</td></tr>
+            <tr><td>常量引用</td><td>运行时常量池、字符串常量等引用的对象。</td></tr>
+            <tr><td>JNI 引用</td><td>本地方法栈中 Native 方法持有的引用。</td></tr>
+            <tr><td>同步锁持有对象</td><td>被 <code>synchronized</code> 锁住的对象。</td></tr>
+            <tr><td>JVM 内部引用</td><td>系统类加载器、异常对象、基础类元数据等。</td></tr>
+          </tbody>
+        </table>
+        <p>注意“不可达”不等于立刻回收。对象如果重写了 <code>finalize()</code>，历史版本中还可能经历一次终结机会；现代 Java 中不推荐依赖 finalize，资源释放应使用 <code>try-with-resources</code> 或显式关闭。</p>
+      </section>
+
+<section id="virtual-threads">
+        <h2>55. Java 虚拟线程是什么？</h2>
+        <p>虚拟线程是 JDK 21 正式引入的轻量级线程，属于 Project Loom 的核心能力。它仍然是 <code>java.lang.Thread</code>，但不再一一绑定操作系统线程，而是由 JDK 调度到少量平台线程上执行。</p>
+        <pre><code>传统平台线程：
+Java Thread -> OS Thread
+
+虚拟线程：
+大量 Virtual Thread -> 少量 Platform Thread -> OS Thread</code></pre>
+        <h3>适合场景</h3>
+        <ul>
+          <li>大量阻塞式 IO：HTTP 调用、数据库访问、RPC 调用、文件 IO 等。</li>
+          <li>一请求一线程模型：保留同步代码的可读性，同时降低线程创建和切换成本。</li>
+          <li>高并发但单个请求大部分时间在等待外部资源的服务。</li>
+        </ul>
+        <h3>不适合误解</h3>
+        <p>虚拟线程不是让 CPU 密集型计算变快。CPU 计算仍然受核心数限制，如果任务一直占用 CPU，虚拟线程再多也只是增加调度压力。它真正改善的是阻塞 IO 场景下平台线程被长时间占住的问题。</p>
+        <p>使用时还要注意 synchronized 临界区、阻塞 native 调用、连接池容量等限制。虚拟线程能让线程更便宜，但数据库连接、下游服务吞吐和限流策略仍然要单独设计。</p>
+      </section>
+
+<section id="record-vs-bean">
+        <h2>56. Record 相比 Java Bean 有什么优势？</h2>
+        <p><code>record</code> 适合表达不可变数据载体。它把“这个类只是承载一组数据”的语义直接写进类型声明里，编译器会自动生成构造器、访问方法、<code>equals()</code>、<code>hashCode()</code> 和 <code>toString()</code>。</p>
+        <pre><code class="language-java">public record UserDTO(Long id, String name, String email) {
+}</code></pre>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Java Bean</th>
+              <th>record</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>代码量</td><td>字段、getter、setter、构造器、equals 等通常要手写或生成</td><td>声明字段即可自动生成常用方法</td></tr>
+            <tr><td>可变性</td><td>通常可变，依赖 setter 修改状态</td><td>字段默认是 final，更偏不可变对象</td></tr>
+            <tr><td>语义</td><td>可以承载复杂行为，也可能只是数据对象</td><td>明确表达数据载体</td></tr>
+            <tr><td>适用场景</td><td>需要可变状态、框架强依赖无参构造和 setter</td><td>DTO、配置快照、查询结果、事件消息</td></tr>
+          </tbody>
+        </table>
+        <p>需要注意：record 不是实体类的万能替代。需要可变状态、继承父类、复杂生命周期、ORM 延迟加载时，普通 class 往往更合适。</p>
+      </section>
+
+<section id="pattern-matching">
+        <h2>57. Pattern Matching 解决什么问题？</h2>
+        <p>Pattern Matching 解决的是“先判断类型，再强制转换，再使用变量”这类重复代码。它把类型判断、类型转换和局部变量绑定合在一起，让分支逻辑更清晰。</p>
+        <pre><code class="language-java">if (obj instanceof String s) {
+    System.out.println(s.length());
+}</code></pre>
+        <p>传统写法需要先 <code>instanceof</code> 判断，再手动强转：</p>
+        <pre><code class="language-java">if (obj instanceof String) {
+    String s = (String) obj;
+    System.out.println(s.length());
+}</code></pre>
+        <h3>常见收益</h3>
+        <ul>
+          <li>减少重复强转，降低类型转换错误。</li>
+          <li>让 <code>if</code>、<code>switch</code> 中的类型分支更紧凑。</li>
+          <li>配合 sealed class / sealed interface 表达有限类型集合时，分支覆盖关系更清楚。</li>
+        </ul>
+        <p>面试可以这样说：Pattern Matching 不只是语法糖，它让 Java 在处理多态数据、协议对象、表达式树、领域事件时更容易写出类型安全且可读的分支代码。</p>
+      </section>
+
+<section id="minor-vs-full-gc">
+        <h2>58. Minor GC 和 Full GC 区别？</h2>
+        <p>Minor GC 和 Full GC 的区别主要在回收范围、触发原因和停顿成本。Minor GC 通常回收年轻代，Full GC 往往会回收整个堆以及相关元数据区域，停顿更重。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Minor GC</th>
+              <th>Full GC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>回收范围</td><td>主要是年轻代</td><td>通常涉及年轻代、老年代、元空间等更多区域</td></tr>
+            <tr><td>触发原因</td><td>Eden 空间不足、对象分配速度快</td><td>老年代不足、元空间不足、晋升失败、显式 <code>System.gc()</code> 等</td></tr>
+            <tr><td>停顿成本</td><td>频率高但通常较短</td><td>停顿更长，对接口延迟影响更明显</td></tr>
+            <tr><td>排查重点</td><td>对象分配速率、年轻代大小、短命对象</td><td>内存泄漏、大对象、缓存无界、老年代增长、类加载异常</td></tr>
+          </tbody>
+        </table>
+        <pre><code>新对象大量分配
+-> Eden 不足
+-> Minor GC
+-> 存活对象进入 Survivor 或晋升老年代
+-> 老年代压力过大
+-> Major GC / Full GC</code></pre>
+        <p>频繁 Minor GC 不一定是严重问题，但会增加 CPU 消耗；频繁 Full GC 通常是明显风险信号，需要结合 GC 日志、<code>jstat</code>、heap dump 和对象分配链路排查。</p>
+      </section>
+
+<section id="java-features">
+        <h2>119. Java 语言有哪些特点？</h2>
+        <p>Java 是一门面向对象、静态类型、跨平台的通用编程语言。它通过 JVM 屏蔽底层操作系统差异，通过 GC 管理内存，通过丰富的标准库和生态支持 Web、后端、中间件、大数据等场景。</p>
+        <ul>
+          <li>面向对象：封装、继承、多态是核心抽象方式，接口和抽象类常用于解耦。</li>
+          <li>跨平台：源码编译成字节码，字节码运行在不同平台的 JVM 上。</li>
+          <li>工程生态成熟：Spring、Netty、Dubbo、MyBatis、JVM 诊断工具链都非常完善。</li>
+        </ul>
+      </section>
+
+<section id="jvm-jdk-jre">
+        <h2>120. JVM、JDK、JRE 有什么区别？</h2>
+        <p>JVM、JRE、JDK 是 Java 运行体系的三个层次。JVM 负责执行字节码，JRE 提供运行环境，JDK 提供开发、编译和诊断工具。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>组件</th>
+              <th>作用</th>
+              <th>面向对象</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>JVM</td><td>类加载、字节码执行、运行时内存管理、垃圾回收</td><td>运行 Java 字节码</td></tr>
+            <tr><td>JRE</td><td>包含 JVM 和 Java 基础类库</td><td>只运行 Java 程序</td></tr>
+            <tr><td>JDK</td><td>包含 JRE 以及 javac、jar、javadoc、jstack、jmap、jstat 等工具</td><td>开发、编译、诊断 Java 程序</td></tr>
+          </tbody>
+        </table>
+        <p>简单说：运行程序最低需要 JRE，开发程序需要 JDK；JVM 是真正执行字节码的核心。</p>
+      </section>
+
+<section id="java-bytecode">
+        <h2>121. Java 字节码是什么？为什么 Java 可以跨平台？</h2>
+        <p>Java 字节码是 <code>.java</code> 文件经过 <code>javac</code> 编译后生成的 <code>.class</code> 指令集。JVM 负责加载、校验、解释执行或 JIT 编译这些字节码。</p>
+        <ul>
+          <li>跨平台的关键是字节码格式统一，不同平台提供对应 JVM 实现。</li>
+          <li>字节码在执行前会经过类加载和字节码校验，防止非法指令破坏运行时安全。</li>
+          <li>热点代码会被 JIT 编译成本地机器码，提高长期运行服务的执行效率。</li>
+        </ul>
+      </section>
+
+<section id="compile-and-interpret">
+        <h2>122. 为什么说 Java 是编译与解释并存的语言？</h2>
+        <p>Java 先通过 javac 编译成字节码，运行时 JVM 可以解释执行字节码，也可以把热点代码 JIT 编译成本地机器码，因此是编译与解释并存。</p>
+        <ul>
+          <li>编译阶段把源码转换成平台无关字节码，便于分发和校验。</li>
+          <li>解释执行让程序可以快速启动并保持动态能力。</li>
+          <li>JIT 根据运行时 profiling 信息优化热点路径，例如方法内联、逃逸分析、锁消除。</li>
+        </ul>
+      </section>
+
+<section id="jit-vs-aot">
+        <h2>123. JIT 和 AOT 有什么区别？</h2>
+        <p>JIT 是运行时编译，AOT 是运行前编译。JIT 更依赖运行时信息，峰值性能和动态优化能力更强；AOT 启动更快、运行时依赖更少。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>JIT</th>
+              <th>AOT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>编译时机</td><td>程序运行过程中</td><td>程序运行前</td></tr>
+            <tr><td>优化依据</td><td>真实运行时 profiling 信息</td><td>静态分析和构建期信息</td></tr>
+            <tr><td>启动速度</td><td>需要解释执行和预热</td><td>启动更快</td></tr>
+            <tr><td>峰值性能</td><td>长期运行后动态优化能力强</td><td>运行时优化空间较少</td></tr>
+            <tr><td>典型场景</td><td>长期运行的后端服务</td><td>Serverless、CLI、短生命周期任务</td></tr>
+          </tbody>
+        </table>
+        <p>HotSpot 的常见执行路径可以理解为：先解释执行，发现热点代码后 JIT 编译成本地机器码，再根据运行时信息继续优化。</p>
+      </section>
+
+<section id="aot-pros-cons">
+        <h2>124. AOT 有什么优点？为什么 Java 不全部使用 AOT？</h2>
+        <p>AOT 的主要优点是启动快、内存占用低、运行时依赖少，适合冷启动敏感或短生命周期场景。但 Java 不全部使用 AOT，是因为 Java 生态高度依赖运行时动态能力。</p>
+        <ul>
+          <li>优点：减少启动预热时间，降低部分运行时开销，部署产物更接近原生可执行程序。</li>
+          <li>限制：反射、动态代理、运行期类加载、SPI、序列化等能力需要额外配置或受限。</li>
+          <li>取舍：长期运行服务通常更看重 JIT 的动态优化和峰值性能，短生命周期服务更看重 AOT 的启动速度。</li>
+        </ul>
+        <p>所以 AOT 是重要补充，不是对 JIT 的简单替代。实际选型要看启动时间、内存预算、框架兼容性和服务生命周期。</p>
+      </section>
+
+<section id="oracle-vs-openjdk">
+        <h2>125. Oracle JDK 和 OpenJDK 有什么区别？</h2>
+        <p>OpenJDK 是 Java 平台的开源实现，Oracle JDK 基于 OpenJDK 构建并带有 Oracle 的发行、支持和许可策略。现代版本中二者核心代码差异已经很小。</p>
+        <ul>
+          <li>选择时主要看许可证、长期支持、补丁更新、公司合规要求和运行环境。</li>
+          <li>常见生产发行版还包括 Temurin、Zulu、Corretto、Microsoft Build of OpenJDK 等。</li>
+          <li>服务端项目更应关注 JDK 大版本、GC、容器适配、时区证书和安全补丁。</li>
+        </ul>
+      </section>
+
+<section id="java-vs-cpp">
+        <h2>126. Java 和 C++ 有什么区别？</h2>
+        <p>Java 和 C++ 都支持面向对象，但运行模型和内存管理差异很大。Java 运行在 JVM 上，自动 GC；C++ 编译成本地代码，开发者直接管理对象生命周期。</p>
+        <ul>
+          <li>Java 没有指针算术和多继承实现类，内存安全边界更强。</li>
+          <li>C++ 更接近系统底层，适合高性能系统、游戏引擎、数据库内核、基础设施。</li>
+          <li>Java 更强调跨平台、工程生态、运行时诊断和服务端开发效率。</li>
+        </ul>
+      </section>
+
+<section id="java-comments">
+        <h2>127. Java 中注释有哪几种？</h2>
+        <p>Java 注释分为单行注释、多行注释和文档注释。注释不会参与运行逻辑，文档注释可以被 javadoc 工具提取成 API 文档。</p>
+        <ul>
+          <li><code>//</code> 用于单行说明。</li>
+          <li><code>/* ... */</code> 用于多行说明。</li>
+          <li><code>/** ... */</code> 用于类、方法、字段的文档说明，常配合 <code>@param</code>、<code>@return</code>、<code>@throws</code>。</li>
+        </ul>
+      </section>
+
+<section id="identifier-vs-keyword">
+        <h2>128. Java 标识符和关键字有什么区别？</h2>
+        <p>标识符是开发者给类、方法、变量、包起的名字；关键字是 Java 语言预留的语法单词，不能作为普通标识符使用。</p>
+        <ul>
+          <li>标识符可以包含字母、数字、下划线、美元符号，但不能以数字开头。</li>
+          <li><code>class</code>、<code>public</code>、<code>static</code>、<code>void</code>、<code>if</code>、<code>return</code> 等都是关键字。</li>
+          <li>命名规范通常要求类名大驼峰，方法和变量小驼峰，常量全大写加下划线。</li>
+        </ul>
+      </section>
+
+<section id="iplusplus">
+        <h2>129. Java 中 ++i 和 i++ 有什么区别？</h2>
+        <p><code>++i</code> 是先自增再取值，<code>i++</code> 是先取值再自增。单独作为语句时二者最终结果相同，放在表达式中结果不同。</p>
+        <ul>
+          <li><code>int a = ++i;</code> 中，i 先加 1，再赋值给 a。</li>
+          <li><code>int a = i++;</code> 中，先把旧值赋给 a，再让 i 加 1。</li>
+          <li>在复杂表达式里混用自增会降低可读性，业务代码中应避免依赖这种副作用顺序。</li>
+        </ul>
+      </section>
+
+<section id="primitive-types">
+        <h2>130. Java 中基本数据类型有哪些？</h2>
+        <p>Java 有 8 种基本数据类型：byte、short、int、long、float、double、char、boolean。它们不是对象，直接保存具体值。</p>
+        <ul>
+          <li>整数类型：byte、short、int、long，默认整数字面量是 int。</li>
+          <li>浮点类型：float、double，默认小数字面量是 double。</li>
+          <li>char 表示 UTF-16 代码单元，boolean 只有 true 和 false。</li>
+        </ul>
+      </section>
+
+<section id="autoboxing">
+        <h2>131. 自动装箱和拆箱是什么？</h2>
+        <p>自动装箱是基本类型自动转换为包装类型，拆箱是包装类型自动转换为基本类型。编译器会在字节码层面插入 <code>valueOf()</code> 和 <code>xxxValue()</code> 调用。</p>
+        <ul>
+          <li><code>Integer i = 1</code> 会调用 <code>Integer.valueOf(1)</code>。</li>
+          <li><code>int x = i</code> 会调用 <code>i.intValue()</code>。</li>
+          <li>包装类型为 null 时自动拆箱会抛出 <code>NullPointerException</code>。</li>
+        </ul>
+        <pre><code class="language-java">Integer count = null;
+int total = count; // NullPointerException</code></pre>
+        <p>工程中尤其要小心接口返回的包装类型、数据库字段映射和三元表达式中的隐式拆箱。</p>
+      </section>
+
+<section id="wrapper-cache">
+        <h2>132. 包装类型的缓存机制是什么？</h2>
+        <p>包装类型缓存是 <code>valueOf()</code> 对常用值复用对象，减少频繁创建包装对象。最常见的是 Integer 默认缓存 -128 到 127。</p>
+        <ul>
+          <li><code>Integer.valueOf(127)</code> 多次调用可能返回同一个对象。</li>
+          <li><code>Integer.valueOf(128)</code> 通常返回不同对象，不能依赖 <code>==</code> 比较数值。</li>
+          <li>包装类型比较数值应使用 <code>equals()</code> 或显式拆箱。</li>
+        </ul>
+        <pre><code class="language-java">Integer a = 127;
+Integer b = 127;
+Integer c = 128;
+Integer d = 128;
+
+System.out.println(a == b); // true，命中缓存
+System.out.println(c == d); // false，通常未命中缓存</code></pre>
+        <p>面试里要强调：缓存是实现优化，不是业务语义。包装类型数值比较优先使用 <code>equals()</code>，但调用前要处理 null。</p>
+      </section>
+
+<section id="float-precision">
+        <h2>133. 为什么浮点数运算可能丢失精度？</h2>
+        <p>浮点数使用二进制表示，很多十进制小数无法被精确表示，例如 0.1、0.2。运算过程中会出现舍入误差。</p>
+        <ul>
+          <li><code>double</code> 和 <code>float</code> 适合科学计算、统计估算，不适合金额精确计算。</li>
+          <li>误差来自二进制浮点表示和有限位数，不是 Java 独有问题。</li>
+          <li>金额、计费、结算应使用 <code>BigDecimal</code> 并明确舍入规则。</li>
+        </ul>
+      </section>
+
+<section id="bigdecimal">
+        <h2>134. BigDecimal 为什么适合金额计算？</h2>
+        <p><code>BigDecimal</code> 使用十进制高精度表示，适合金额和精确小数计算。它能避免二进制浮点无法精确表示十进制小数的问题。</p>
+        <ul>
+          <li>创建时推荐 <code>new BigDecimal("0.1")</code> 或 <code>BigDecimal.valueOf(0.1)</code>。</li>
+          <li>除法可能出现无限循环小数，需要指定精度和 <code>RoundingMode</code>。</li>
+          <li>比较数值大小通常使用 <code>compareTo()</code>，因为 <code>equals()</code> 会同时比较 scale。</li>
+        </ul>
+      </section>
+
+<section id="generics-erasure">
+        <h2>135. Java 泛型是什么？类型擦除是什么？</h2>
+        <p>Java 泛型用于在编译期提供类型约束，减少强制类型转换和运行时类型错误。类型擦除指大部分泛型信息在编译后被擦除为原始类型或边界类型。</p>
+        <ul>
+          <li><code>List&lt;String&gt;</code> 和 <code>List&lt;Integer&gt;</code> 运行时通常都是 <code>List</code>。</li>
+          <li>类型擦除导致不能直接 <code>new T()</code>，不能创建泛型数组，运行时也难以直接判断完整泛型实参。</li>
+          <li>框架需要泛型信息时常用 <code>ParameterizedType</code>、<code>TypeReference</code> 等方式保留类型描述。</li>
+        </ul>
+        <pre><code class="language-java">List&lt;String&gt; names = new ArrayList&lt;&gt;();
+names.add("ren");
+
+// 编译后主要保留为 List，泛型约束由编译器检查</code></pre>
+        <p>泛型的价值主要在编译期类型安全。运行期如果需要完整泛型信息，通常要借助匿名子类、反射 Type 或框架提供的类型引用对象。</p>
+      </section>
+
+<section id="reflection">
+        <h2>136. Java 反射是什么？有哪些使用场景？</h2>
+        <p>反射允许程序在运行时获取类、字段、方法、构造器、注解等元信息，并动态创建对象或调用方法。</p>
+        <ul>
+          <li>Spring 的 Bean 创建、依赖注入、注解扫描、AOP 代理都大量依赖反射或类似机制。</li>
+          <li>MyBatis、Jackson、Hibernate 等框架也会通过反射读写属性、调用构造器、解析注解。</li>
+          <li>反射灵活但有性能、封装破坏和安全边界问题，高频路径通常会缓存反射对象或用字节码生成优化。</li>
+        </ul>
+        <pre><code class="language-java">Class&lt;?&gt; clazz = Class.forName("com.example.User");
+Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
+        <p>回答时可以说：反射是框架“根据配置或注解在运行期操作对象”的基础，但业务代码不应滥用反射，否则可读性、性能和封装边界都会变差。</p>
+      </section>
+
+<section id="java-spi">
+        <h2>137. Java SPI 机制是什么？</h2>
+        <p>SPI 是 Service Provider Interface，用于把接口定义和具体实现解耦。调用方依赖接口，运行时通过配置发现实现类。</p>
+        <ul>
+          <li>Java 原生 SPI 通过 <code>META-INF/services/接口全限定名</code> 文件声明实现类。</li>
+          <li><code>ServiceLoader</code> 会扫描并加载这些实现，典型例子是 JDBC Driver。</li>
+          <li>SPI 适合插件化扩展，但原生 SPI 缺少按条件加载、依赖注入和优先级控制，复杂框架通常会增强这套机制。</li>
+        </ul>
+      </section>
+
+<section id="serialization">
+        <h2>138. Java 序列化和反序列化是什么？</h2>
+        <p>序列化是把对象转换成可存储或可传输的数据格式，反序列化是把数据还原成对象。Java 原生序列化、JSON、Protobuf、Kryo 都属于不同序列化方案。</p>
+        <ul>
+          <li>Java 原生序列化要求实现 <code>Serializable</code>，但性能、可读性和安全性都不适合很多现代服务场景。</li>
+          <li>服务接口常用 JSON，内部高性能通信可用 Protobuf、Thrift 等二进制协议。</li>
+          <li>反序列化不可信数据可能触发安全漏洞，应限制类型、升级依赖并避免反序列化任意对象。</li>
+        </ul>
+      </section>
+
+<section id="collection-framework">
+        <h2>139. Java 集合框架整体结构是什么？</h2>
+        <p>Java 集合框架主要分为 Collection 和 Map 两大体系。Collection 表示单列元素集合，Map 表示 key-value 映射。</p>
+        <ul>
+          <li>List 有序可重复，典型实现有 ArrayList、LinkedList。</li>
+          <li>Set 不允许重复，典型实现有 HashSet、LinkedHashSet、TreeSet。</li>
+          <li>Queue/Deque 表示队列和双端队列；Map 体系包括 HashMap、LinkedHashMap、TreeMap、ConcurrentHashMap。</li>
+        </ul>
+      </section>
+
+<section id="collection-vs-collections">
+        <h2>140. Collection 和 Collections 有什么区别？</h2>
+        <p><code>Collection</code> 是集合接口，表示一组元素；<code>Collections</code> 是工具类，提供排序、查找、同步包装、不可变包装等静态方法。</p>
+        <ul>
+          <li><code>List</code>、<code>Set</code>、<code>Queue</code> 都继承自 <code>Collection</code>。</li>
+          <li><code>Collections.sort(list)</code>、<code>Collections.unmodifiableList(list)</code> 是工具方法。</li>
+          <li>二者名字相近但职责完全不同：一个是数据结构抽象，一个是工具方法集合。</li>
+        </ul>
+      </section>
+
+<section id="list-set-queue-map">
+        <h2>141. List、Set、Queue、Map 分别适合什么场景？</h2>
+        <p>List、Set、Queue、Map 的区别来自数据语义：是否有序、是否允许重复、是否按 key 访问、是否表达排队关系。</p>
+        <ul>
+          <li>List 适合按顺序保存元素并通过下标访问。</li>
+          <li>Set 适合去重和集合判断，HashSet 查找快，TreeSet 保持排序。</li>
+          <li>Queue 适合任务排队和生产消费；Map 适合按 key 快速定位 value。</li>
+        </ul>
+      </section>
+
+<section id="arraylist-expansion">
+        <h2>142. ArrayList 扩容机制是什么？</h2>
+        <p>ArrayList 底层是数组。容量不足时会创建更大的新数组，并把旧数组元素复制过去，因此扩容会带来 O(n) 的复制成本。</p>
+        <ul>
+          <li>JDK 8 中常见扩容约为原容量的 1.5 倍。</li>
+          <li>尾部追加均摊复杂度是 O(1)，中间插入或删除需要移动元素，复杂度是 O(n)。</li>
+          <li>已知数据量时设置初始容量可以减少扩容次数。</li>
+        </ul>
+      </section>
+
+<section id="arraylist-unsafe">
+        <h2>143. ArrayList 为什么线程不安全？</h2>
+        <p>ArrayList 没有同步控制，多线程同时修改时，size 更新、数组写入、扩容复制都可能交叉执行，导致数据覆盖、丢失或越界。</p>
+        <ul>
+          <li>两个线程同时 add 可能读到相同 size，写入同一个位置。</li>
+          <li>扩容期间另一个线程读写旧数组或新数组，可能出现不一致状态。</li>
+          <li>并发场景可使用外部加锁、<code>Collections.synchronizedList</code>、<code>CopyOnWriteArrayList</code> 或并发队列。</li>
+        </ul>
+      </section>
+
+<section id="linkedlist-insert">
+        <h2>144. LinkedList 为什么不一定比 ArrayList 插入删除快？</h2>
+        <p>LinkedList 插入删除只是在已定位节点后修改指针，但定位节点本身通常需要 O(n) 遍历；ArrayList 虽然移动元素，但数组内存连续，CPU 缓存友好。</p>
+        <ul>
+          <li>随机访问场景 ArrayList 明显更快。</li>
+          <li>LinkedList 每个节点都要额外保存前后指针，内存开销更大。</li>
+          <li>只有在已经持有节点位置、频繁头尾操作等场景，链表优势才更明显。</li>
+        </ul>
+      </section>
+
+<section id="hashset-hashmap">
+        <h2>145. HashSet 底层为什么基于 HashMap？</h2>
+        <p>HashSet 底层基于 HashMap 实现，Set 中的元素作为 HashMap 的 key，value 使用一个固定的占位对象。</p>
+        <ul>
+          <li>Set 需要去重，而 HashMap 的 key 天然唯一。</li>
+          <li>判断重复依赖元素的 <code>hashCode()</code> 和 <code>equals()</code>。</li>
+          <li>自定义对象放入 HashSet 时，如果 equals/hashCode 实现不一致，会导致去重失败或查找异常。</li>
+        </ul>
+      </section>
+
+<section id="linkedhashmap-order">
+        <h2>146. LinkedHashMap 如何保证插入顺序？</h2>
+        <p>LinkedHashMap 在 HashMap 的哈希表结构基础上，额外维护一条双向链表，用来记录插入顺序或访问顺序。</p>
+        <ul>
+          <li>默认按插入顺序遍历。</li>
+          <li>构造时开启 accessOrder 后，可以按访问顺序维护，适合实现 LRU 缓存。</li>
+          <li>它比 HashMap 多维护链表指针，内存开销略高。</li>
+        </ul>
+      </section>
+
+<section id="treemap-vs-hashmap">
+        <h2>147. TreeMap 和 HashMap 有什么区别？</h2>
+        <p>HashMap 基于哈希表，关注快速查找；TreeMap 基于红黑树，关注 key 的有序性。</p>
+        <ul>
+          <li>HashMap 平均 put/get 是 O(1)，不保证遍历顺序。</li>
+          <li>TreeMap put/get/remove 是 O(log n)，会按 key 的自然顺序或 Comparator 排序。</li>
+          <li>需要范围查询、排序遍历、最近 key 查询时 TreeMap 更合适。</li>
+        </ul>
+      </section>
+
+<section id="priorityqueue">
+        <h2>148. PriorityQueue 底层原理是什么？</h2>
+        <p>PriorityQueue 是优先队列，底层通常是二叉堆。出队时返回优先级最高或最低的元素，具体顺序由自然排序或 Comparator 决定。</p>
+        <ul>
+          <li>插入和删除堆顶通常是 O(log n)。</li>
+          <li>获取堆顶是 O(1)，但遍历结果不保证整体有序。</li>
+          <li>适合 TopK、任务优先级调度、合并有序流等场景。</li>
+        </ul>
+      </section>
+
+<section id="blocking-queue-compare">
+        <h2>149. ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？</h2>
+        <p>ArrayBlockingQueue 基于数组，是有界阻塞队列；LinkedBlockingQueue 基于链表，可以指定容量，不指定时容量非常大。</p>
+        <ul>
+          <li>ArrayBlockingQueue 内存连续、容量固定，生产消费共用一把锁。</li>
+          <li>LinkedBlockingQueue 链表节点动态创建，put/take 通常使用不同锁，吞吐可能更好。</li>
+          <li>线程池中使用无界 LinkedBlockingQueue 容易造成任务堆积和内存风险。</li>
+        </ul>
+      </section>
+
+<section id="delayqueue">
+        <h2>150. DelayQueue 适合什么场景？</h2>
+        <p>DelayQueue 是延迟队列，元素必须实现 Delayed 接口，只有到期元素才能被取出。</p>
+        <ul>
+          <li>底层通常用优先队列按过期时间排序。</li>
+          <li>适合订单超时关闭、缓存过期、延迟重试、定时任务触发等场景。</li>
+          <li>它是内存队列，进程重启会丢失任务；可靠延迟任务通常要结合数据库或 MQ。</li>
+        </ul>
+      </section>
+
+<section id="fail-fast-fail-safe">
+        <h2>151. fail-fast 和 fail-safe 是什么？</h2>
+        <p>fail-fast 是快速失败机制，集合在迭代过程中检测到结构性修改会抛出 ConcurrentModificationException；fail-safe 通常基于副本或弱一致迭代，不直接抛该异常。</p>
+        <ul>
+          <li>ArrayList、HashMap 的普通迭代器通常是 fail-fast。</li>
+          <li>CopyOnWriteArrayList 迭代的是快照，属于 fail-safe 风格。</li>
+          <li>fail-fast 不能作为并发安全保证，它只是尽早暴露错误修改。</li>
+        </ul>
+      </section>
+
+<section id="iterator-remove">
+        <h2>152. Iterator 删除元素为什么比 for 循环更安全？</h2>
+        <p>Iterator 的 remove 方法会同步更新迭代器内部状态，避免集合结构修改计数和迭代器期望计数不一致。</p>
+        <ul>
+          <li>增强 for 本质也是迭代器，循环中直接调用集合 remove 容易触发 ConcurrentModificationException。</li>
+          <li>使用 iterator.remove() 删除的是当前迭代到的元素，状态可控。</li>
+          <li>并发集合有自己的弱一致迭代语义，不能和普通集合混用理解。</li>
+        </ul>
+      </section>
+
+<section id="isempty">
+        <h2>153. 集合判空为什么推荐 isEmpty()？</h2>
+        <p>集合判空推荐使用 <code>isEmpty()</code>，语义明确，并避免通过 <code>size() == 0</code> 暴露不必要的计数细节。</p>
+        <ul>
+          <li><code>isEmpty()</code> 可读性更强，直接表达是否为空。</li>
+          <li>某些集合或视图计算 size 可能不是常数成本。</li>
+          <li>判空前仍要处理 null；常见写法是 <code>collection != null && !collection.isEmpty()</code>。</li>
+        </ul>
+      </section>
+
+<section id="thread-lifecycle">
+        <h2>154. 线程的生命周期有哪些状态？</h2>
+        <p>Java 线程状态定义在 <code>Thread.State</code> 中，包括 NEW、RUNNABLE、BLOCKED、WAITING、TIMED_WAITING、TERMINATED。</p>
+        <ul>
+          <li>NEW 表示线程对象已创建但未 start。</li>
+          <li>RUNNABLE 包括正在运行和等待 CPU 调度。</li>
+          <li>BLOCKED 是等待进入 synchronized 临界区；WAITING/TIMED_WAITING 是等待通知或超时；TERMINATED 表示执行结束。</li>
+        </ul>
+      </section>
+
+<section id="sleep-vs-wait">
+        <h2>155. sleep() 和 wait() 有什么区别？</h2>
+        <p><code>sleep()</code> 是 Thread 的静态方法，让当前线程暂停指定时间；<code>wait()</code> 是 Object 方法，让线程释放对象锁并进入等待队列。</p>
+        <ul>
+          <li><code>sleep()</code> 不释放已持有的锁。</li>
+          <li><code>wait()</code> 必须在 synchronized 块或方法中调用，会释放对应 monitor。</li>
+          <li><code>wait()</code> 通常与 <code>notify()</code>/<code>notifyAll()</code> 配合实现线程协作。</li>
+        </ul>
+      </section>
+
+<section id="notify-vs-notifyall">
+        <h2>156. notify() 和 notifyAll() 有什么区别？</h2>
+        <p><code>notify()</code> 随机唤醒一个等待在同一对象 monitor 上的线程，<code>notifyAll()</code> 唤醒所有等待线程，让它们重新竞争锁。</p>
+        <ul>
+          <li>notify 可能唤醒的不是期望条件对应的线程，复杂条件下容易造成线程继续等待。</li>
+          <li>notifyAll 更安全但会带来更多无效唤醒和锁竞争。</li>
+          <li>等待条件应使用 while 循环检查，避免虚假唤醒或条件不满足。</li>
+        </ul>
+      </section>
+
+<section id="create-thread">
+        <h2>157. 创建线程有哪几种方式？</h2>
+        <p>Java 创建线程的常见方式包括继承 Thread、实现 Runnable、实现 Callable 配合 FutureTask、提交任务到线程池。</p>
+        <ul>
+          <li>Thread 和 Runnable 本质都是定义线程要执行的任务。</li>
+          <li>Callable 可以返回结果并抛出异常，通常配合 Future 使用。</li>
+          <li>生产环境更推荐线程池统一管理线程生命周期、队列和拒绝策略。</li>
+        </ul>
+      </section>
+
+<section id="runnable-callable">
+        <h2>158. Runnable 和 Callable 有什么区别？</h2>
+        <p>Runnable 表示无返回值任务，不能直接抛出受检异常；Callable 表示有返回值任务，可以抛出异常。</p>
+        <ul>
+          <li><code>Runnable.run()</code> 返回 void。</li>
+          <li><code>Callable.call()</code> 返回泛型结果。</li>
+          <li>Callable 通常通过 ExecutorService 提交，返回 Future 获取结果。</li>
+        </ul>
+      </section>
+
+<section id="future-completablefuture">
+        <h2>159. Future 和 CompletableFuture 有什么区别？</h2>
+        <p>Future 表示异步计算结果，但组合能力弱；CompletableFuture 在 Future 基础上提供回调、编排、组合和异常处理能力。</p>
+        <ul>
+          <li>Future 主要通过 get 阻塞等待结果。</li>
+          <li>CompletableFuture 支持 thenApply、thenCompose、thenCombine、exceptionally 等链式操作。</li>
+          <li>复杂异步流程、并行聚合、回调编排更适合 CompletableFuture。</li>
+        </ul>
+      </section>
+
+<section id="optimistic-pessimistic-lock">
+        <h2>160. 乐观锁和悲观锁有什么区别？</h2>
+        <p>悲观锁假设冲突经常发生，操作前先加锁；乐观锁假设冲突较少，更新时通过版本号、CAS 或条件判断检测冲突。</p>
+        <ul>
+          <li>悲观锁适合写冲突高、数据一致性要求强的场景。</li>
+          <li>乐观锁适合读多写少、冲突概率低的场景。</li>
+          <li>CAS 存在 ABA、自旋开销和热点竞争问题，数据库乐观锁常用 version 字段。</li>
+        </ul>
+      </section>
+
+<section id="atomic-classes">
+        <h2>161. Java 中 Atomic 原子类的原理是什么？</h2>
+        <p>Atomic 原子类通过 volatile 保证可见性，通过 CAS 保证单变量更新的原子性。</p>
+        <ul>
+          <li>CAS 比较内存旧值是否等于期望值，匹配则写入新值。</li>
+          <li>AtomicInteger、AtomicLong、AtomicReference 是常见原子类。</li>
+          <li>高并发计数热点下 AtomicLong 竞争严重时，可以考虑 LongAdder 分散竞争。</li>
+        </ul>
+      </section>
+
+<section id="aqs">
+        <h2>162. AQS 的核心思想是什么？</h2>
+        <p>AQS 是 AbstractQueuedSynchronizer，是 Java 并发包中很多锁和同步器的基础框架。</p>
+        <ul>
+          <li>它用 volatile state 表示同步状态，用 CAS 修改状态。</li>
+          <li>获取失败的线程会进入 CLH 队列，并通过 park/unpark 挂起和唤醒。</li>
+          <li>ReentrantLock、Semaphore、CountDownLatch、ReentrantReadWriteLock 都基于 AQS 思想。</li>
+        </ul>
+      </section>
+
+<section id="read-write-lock">
+        <h2>163. ReentrantReadWriteLock 适合什么场景？</h2>
+        <p>ReentrantReadWriteLock 是读写锁，允许多个读线程并发访问，但写线程需要独占访问。</p>
+        <ul>
+          <li>适合读多写少、读操作耗时明显、共享数据结构需要一致保护的场景。</li>
+          <li>读写锁不是所有场景都更快，写多或锁竞争复杂时开销可能更高。</li>
+          <li>写锁可以降级为读锁，但读锁不能直接升级为写锁。</li>
+        </ul>
+      </section>
+
+<section id="stamped-lock">
+        <h2>164. StampedLock 是什么？</h2>
+        <p>StampedLock 是 Java 8 引入的锁，支持写锁、悲观读锁和乐观读。它通过 stamp 标识锁状态。</p>
+        <ul>
+          <li>乐观读不阻塞写，但读取后需要 validate 检查期间是否发生写入。</li>
+          <li>适合读多写少且读操作可以重试的场景。</li>
+          <li>StampedLock 不可重入，使用不当容易死锁或忘记释放 stamp。</li>
+        </ul>
+      </section>
+
+<section id="concurrent-containers">
+        <h2>165. 并发容器有哪些？</h2>
+        <p>并发容器是为多线程访问设计的数据结构，常见有 ConcurrentHashMap、CopyOnWriteArrayList、BlockingQueue、ConcurrentLinkedQueue 等。</p>
+        <ul>
+          <li>ConcurrentHashMap 适合高并发 key-value 读写。</li>
+          <li>CopyOnWriteArrayList 适合读多写少的监听器列表、配置快照。</li>
+          <li>BlockingQueue 适合生产者消费者和线程池任务队列。</li>
+        </ul>
+      </section>
+
+<section id="forkjoinpool">
+        <h2>166. ForkJoinPool 适合什么场景？</h2>
+        <p>ForkJoinPool 适合把大任务拆成多个小任务并行执行，再合并结果。它使用工作窃取算法提高线程利用率。</p>
+        <ul>
+          <li>典型场景包括递归计算、分治任务、并行流。</li>
+          <li>任务应尽量 CPU 密集且可拆分，避免在 ForkJoin 任务中长时间阻塞 IO。</li>
+          <li>Java parallelStream 默认使用公共 ForkJoinPool，阻塞任务可能影响其它并行流。</li>
+        </ul>
+      </section>
+
+<section id="executors-why-not">
+        <h2>167. 线程池为什么不建议使用 Executors 快捷方法？</h2>
+        <p>Executors 的快捷工厂方法隐藏了队列和线程数细节，容易创建无界队列或无界线程池，导致 OOM 或线程耗尽。</p>
+        <ul>
+          <li><code>newFixedThreadPool</code> 使用无界 LinkedBlockingQueue，任务堆积可能撑爆内存。</li>
+          <li><code>newCachedThreadPool</code> 最大线程数接近无限，突发流量可能创建大量线程。</li>
+          <li>生产环境通常直接使用 ThreadPoolExecutor，显式设置核心线程数、队列容量、最大线程数和拒绝策略。</li>
+        </ul>
+      </section>
+
+<section id="thread-pool-shutdown">
+        <h2>168. 线程池如何优雅关闭？</h2>
+        <p>线程池优雅关闭通常先调用 <code>shutdown()</code> 停止接收新任务，再等待已提交任务完成，超时后再调用 <code>shutdownNow()</code> 尝试中断。</p>
+        <ul>
+          <li><code>shutdown()</code> 不会立即杀掉正在执行的任务。</li>
+          <li><code>awaitTermination()</code> 用于等待线程池结束。</li>
+          <li>任务内部要正确响应中断，阻塞 IO、死循环、吞掉 InterruptedException 都会影响关闭。</li>
+        </ul>
+      </section>
+
+<section id="class-file-structure">
+        <h2>169. 类文件结构包含哪些内容？</h2>
+        <p>Class 文件是 JVM 识别的二进制格式，包含魔数、版本号、常量池、访问标志、类索引、字段表、方法表和属性表。</p>
+        <ul>
+          <li>魔数 <code>0xCAFEBABE</code> 用于识别 class 文件。</li>
+          <li>常量池保存字面量、类名、方法名、字段名、符号引用等。</li>
+          <li>方法表中的 Code 属性保存字节码指令、操作数栈深度、局部变量表等执行信息。</li>
+        </ul>
+      </section>
+
+<section id="classloaders">
+        <h2>170. 类加载器有哪些？</h2>
+        <p>常见类加载器包括 Bootstrap ClassLoader、Platform/Extension ClassLoader、Application ClassLoader 和自定义 ClassLoader。</p>
+        <ul>
+          <li>Bootstrap 加载 Java 核心类库。</li>
+          <li>Platform/Extension 加载平台扩展类库。</li>
+          <li>Application 加载应用 classpath/module-path 下的类，自定义加载器常用于隔离、热部署、插件化。</li>
+        </ul>
+      </section>
+
+<section id="parent-delegation">
+        <h2>171. 双亲委派模型解决什么问题？</h2>
+        <p>双亲委派模型指类加载器加载类时，先把请求委派给父加载器，父加载器无法加载时，子加载器才尝试加载。</p>
+        <ul>
+          <li>它保证 Java 核心类库优先由顶层加载器加载，避免应用伪造 <code>java.lang.String</code> 等核心类。</li>
+          <li>它能减少重复加载，保证同名核心类在 JVM 中的一致性。</li>
+          <li>SPI、OSGi、Tomcat、某些热部署框架会为了隔离或扩展打破部分委派规则。</li>
+        </ul>
+      </section>
+
+<section id="break-parent-delegation">
+        <h2>172. 如何打破双亲委派模型？</h2>
+        <p>打破双亲委派通常是让子加载器优先加载某些类，或通过线程上下文类加载器让父层代码反向使用子层实现。</p>
+        <ul>
+          <li>JDBC SPI 使用线程上下文类加载器加载厂商 Driver，实现由应用侧提供。</li>
+          <li>Tomcat 为每个 Web 应用提供独立 ClassLoader，使不同应用可以加载不同版本的依赖。</li>
+          <li>打破委派会带来类冲突、ClassCastException、依赖隔离复杂等问题，需要明确类加载边界。</li>
+        </ul>
+      </section>
+
+<section id="metaspace-method-area">
+        <h2>173. 方法区和永久代、元空间是什么关系？</h2>
+        <p>方法区是 JVM 规范中的运行时内存区域，用于存放类元数据、常量、静态变量等；永久代和元空间是 HotSpot 对方法区的具体实现。</p>
+        <ul>
+          <li>JDK 8 之前 HotSpot 使用永久代，受 JVM 堆相关参数影响。</li>
+          <li>JDK 8 起使用元空间，元数据主要分配在本地内存。</li>
+          <li>元空间仍可能 OOM，常见原因是动态生成大量类、类加载器泄漏。</li>
+        </ul>
+      </section>
+
+<section id="off-heap-memory">
+        <h2>174. 堆外内存是什么？</h2>
+        <p>堆外内存是不在 Java 堆中的内存，通常通过 DirectByteBuffer、Unsafe、JNI 或本地库分配。</p>
+        <ul>
+          <li>Netty、NIO、数据库驱动、压缩加密库都可能使用堆外内存。</li>
+          <li>堆外内存减少某些 IO 拷贝，但不受普通堆 dump 直接展示。</li>
+          <li>需要关注 <code>-XX:MaxDirectMemorySize</code>、进程 RSS、Native Memory Tracking。</li>
+        </ul>
+      </section>
+
+<section id="direct-memory-risk">
+        <h2>175. 直接内存有什么风险？</h2>
+        <p>直接内存主要通过 DirectByteBuffer 使用，适合减少 Java 堆和 native IO 之间的数据复制。</p>
+        <ul>
+          <li>它的释放依赖 Cleaner 或显式管理，释放不及时可能导致进程内存持续上涨。</li>
+          <li>直接内存 OOM 不一定体现在 Java heap 使用率高。</li>
+          <li>大量 direct buffer 分配释放会带来 native 内存压力和排查复杂度。</li>
+        </ul>
+      </section>
+
+<section id="stop-the-world">
+        <h2>176. 什么是 Stop The World？</h2>
+        <p>Stop The World 指 JVM 暂停所有用户线程，让 GC 或某些 JVM 内部操作在安全点执行。</p>
+        <ul>
+          <li>STW 期间业务线程无法继续处理请求，会体现为延迟尖刺。</li>
+          <li>Minor GC、Full GC、某些阶段的 G1/CMS/ZGC 操作都可能产生 STW，只是时长不同。</li>
+          <li>降低 STW 要从堆大小、对象分配速率、GC 选择、晋升失败、大对象和引用处理等方向优化。</li>
+        </ul>
+      </section>
+
+<section id="gc-collector-choice">
+        <h2>177. 如何选择垃圾收集器？</h2>
+        <p>垃圾收集器选择取决于堆大小、延迟目标、吞吐目标、JDK 版本和服务类型。</p>
+        <ul>
+          <li>吞吐优先的批处理任务可考虑 Parallel GC。</li>
+          <li>通用服务端应用在 JDK 11/17 常用 G1，兼顾吞吐和可控停顿。</li>
+          <li>超低延迟、大堆场景可评估 ZGC 或 Shenandoah。</li>
+        </ul>
+      </section>
+
+<section id="g1-region">
+        <h2>178. G1 的 Region 是什么？</h2>
+        <p>G1 把 Java 堆划分为多个大小相等的 Region，不再固定划分连续的新生代和老年代区域。</p>
+        <ul>
+          <li>Region 可以扮演 Eden、Survivor、Old、Humongous 等角色。</li>
+          <li>G1 根据每个 Region 的垃圾比例和回收收益，优先回收价值最高的 Region。</li>
+          <li>这种结构让 G1 能在目标停顿时间内做增量式回收。</li>
+        </ul>
+      </section>
+
+<section id="gc-types">
+        <h2>179. Minor GC、Major GC、Mixed GC、Full GC 分别是什么？</h2>
+        <p>Minor GC 通常回收年轻代；Major GC 常被用来表示老年代回收；Mixed GC 是 G1 中同时回收年轻代和部分老年代 Region；Full GC 会更彻底地回收整个堆，停顿通常更长。</p>
+        <ul>
+          <li>Minor GC 频繁通常说明对象分配速率高或年轻代过小。</li>
+          <li>Mixed GC 是 G1 控制老年代垃圾的主要方式。</li>
+          <li>Full GC 常与晋升失败、元空间不足、显式 System.gc 或内存压力有关。</li>
+        </ul>
+      </section>
+
+<section id="jvm-params">
+        <h2>180. JVM 常用参数有哪些？</h2>
+        <p>JVM 常用参数主要分为堆内存、GC、日志、诊断和容器适配几类。</p>
+        <ul>
+          <li><code>-Xms</code>、<code>-Xmx</code> 设置堆初始值和最大值。</li>
+          <li><code>-XX:+UseG1GC</code>、<code>-XX:MaxGCPauseMillis</code> 控制 GC 选择和目标停顿。</li>
+          <li><code>-Xlog:gc*</code>、<code>-XX:+HeapDumpOnOutOfMemoryError</code> 用于 GC 日志和 OOM 现场保留。</li>
+        </ul>
+      </section>
+
+<section id="jvm-tools">
+        <h2>181. jps、jstack、jmap、jstat 分别用来做什么？</h2>
+        <p>这些是 JVM 常用诊断工具：jps 看进程，jstack 看线程栈，jmap 看堆，jstat 看 GC 和内存统计。</p>
+        <ul>
+          <li>jstack 适合分析死锁、线程阻塞、线程池耗尽。</li>
+          <li>jmap 可以导出 heap dump，配合 MAT/VisualVM 分析对象占用。</li>
+          <li>jstat 可以持续观察 GC 次数、耗时、各内存区使用变化。</li>
+        </ul>
+      </section>
+
+<section id="deadlock-analysis">
+        <h2>182. 如何分析线程死锁？</h2>
+        <p>线程死锁通常是多个线程互相持有对方需要的锁，导致都无法继续执行。</p>
+        <ul>
+          <li>先用 <code>jstack</code> 导出线程栈，JVM 通常会直接标出 Found one Java-level deadlock。</li>
+          <li>查看每个线程持有哪些锁、等待哪些锁、锁对象地址和调用栈。</li>
+          <li>修复方式包括统一加锁顺序、减少锁嵌套、使用 tryLock 超时、缩小临界区。</li>
+        </ul>
+      </section>
+
+<section id="frequent-gc">
+        <h2>183. 如何分析频繁 GC？</h2>
+        <p>频繁 GC 可能来自对象分配过快、年轻代过小、老年代压力大、内存泄漏、大对象分配或 GC 参数不合理。</p>
+        <ul>
+          <li>先看 GC 日志，区分 Minor GC 频繁、Mixed GC 频繁还是 Full GC 频繁。</li>
+          <li>再结合 jstat、监控、heap dump 分析对象增长和晋升情况。</li>
+          <li>代码层面常见原因包括缓存无界、批量加载过大、临时对象过多、连接或流未关闭。</li>
+        </ul>
+      </section>
+
+<section id="bio-nio-aio">
+        <h2>184. BIO、NIO、AIO 有什么区别？</h2>
+        <p>BIO 是同步阻塞 IO，NIO 是同步非阻塞 IO，AIO 是异步 IO。三者的差异在于线程是否阻塞等待、是否由操作系统完成后通知。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>模型</th>
+              <th>特点</th>
+              <th>适用场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>BIO</td><td>同步阻塞，一个连接通常占用一个线程</td><td>连接数少、逻辑简单的服务</td></tr>
+            <tr><td>NIO</td><td>同步非阻塞，通过 Selector 管理多个连接</td><td>高并发网络连接、网关、RPC 框架</td></tr>
+            <tr><td>AIO</td><td>异步 IO，提交后由系统完成并通知</td><td>理论上适合异步文件/网络 IO，但 Java 服务端使用较少</td></tr>
+          </tbody>
+        </table>
+        <p>面试里重点说 NIO：它不是让单个请求更快，而是让少量线程能管理大量连接，降低线程资源成本。</p>
+      </section>
+
+<section id="sync-async-block-nonblock">
+        <h2>185. 同步、异步、阻塞、非阻塞有什么区别？</h2>
+        <p>同步/异步描述调用结果由谁主动获取，阻塞/非阻塞描述等待结果时线程是否被挂起。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>概念</th>
+              <th>回答重点</th>
+              <th>例子</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>同步</td><td>调用方主动等待或主动获取结果</td><td>普通方法调用、阻塞读</td></tr>
+            <tr><td>异步</td><td>调用方发起后，由回调、Future、事件通知处理结果</td><td>CompletableFuture、异步回调</td></tr>
+            <tr><td>阻塞</td><td>等待期间线程被挂起，不能做别的事</td><td>BIO read</td></tr>
+            <tr><td>非阻塞</td><td>调用立即返回，线程可以继续处理其它任务</td><td>NIO non-blocking channel</td></tr>
+          </tbody>
+        </table>
+        <p>同步不一定阻塞，异步也不等于一定更快。它们描述的是不同维度：同步/异步看结果获取方式，阻塞/非阻塞看等待时线程状态。</p>
+      </section>
+
+<section id="nio-components">
+        <h2>186. Java NIO 的 Channel、Buffer、Selector 分别是什么？</h2>
+        <p>Channel、Buffer、Selector 是 Java NIO 的核心组件。Channel 表示数据通道，Buffer 表示读写缓冲区，Selector 负责监听多个 Channel 的就绪事件。</p>
+        <ul>
+          <li>数据从 Channel 读入 Buffer，再从 Buffer 写入 Channel。</li>
+          <li>Selector 可以监听 accept、connect、read、write 等事件。</li>
+          <li>NIO 适合大量连接、每个连接活跃度不高的网络服务。</li>
+        </ul>
+      </section>
+
+<section id="io-multiplexing">
+        <h2>187. IO 多路复用是什么？</h2>
+        <p>IO 多路复用是用一个或少量线程同时监听多个连接的 IO 就绪事件，避免每个连接都占用一个阻塞线程。</p>
+        <ul>
+          <li>Linux 下常见实现有 select、poll、epoll。</li>
+          <li>Java NIO Selector 是多路复用思想在 Java 层的封装。</li>
+          <li>它提升的是连接管理能力，业务处理慢仍然需要线程池或异步化配合。</li>
+        </ul>
+      </section>
+
+<section id="reactor-model">
+        <h2>188. Reactor 模型是什么？</h2>
+        <p>Reactor 模型是一种事件驱动网络模型，由事件多路复用器监听 IO 事件，再分发给对应 Handler 处理。</p>
+        <pre><code>Selector 监听 IO 事件
+-> 事件就绪
+-> 分发给 Handler
+-> Handler 处理读写、编解码或业务任务</code></pre>
+        <ul>
+          <li>单 Reactor 单线程模型简单，但 IO 和业务都在一个线程中，容易被慢任务阻塞。</li>
+          <li>单 Reactor 多线程会把业务处理交给工作线程池。</li>
+          <li>主从 Reactor 模型通常由 boss 线程处理连接，worker 线程处理读写事件，Netty 就是典型实现。</li>
+        </ul>
+      </section>
+
+<section id="zero-copy">
+        <h2>189. 零拷贝是什么？</h2>
+        <p>零拷贝是减少数据在内核态和用户态之间复制次数的技术总称，常用于文件传输和网络发送。</p>
+        <ul>
+          <li>传统 IO 往往需要磁盘到内核缓冲区、内核到用户缓冲区、用户到 socket 缓冲区等多次复制。</li>
+          <li><code>sendfile</code>、<code>mmap</code>、DirectBuffer 都能在不同层面减少复制。</li>
+          <li>Kafka、Netty、文件服务器等高吞吐场景经常利用零拷贝降低 CPU 消耗。</li>
+        </ul>
+      </section>
+
+<section id="io-patterns">
+        <h2>190. Java 中有哪些常见 IO 设计模式？</h2>
+        <p>Java IO 中常见设计模式包括装饰器模式、适配器模式和组合式封装。</p>
+        <ul>
+          <li>InputStream/OutputStream 的各种包装类体现装饰器模式，例如 BufferedInputStream 增强缓冲能力。</li>
+          <li>Reader/Writer 处理字符流，InputStream/OutputStream 处理字节流，转换流体现字节到字符的适配。</li>
+          <li>这种设计让功能可以按需叠加，但类层级较多，使用时要区分字节、字符、缓冲、对象序列化等职责。</li>
+        </ul>
+      </section>
+
+<section id="netty-performance">
+        <h2>191. Netty 为什么性能高？</h2>
+        <p>Netty 性能高来自 NIO 多路复用、事件循环线程模型、内存池、零拷贝思想和成熟的编解码 pipeline。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>能力</th>
+              <th>为什么有帮助</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>NIO 多路复用</td><td>少量线程管理大量连接，降低线程成本。</td></tr>
+            <tr><td>EventLoop</td><td>Channel 绑定固定线程，减少锁竞争和线程切换。</td></tr>
+            <tr><td>ByteBuf</td><td>读写指针分离，支持池化、直接内存、切片和组合。</td></tr>
+            <tr><td>Pipeline</td><td>编解码、业务处理、异常处理可以拆成可组合 Handler。</td></tr>
+            <tr><td>零拷贝思想</td><td>减少不必要的数据复制，降低 CPU 和内存带宽消耗。</td></tr>
+          </tbody>
+        </table>
+        <p>但 Netty 性能高不代表业务一定快。耗时业务、阻塞数据库调用、慢下游服务仍然要放到业务线程池或异步链路中处理，不能阻塞 EventLoop。</p>
+      </section>
+
+<section id="netty-eventloop">
+        <h2>192. Netty 的 EventLoop 是什么？</h2>
+        <p>EventLoop 是 Netty 的事件循环，一个 EventLoop 通常绑定一个线程，负责处理注册在其上的多个 Channel 的 IO 事件和任务队列。</p>
+        <ul>
+          <li>同一个 Channel 的 IO 事件通常在同一个 EventLoop 线程中执行，减少并发同步成本。</li>
+          <li>耗时业务不应直接阻塞 EventLoop，否则会影响该线程负责的所有连接。</li>
+          <li>耗时任务应提交到业务线程池，再把结果写回 Channel。</li>
+        </ul>
+      </section>
+
+<section id="netty-bytebuf">
+        <h2>193. Netty 的 ByteBuf 相比 ByteBuffer 有什么优势？</h2>
+        <p>ByteBuf 是 Netty 提供的字节缓冲区，相比 JDK ByteBuffer 更适合网络编程。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>优势</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>读写指针分离</td><td>有 <code>readerIndex</code> 和 <code>writerIndex</code>，读写不需要频繁 <code>flip()</code>。</td></tr>
+            <tr><td>内存形态丰富</td><td>支持堆内存、直接内存、池化、切片、组合缓冲区。</td></tr>
+            <tr><td>池化能力</td><td>减少频繁分配和回收，降低 GC 压力。</td></tr>
+            <tr><td>引用计数</td><td>可以减少复制，但必须正确 <code>release()</code>。</td></tr>
+          </tbody>
+        </table>
+        <p>ByteBuf 的风险也很明确：池化和引用计数提升性能的同时，也要求开发者严格管理生命周期，否则容易出现直接内存泄漏。</p>
+      </section>
+</main>
+  </div>
+  <script src="assets/study-legacy-map.js"></script>
+  <script src="assets/study.js"></script>
+</body>
+</html>
+
