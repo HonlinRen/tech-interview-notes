@@ -727,42 +727,6 @@ for x in nums():
       
       </section>
 
-<section id="field-model-validator">
-        <h2>54. field_validator 和 model_validator 区别</h2>
-        <p><code>field_validator</code> 校验单个字段；<code>model_validator</code> 校验整个模型或字段间关系。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>对比项</th>
-              <th>field_validator</th>
-              <th>model_validator</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>粒度</td><td>单字段</td><td>整个模型</td></tr>
-            <tr><td>适合</td><td>格式、范围、单字段转换</td><td>字段间约束</td></tr>
-            <tr><td>时机</td><td>字段赋值时</td><td>模型初始化或校验时</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-python">from pydantic import BaseModel, field_validator, model_validator
-
-class Period(BaseModel):
-    start: int
-    end: int
-
-    @field_validator("start", "end")
-    @classmethod
-    def positive(cls, value):
-        if value &lt; 0:
-            raise ValueError("must be positive")
-        return value
-
-    @model_validator(mode="after")
-    def check_order(self):
-        if self.start &gt;= self.end:
-            raise ValueError("start must be less than end")
-        return self</code></pre>
-      </section>
 
 <section id="coroutine">
         <h2>114. Python 协程是什么？</h2>
