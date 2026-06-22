@@ -6,6 +6,7 @@
   <title>可观测性 高频问题整理</title>
   <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
 </head>
 <body data-category="observability">
   <div class="layout">
@@ -46,11 +47,14 @@
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
 <section id="otel-intro">
-        <h2>94. OpenTelemetry 是什么？</h2>
-        <p>OpenTelemetry（OTel）是 CNCF 下的<strong>可观测性统一标准</strong>，定义 Trace、Metric、Log 的采集、上下文传播和导出协议，并提供多语言 SDK 与 Collector 组件。</p>
+        <h2>OpenTelemetry 是什么？</h2>
+        <p>OpenTelemetry（OTel）是 CNCF 下的<strong>可观测性统一标准</strong>，定义 Trace、Metric、Log 的采集、上下文传播和导出协议，并提供多语言 SDK 与 Collector 组件</p>
         <table>
           <thead>
-            <tr><th>组件</th><th>作用</th></tr>
+            <tr>
+              <th>组件</th>
+              <th>作用</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>SDK</td><td>应用内埋点：创建 Span、记录指标、注入 TraceContext</td></tr>
@@ -59,18 +63,22 @@
             <tr><td>OTLP</td><td>统一的 gRPC/HTTP 导出协议，替代各厂商私有 Agent 格式</td></tr>
           </tbody>
         </table>
-        <p>核心价值：<strong>统一埋点标准、降低厂商绑定、跨语言跨服务链路一致</strong>。以前 Zipkin、Jaeger、Datadog 各自 SDK 不互通，OTel 做"采集层标准化"，后端存储分析可自由选型。</p>
-        <pre><code>App (OTel SDK) --OTLP--> Collector --&gt; Jaeger (Trace)
+        <p>核心价值：<strong>统一埋点标准、降低厂商绑定、跨语言跨服务链路一致</strong>。OTel 做&quot;采集层标准化&quot;，后端存储分析可自由选型。</p>
+        <pre><code>App (OTel SDK) --OTLP--&gt; Collector --&gt; Jaeger (Trace)
                                       --&gt; Prometheus (Metric)
                                       --&gt; Loki / ES (Log)</code></pre>
       </section>
 
 <section id="trace-span">
-        <h2>95. Trace 和 Span 是什么关系？</h2>
+        <h2>Trace 和 Span 是什么关系？</h2>
         <p><strong>Trace</strong> 表示一次完整请求的端到端调用链（由全局 TraceId 标识）。<strong>Span</strong> 是 Trace 中的一个操作单元，代表一次具体的耗时操作。</p>
         <table>
           <thead>
-            <tr><th>概念</th><th>说明</th><th>示例</th></tr>
+            <tr>
+              <th>概念</th>
+              <th>说明</th>
+              <th>示例</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>Trace</td><td>完整请求链路，共享 TraceId</td><td>用户提问 → 网关 → RAG → LLM → 返回</td></tr>
@@ -90,18 +98,22 @@
       </section>
 
 <section id="trace-slow-locate">
-        <h2>96. 如何用 Trace 定位接口慢？</h2>
+        <h2>如何用 Trace 定位接口慢？</h2>
         <p>定位慢接口的核心思路：<strong>找到 Trace 中耗时最长的 Span，沿调用树向下钻取</strong>。</p>
         <ol>
           <li>在 APM/Jaeger 中按接口路径或服务名筛选慢 Trace（如 P99 &gt; 2s）。</li>
           <li>打开 Waterfall 视图，找<strong>最宽/最长的 Span</strong>（Critical Path）。</li>
-          <li>区分"自身耗时"与"等待子 Span"：Span 自身耗时 = 总耗时 − 所有子 Span 耗时之和。</li>
+          <li>区分&quot;自身耗时&quot;与&quot;等待子 Span&quot;：Span 自身耗时 = 总耗时 − 所有子 Span 耗时之和。</li>
           <li>检查 Span 的 status、error message、attributes（SQL 语句、HTTP URL、模型名）。</li>
           <li>对比正常 Trace 与慢 Trace，看是偶发还是系统性（如连接池满、索引缺失）。</li>
         </ol>
         <table>
           <thead>
-            <tr><th>慢 Span 位置</th><th>常见原因</th><th>下一步</th></tr>
+            <tr>
+              <th>慢 Span 位置</th>
+              <th>常见原因</th>
+              <th>下一步</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>网关</td><td>限流排队、TLS 握手、路由查找</td><td>看网关 QPS、连接数</td></tr>
@@ -115,15 +127,18 @@
       </section>
 
 <section id="prometheus-intro">
-        <h2>97. Prometheus 是什么？</h2>
+        <h2>Prometheus 是什么？</h2>
         <p>Prometheus 是 CNCF Graduated 的<strong>时序指标监控系统</strong>，采用 Pull 模型定期抓取目标暴露的 <code>/metrics</code> 端点，数据以时间序列存储，通过 PromQL 查询和告警。</p>
         <table>
           <thead>
-            <tr><th>特性</th><th>说明</th></tr>
+            <tr>
+              <th>特性</th>
+              <th>说明</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>Pull 采集</td><td>Prometheus Server 主动拉取，也可 Pushgateway 处理短生命周期任务</td></tr>
-            <tr><td>多维标签</td><td>指标名 + Label 组合，如 <code>http_requests_total{method="POST",status="500"}</code></td></tr>
+            <tr><td>多维标签</td><td>指标名 + Label 组合，如 <code>http_requests_total{method=&quot;POST&quot;,status=&quot;500&quot;}</code></td></tr>
             <tr><td>PromQL</td><td>支持 rate、histogram_quantile、聚合等查询语言</td></tr>
             <tr><td>Alertmanager</td><td>告警路由、分组、抑制、静默</td></tr>
             <tr><td>Grafana</td><td>常用可视化前端，非 Prometheus 内置</td></tr>
@@ -133,10 +148,15 @@
       </section>
 
 <section id="prometheus-metric-types">
-        <h2>98. Counter、Gauge、Histogram 区别？</h2>
+        <h2>Counter、Gauge、Histogram 区别？</h2>
         <table>
           <thead>
-            <tr><th>类型</th><th>行为</th><th>典型场景</th><th>PromQL 示例</th></tr>
+            <tr>
+              <th>类型</th>
+              <th>行为</th>
+              <th>典型场景</th>
+              <th>PromQL 示例</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>Counter</td><td>只增不减（重启归零）</td><td>请求总数、错误总数、Token 消耗累计</td><td><code>rate(http_requests_total[5m])</code></td></tr>
@@ -146,22 +166,22 @@
           </tbody>
         </table>
         <pre><code># Counter 示例
-http_requests_total{method="GET", status="200"} 152340
+http_requests_total{method=&quot;GET&quot;, status=&quot;200&quot;} 152340
 
 # Gauge 示例
 db_connection_pool_active 18
 db_connection_pool_max    20
 
 # Histogram 示例（桶: 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10）
-http_request_duration_seconds_bucket{le="0.1"} 98000
-http_request_duration_seconds_bucket{le="0.5"} 99500
+http_request_duration_seconds_bucket{le=&quot;0.1&quot;} 98000
+http_request_duration_seconds_bucket{le=&quot;0.5&quot;} 99500
 http_request_duration_seconds_sum  8234.5
 http_request_duration_seconds_count 100000</code></pre>
         <p>选类型原则：累计计数用 Counter，当前状态用 Gauge，需要算分位数用 Histogram（服务端聚合，桶可统一配置）。</p>
       </section>
 
 <section id="prometheus-alerting">
-        <h2>99. Prometheus 指标如何用于告警？</h2>
+        <h2>Prometheus 指标如何用于告警？</h2>
         <p>告警链路：<strong>Recording Rule / Alert Rule → Alertmanager → 通知渠道（钉钉/Slack/PagerDuty）</strong>。</p>
         <pre><code># alerting rule 示例
 groups:
@@ -169,25 +189,28 @@ groups:
     rules:
       - alert: HighErrorRate
         expr: |
-          sum(rate(http_requests_total{status=~"5.."}[5m]))
-          / sum(rate(http_requests_total[5m])) > 0.05
+          sum(rate(http_requests_total{status=~&quot;5..&quot;}[5m]))
+          / sum(rate(http_requests_total[5m])) &gt; 0.05
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "5xx 错误率超过 5% 持续 5 分钟"
+          summary: &quot;5xx 错误率超过 5% 持续 5 分钟&quot;
 
       - alert: HighP99Latency
         expr: |
           histogram_quantile(0.99,
             sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
-          ) > 2
+          ) &gt; 2
         for: 3m
         labels:
           severity: warning</code></pre>
         <table>
           <thead>
-            <tr><th>告警设计要点</th><th>说明</th></tr>
+            <tr>
+              <th>告警设计要点</th>
+              <th>说明</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>for 持续时间</td><td>避免瞬时抖动误报，如 <code>for: 5m</code></td></tr>
@@ -199,11 +222,15 @@ groups:
       </section>
 
 <section id="rag-agent-metrics">
-        <h2>100. RAG / Agent 需要监控哪些指标？</h2>
+        <h2>RAG / Agent 需要监控哪些指标？</h2>
         <p>AI 应用除常规 RED 指标外，还需覆盖<strong>检索质量、模型成本、工具可靠性</strong>。</p>
         <table>
           <thead>
-            <tr><th>维度</th><th>关键指标</th><th>说明</th></tr>
+            <tr>
+              <th>维度</th>
+              <th>关键指标</th>
+              <th>说明</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>端到端</td><td>总耗时 P50/P95/P99、成功率、超时率</td><td>用户感知的整体体验</td></tr>
@@ -216,16 +243,16 @@ groups:
           </tbody>
         </table>
         <pre><code># 示例指标命名
-rag_retrieval_duration_seconds{stage="vector_search"}
+rag_retrieval_duration_seconds{stage=&quot;vector_search&quot;}
 rag_retrieval_hit_count
 rag_rerank_duration_seconds
-llm_tokens_total{direction="input|output", model="gpt-4o"}
-agent_tool_call_total{tool="search_db", status="success|error"}
-rag_refusal_total{reason="low_score|no_context"}</code></pre>
+llm_tokens_total{direction=&quot;input|output&quot;, model=&quot;gpt-4o&quot;}
+agent_tool_call_total{tool=&quot;search_db&quot;, status=&quot;success|error&quot;}
+rag_refusal_total{reason=&quot;low_score|no_context&quot;}</code></pre>
       </section>
 
 <section id="token-monitoring">
-        <h2>101. 如何监控 Token 消耗？</h2>
+        <h2>如何监控 Token 消耗？</h2>
         <p>Token 是 LLM 应用的<strong>核心成本单元</strong>，需按多维度拆分统计并设预算告警。</p>
         <ol>
           <li><strong>采集</strong>：每次 LLM 调用后记录 API 返回的 <code>usage.prompt_tokens</code>、<code>usage.completion_tokens</code>，或通过 tiktoken 本地估算。</li>
@@ -235,28 +262,36 @@ rag_refusal_total{reason="low_score|no_context"}</code></pre>
         </ol>
         <table>
           <thead>
-            <tr><th>监控项</th><th>实现方式</th></tr>
+            <tr>
+              <th>监控项</th>
+              <th>实现方式</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td>实时 Counter</td><td><code>llm_tokens_total{tenant="A", model="gpt-4o", direction="input"}</code></td></tr>
+            <tr><td>实时 Counter</td><td><code>llm_tokens_total{tenant=&quot;A&quot;, model=&quot;gpt-4o&quot;, direction=&quot;input&quot;}</code></td></tr>
             <tr><td>费用估算</td><td>Token × 单价，按模型定价表计算</td></tr>
             <tr><td>缓存节省</td><td>对比 cache hit 时跳过的 Token 数</td></tr>
             <tr><td>阶段拆分</td><td>检索 Embedding Token vs 生成 Token 分开统计</td></tr>
           </tbody>
         </table>
         <pre><code>// 调用后埋点示例
-metrics.counter("llm_tokens_total", tags={
-  "tenant": tenantId, "model": "gpt-4o",
-  "direction": "input", "stage": "generate"
+metrics.counter(&quot;llm_tokens_total&quot;, tags={
+  &quot;tenant&quot;: tenantId, &quot;model&quot;: &quot;gpt-4o&quot;,
+  &quot;direction&quot;: &quot;input&quot;, &quot;stage&quot;: &quot;generate&quot;
 }).inc(response.usage.prompt_tokens);</code></pre>
       </section>
 
 <section id="red-use">
-        <h2>415. RED 和 USE 监控方法是什么？</h2>
+        <h2>RED 和 USE 监控方法是什么？</h2>
         <p>两套互补的监控方法论，分别面向<strong>请求驱动服务</strong>和<strong>资源驱动组件</strong>。</p>
         <table>
           <thead>
-            <tr><th>方法</th><th>适用对象</th><th>三个维度</th><th>说明</th></tr>
+            <tr>
+              <th>方法</th>
+              <th>适用对象</th>
+              <th>三个维度</th>
+              <th>说明</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>RED</td><td>API、微服务、无状态应用</td><td>Rate（请求速率）</td><td>QPS / RPS</td></tr>
@@ -267,14 +302,19 @@ metrics.counter("llm_tokens_total", tags={
             <tr><td></td><td></td><td>Errors（错误）</td><td>IO error、OOM、超时、拒绝连接</td></tr>
           </tbody>
         </table>
-        <p>实践：网关/业务服务用 RED 看健康度；MySQL/Redis/MQ 用 USE 看资源瓶颈。两者结合才能从"接口慢"定位到"DB 连接池饱和"。</p>
+        <p>实践：网关/业务服务用 RED 看健康度；MySQL/Redis/MQ 用 USE 看资源瓶颈。两者结合才能从&quot;接口慢&quot;定位到&quot;DB 连接池饱和&quot;。</p>
       </section>
 
 <section id="sli-slo-sla">
-        <h2>416. SLI、SLO、SLA 有什么区别？</h2>
+        <h2>SLI、SLO、SLA 有什么区别？</h2>
         <table>
           <thead>
-            <tr><th>概念</th><th>定义</th><th>示例</th><th>谁定义</th></tr>
+            <tr>
+              <th>概念</th>
+              <th>定义</th>
+              <th>示例</th>
+              <th>谁定义</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>SLI</td><td>Service Level Indicator，可量化的服务指标</td><td>成功请求占比、P99 延迟 &lt; 500ms 的比例</td><td>工程团队</td></tr>
@@ -288,15 +328,19 @@ SLO = SLI ≥ 99.9%（30 天滚动窗口）   → 当前达标
 SLA = 可用性 ≥ 99.5%（合同）          → 当前达标，距违约有余量
 
 Error Budget = 1 - SLO = 0.1%
-→ 30 天内最多允许 0.1% 的请求失败，用于平衡"发版速度 vs 稳定性"</code></pre>
+→ 30 天内最多允许 0.1% 的请求失败，用于平衡&quot;发版速度 vs 稳定性&quot;</code></pre>
       </section>
 
 <section id="p95-p99">
-        <h2>417. P95、P99 延迟有什么意义？</h2>
+        <h2>P95、P99 延迟有什么意义？</h2>
         <p>平均值会被长尾请求严重拉高或掩盖，<strong>分位数更能反映大多数用户的真实体验</strong>。</p>
         <table>
           <thead>
-            <tr><th>指标</th><th>含义</th><th>用途</th></tr>
+            <tr>
+              <th>指标</th>
+              <th>含义</th>
+              <th>用途</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>P50（中位数）</td><td>50% 请求在此时间内完成</td><td>典型用户体验</td></tr>
@@ -305,7 +349,7 @@ Error Budget = 1 - SLO = 0.1%
             <tr><td>Max</td><td>最慢请求</td><td>排查极端 case，不适合做 SLO</td></tr>
           </tbody>
         </table>
-        <p>为什么不用平均值：100 个请求中 99 个 10ms、1 个 10s，平均 ≈ 109ms，看起来"还行"，但 P99 = 10s 暴露了严重长尾。</p>
+        <p>为什么不用平均值：100 个请求中 99 个 10ms、1 个 10s，平均 ≈ 109ms，看起来&quot;还行&quot;，但 P99 = 10s 暴露了严重长尾。</p>
         <pre><code># Prometheus 计算 P99
 histogram_quantile(0.99,
   sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)
@@ -314,11 +358,15 @@ histogram_quantile(0.99,
       </section>
 
 <section id="logs-metrics-trace-correlation">
-        <h2>418. 日志、指标、链路追踪如何关联？</h2>
-        <p>三者构成可观测性三大支柱，通过<strong>TraceId / SpanId</strong> 串联，实现"指标发现异常 → Trace 定位慢点 → 日志看详情"。</p>
+        <h2>日志、指标、链路追踪如何关联？</h2>
+        <p>三者构成可观测性三大支柱，通过<strong>TraceId / SpanId</strong> 串联，实现&quot;指标发现异常 → Trace 定位慢点 → 日志看详情&quot;。</p>
         <table>
           <thead>
-            <tr><th>信号</th><th>回答的问题</th><th>关联键</th></tr>
+            <tr>
+              <th>信号</th>
+              <th>回答的问题</th>
+              <th>关联键</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>Metrics</td><td>系统整体是否健康？趋势如何？</td><td>service、endpoint 标签</td></tr>
@@ -327,19 +375,19 @@ histogram_quantile(0.99,
           </tbody>
         </table>
         <pre><code>// 日志中注入 Trace 上下文（Java MDC / Python contextvars）
-MDC.put("trace_id", span.getSpanContext().getTraceId());
-MDC.put("span_id",  span.getSpanContext().getSpanId());
-log.info("order created, orderId={}", orderId);
+MDC.put(&quot;trace_id&quot;, span.getSpanContext().getTraceId());
+MDC.put(&quot;span_id&quot;,  span.getSpanContext().getSpanId());
+log.info(&quot;order created, orderId={}&quot;, orderId);
 
 // 日志输出
-{"trace_id":"abc123","span_id":"def456","msg":"order created","orderId":"O001"}
+{&quot;trace_id&quot;:&quot;abc123&quot;,&quot;span_id&quot;:&quot;def456&quot;,&quot;msg&quot;:&quot;order created&quot;,&quot;orderId&quot;:&quot;O001&quot;}
 
 // Grafana 中：从 Prometheus 告警 → 跳转 Tempo Trace → 关联 Loki 日志</code></pre>
         <p>工程落地：统一 TraceId 从网关生成并透传；所有服务日志格式 JSON 化并含 trace_id；Grafana/Jaeger 配置 Exemplar 从 Metric 跳 Trace。</p>
       </section>
 
 <section id="trace-id-propagation">
-        <h2>419. TraceId 如何在微服务间传递？</h2>
+        <h2>TraceId 如何在微服务间传递？</h2>
         <p>基于 W3C Trace Context 标准，通过 HTTP Header 或 MQ Message Property 传递上下文。</p>
         <pre><code># W3C 标准 Header
 traceparent: 00-&lt;trace-id&gt;-&lt;parent-span-id&gt;-&lt;flags&gt;
@@ -360,38 +408,45 @@ X-B3-Sampled: 1</code></pre>
       </section>
 
 <section id="error-code-design">
-        <h2>420. 如何设计统一错误码和错误日志？</h2>
+        <h2>如何设计统一错误码和错误日志？</h2>
         <p>错误码是<strong>可机器处理的业务语义</strong>，错误日志是<strong>可人工排查的上下文</strong>，两者配合但不重复。</p>
         <table>
           <thead>
-            <tr><th>设计原则</th><th>说明</th></tr>
+            <tr>
+              <th>设计原则</th>
+              <th>说明</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>分段编码</td><td>如 <code>10xxxx</code> 通用、<code>20xxxx</code> 用户、<code>30xxxx</code> 订单，便于归类</td></tr>
             <tr><td>对外 vs 对内</td><td>API 返回用户友好 message + 错误码；日志记录完整 stack trace 和内部 detail</td></tr>
-            <tr><td>可监控</td><td>错误码作为 Metric Label，如 <code>error_total{code="2001001"}</code></td></tr>
+            <tr><td>可监控</td><td>错误码作为 Metric Label，如 <code>error_total{code=&quot;2001001&quot;}</code></td></tr>
             <tr><td>稳定不变</td><td>已发布的错误码不随意修改含义</td></tr>
           </tbody>
         </table>
         <pre><code>// API 响应（对外）
-{ "code": 2001001, "message": "用户名或密码错误", "request_id": "req-abc" }
+{ &quot;code&quot;: 2001001, &quot;message&quot;: &quot;用户名或密码错误&quot;, &quot;request_id&quot;: &quot;req-abc&quot; }
 
 // 错误日志（对内）
 {
-  "level": "WARN", "code": 2001001,
-  "trace_id": "abc123", "user_id": "U001",
-  "detail": "password mismatch, attempt=3",
-  "stack": "..."   // 仅 5xx / 未预期异常记录
+  &quot;level&quot;: &quot;WARN&quot;, &quot;code&quot;: 2001001,
+  &quot;trace_id&quot;: &quot;abc123&quot;, &quot;user_id&quot;: &quot;U001&quot;,
+  &quot;detail&quot;: &quot;password mismatch, attempt=3&quot;,
+  &quot;stack&quot;: &quot;...&quot;   // 仅 5xx / 未预期异常记录
 }</code></pre>
         <p>5xx 系统错误与 4xx 业务错误分开统计；告警基于 5xx rate 和特定业务错误码突增。</p>
       </section>
 
 <section id="mq-backlog-monitoring">
-        <h2>421. 如何监控 MQ 积压？</h2>
+        <h2>如何监控 MQ 积压？</h2>
         <p>消息积压 = <strong>生产速度 &gt; 消费速度</strong>，需从生产、消费、存储三侧监控。</p>
         <table>
           <thead>
-            <tr><th>指标</th><th>含义</th><th>告警建议</th></tr>
+            <tr>
+              <th>指标</th>
+              <th>含义</th>
+              <th>告警建议</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>Consumer Lag / 积压量</td><td>未消费消息数</td><td>持续增长 &gt; 10min → warning</td></tr>
@@ -404,19 +459,23 @@ X-B3-Sampled: 1</code></pre>
         </table>
         <pre><code># RocketMQ 示例
 rocketmq_consumer_offset - rocketmq_broker_offset  → lag
-rocketmq_consumer_tps{group="order-consumer"}
-rocketmq_producer_tps{topic="order-topic"}
+rocketmq_consumer_tps{group=&quot;order-consumer&quot;}
+rocketmq_producer_tps{topic=&quot;order-topic&quot;}
 
 # Kafka 示例
-kafka_consumergroup_lag{group="order-group", topic="orders"}</code></pre>
+kafka_consumergroup_lag{group=&quot;order-group&quot;, topic=&quot;orders&quot;}</code></pre>
         <p>Trace 关联：Consumer Span 耗时突增 + Lag 上升 → 定位消费逻辑或下游 DB 慢。</p>
       </section>
 
 <section id="redis-hot-big-key">
-        <h2>422. 如何监控 Redis 热 Key 和大 Key？</h2>
+        <h2>如何监控 Redis 热 Key 和大 Key？</h2>
         <table>
           <thead>
-            <tr><th>问题</th><th>影响</th><th>监控手段</th></tr>
+            <tr>
+              <th>问题</th>
+              <th>影响</th>
+              <th>监控手段</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>热 Key</td><td>单 Key QPS 过高，单节点 CPU 飙高，集群倾斜</td><td><code>redis-cli --hotkeys</code>、MONITOR 采样、Proxy 层统计、Redis 4.0+ HOTKEYS 报告</td></tr>
@@ -430,17 +489,17 @@ redis-cli --bigkeys -i 0.1
 MEMORY USAGE mykey
 
 # 热 Key 监控（业务侧埋点）
-redis_key_access_total{key_prefix="user:session"}  → 按前缀聚合找热点
+redis_key_access_total{key_prefix=&quot;user:session&quot;}  → 按前缀聚合找热点
 
 # 告警
-redis_memory_used_bytes / redis_memory_max_bytes > 0.85
-redis_connected_clients > 8000
-redis_slowlog_length > 10</code></pre>
+redis_memory_used_bytes / redis_memory_max_bytes &gt; 0.85
+redis_connected_clients &gt; 8000
+redis_slowlog_length &gt; 10</code></pre>
         <p>治理：热 Key 加 Local Cache 或多副本；大 Key 拆分（Hash 分片）、异步删除（UNLINK）、设置合理 TTL。</p>
       </section>
 
 <section id="db-slow-query-pool">
-        <h2>423. 如何监控数据库慢查询和连接池耗尽？</h2>
+        <h2>如何监控数据库慢查询和连接池耗尽？</h2>
         <h3>慢查询</h3>
         <ul>
           <li>开启 <code>slow_query_log</code>，设 <code>long_query_time</code>（如 1s）。</li>
@@ -451,7 +510,11 @@ redis_slowlog_length > 10</code></pre>
         <h3>连接池耗尽</h3>
         <table>
           <thead>
-            <tr><th>指标</th><th>含义</th><th>告警</th></tr>
+            <tr>
+              <th>指标</th>
+              <th>含义</th>
+              <th>告警</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>active_connections / max</td><td>连接池使用率</td><td>&gt; 80% 持续 5min</td></tr>
@@ -461,20 +524,25 @@ redis_slowlog_length > 10</code></pre>
           </tbody>
         </table>
         <pre><code># HikariCP JMX / Micrometer 指标
-hikaricp_connections_active{pool="main"} 18
-hikaricp_connections_pending{pool="main"} 5    ← 危险信号
+hikaricp_connections_active{pool=&quot;main&quot;} 18
+hikaricp_connections_pending{pool=&quot;main&quot;} 5    ← 危险信号
 hikaricp_connections_timeout_total 12          ← 已在超时
 
 # MySQL 侧
-Threads_connected / max_connections > 0.8</code></pre>
+Threads_connected / max_connections &gt; 0.8</code></pre>
         <p>连接池耗尽常见原因：慢 SQL 占住连接不释放、事务未提交、连接泄漏（未 close）、池大小配置过小。</p>
       </section>
 
 <section id="alert-levels">
-        <h2>424. 如何设计告警分级？</h2>
+        <h2>如何设计告警分级？</h2>
         <table>
           <thead>
-            <tr><th>级别</th><th>定义</th><th>响应</th><th>示例</th></tr>
+            <tr>
+              <th>级别</th>
+              <th>定义</th>
+              <th>响应</th>
+              <th>示例</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>P0 / Critical</td><td>核心链路不可用，影响全部用户</td><td>立即电话 On-Call，15min 响应</td><td>支付接口 5xx &gt; 50%、DB 主库宕机</td></tr>
@@ -487,20 +555,23 @@ Threads_connected / max_connections > 0.8</code></pre>
       </section>
 
 <section id="alert-storm">
-        <h2>425. 如何避免告警风暴？</h2>
+        <h2>如何避免告警风暴？</h2>
         <p>告警风暴 = 一个根因触发大量重复/关联告警，导致 On-Call 麻痹。核心策略：<strong>减少、合并、抑制、升级</strong>。</p>
         <table>
           <thead>
-            <tr><th>策略</th><th>实现</th></tr>
+            <tr>
+              <th>策略</th>
+              <th>实现</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>告警去重</td><td>相同 alertname + labels 在 <code>group_wait</code> 窗口内只发一条</td></tr>
             <tr><td>分组聚合</td><td>Alertmanager <code>group_by: [alertname, service]</code>，多条合并为一条通知</td></tr>
             <tr><td>抑制规则</td><td>DB 宕机 → 抑制所有依赖该 DB 的服务告警</td></tr>
-            <tr><td>依赖拓扑</td><td>基于服务依赖图，只告警"最上游根因"</td></tr>
+            <tr><td>依赖拓扑</td><td>基于服务依赖图，只告警&quot;最上游根因&quot;</td></tr>
             <tr><td>for 持续时间</td><td>瞬时抖动不告警，<code>for: 5m</code></td></tr>
             <tr><td>告警静默</td><td>已知变更/维护窗口设 Silence</td></tr>
-            <tr><td>告警审查</td><td>定期清理无效告警（"狼来了"效应）</td></tr>
+            <tr><td>告警审查</td><td>定期清理无效告警（&quot;狼来了&quot;效应）</td></tr>
           </tbody>
         </table>
         <pre><code># Alertmanager 抑制示例
@@ -513,7 +584,7 @@ inhibit_rules:
       </section>
 
 <section id="capacity-planning">
-        <h2>426. 如何做容量评估？</h2>
+        <h2>如何做容量评估？</h2>
         <ol>
           <li><strong>明确目标</strong>：峰值 QPS、数据增量、P99 延迟目标、可用性 SLO。</li>
           <li><strong>基准测试</strong>：单实例压测得到 QPS-CPU 曲线和拐点。</li>
@@ -533,10 +604,13 @@ inhibit_rules:
       </section>
 
 <section id="load-test">
-        <h2>427. 如何做压测？</h2>
+        <h2>如何做压测？</h2>
         <table>
           <thead>
-            <tr><th>阶段</th><th>内容</th></tr>
+            <tr>
+              <th>阶段</th>
+              <th>内容</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>目标定义</td><td>验证 5000 QPS 下 P99 &lt; 200ms，错误率 &lt; 0.1%</td></tr>
@@ -553,10 +627,15 @@ inhibit_rules:
       </section>
 
 <section id="qps-tps-rt">
-        <h2>428. 压测 QPS、TPS、RT 分别代表什么？</h2>
+        <h2>压测 QPS、TPS、RT 分别代表什么？</h2>
         <table>
           <thead>
-            <tr><th>指标</th><th>全称</th><th>含义</th><th>适用场景</th></tr>
+            <tr>
+              <th>指标</th>
+              <th>全称</th>
+              <th>含义</th>
+              <th>适用场景</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>QPS</td><td>Queries Per Second</td><td>每秒查询/请求数</td><td>HTTP API、读多场景</td></tr>
@@ -571,15 +650,18 @@ inhibit_rules:
   例：QPS = 1000, 平均 RT = 200ms = 0.2s
   并发 = 1000 × 0.2 = 200
   → 系统需同时处理 200 个在途请求，据此配置线程池/连接池大小</code></pre>
-        <p>QPS 与 TPS 在口语中常混用；严格说一次"下单"可能包含多个 HTTP 请求但算 1 个 Transaction。</p>
+        <p>QPS 与 TPS 在口语中常混用；严格说一次&quot;下单&quot;可能包含多个 HTTP 请求但算 1 个 Transaction。</p>
       </section>
 
 <section id="postmortem">
-        <h2>429. 线上故障复盘应该包含哪些内容？</h2>
+        <h2>线上故障复盘应该包含哪些内容？</h2>
         <p>Postmortem（事后复盘）目标是<strong>从故障中学习，推动系统性改进</strong>，而非追责。</p>
         <table>
           <thead>
-            <tr><th>章节</th><th>内容</th></tr>
+            <tr>
+              <th>章节</th>
+              <th>内容</th>
+            </tr>
           </thead>
           <tbody>
             <tr><td>故障摘要</td><td>一句话描述：时间、影响范围、持续时长、严重级别</td></tr>
@@ -597,12 +679,13 @@ inhibit_rules:
   【根因】DB 连接池 max=20 过小，促销流量下耗尽，pending 线程堆积
   【改进】1. 连接池 max 调为 50  2. 加 pending 告警  3. 大促前压测纳入 CI</code></pre>
       </section>
-
-    </main>
+</main>
   </div>
   <script src="assets/highlight.min.js"></script>
   <script src="assets/study-legacy-map.js"></script>
   <script src="assets/study.js"></script>
   <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
 </body>
 </html>

@@ -758,8 +758,12 @@ const categoryLabels = {
       }
 
       function enhanceQuestion(section) {
-        const h2 = section.querySelector(":scope > h2");
-        if (!h2 || !/^\d+\./.test(h2.textContent) || /^\d+-\d+\./.test(h2.textContent)) {
+        const h2 = section.querySelector(":scope > .question-heading h2, :scope > h2");
+        if (!h2) {
+          return null;
+        }
+        const titleText = h2.textContent.trim();
+        if (/^\d+-\d+\./.test(titleText)) {
           return null;
         }
 
@@ -987,102 +991,103 @@ const categoryLabels = {
       renumberQuestions();
       renderToc();
       renderCategoryStats();
+      applyPageScopedMigration();
 
       searchInput.addEventListener("input", function () {
-        state.query = searchInput.value;
-        applyFilter();
-        renderSearchSuggestions();
-      });
+          state.query = searchInput.value;
+          applyFilter();
+          renderSearchSuggestions();
+        });
 
-      searchInput.addEventListener("focus", function () {
-        renderSearchSuggestions();
-      });
+        searchInput.addEventListener("focus", function () {
+          renderSearchSuggestions();
+        });
 
-      searchInput.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-          const first = searchSuggestions._matches && searchSuggestions._matches[0];
-          if (first) {
-            event.preventDefault();
-            jumpToQuestion(first);
+        searchInput.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            const first = searchSuggestions._matches && searchSuggestions._matches[0];
+            if (first) {
+              event.preventDefault();
+              jumpToQuestion(first);
+            }
           }
-        }
-        if (event.key === "Escape") {
-          searchSuggestions.classList.remove("show");
-        }
-      });
+          if (event.key === "Escape") {
+            searchSuggestions.classList.remove("show");
+          }
+        });
 
-      searchSuggestions.addEventListener("click", function (event) {
-        const button = event.target.closest(".search-suggestion");
-        if (!button) {
-          return;
-        }
-        const index = Number(button.dataset.questionIndex);
-        const question = searchSuggestions._matches && searchSuggestions._matches[index];
-        if (question) {
-          jumpToQuestion(question);
-        }
-      });
-
-      document.addEventListener("click", function (event) {
-        if (!event.target.closest(".search-wrap")) {
-          searchSuggestions.classList.remove("show");
-        }
-      });
-
-      document.getElementById("filterBar").addEventListener("click", function (event) {
-        const button = event.target.closest(".filter-btn");
-        if (button) {
-          localStorage.setItem("study-current-category", button.dataset.filter);
-          localStorage.removeItem("study-current-question");
-          setFilter(button.dataset.filter);
-        }
-      });
-
-      document.querySelector("aside").addEventListener("click", function (event) {
-        const link = event.target.closest("a[href^='#']");
-        if (link) {
-          event.preventDefault();
-          const id = link.getAttribute("href").slice(1);
-          const question = state.questions.find(function (item) {
-            return item.id === id || questionStorageKey(item) === id;
-          });
+        searchSuggestions.addEventListener("click", function (event) {
+          const button = event.target.closest(".search-suggestion");
+          if (!button) {
+            return;
+          }
+          const index = Number(button.dataset.questionIndex);
+          const question = searchSuggestions._matches && searchSuggestions._matches[index];
           if (question) {
             jumpToQuestion(question);
           }
-          return;
+        });
+
+        document.addEventListener("click", function (event) {
+          if (!event.target.closest(".search-wrap")) {
+            searchSuggestions.classList.remove("show");
+          }
+        });
+
+        document.getElementById("filterBar").addEventListener("click", function (event) {
+          const button = event.target.closest(".filter-btn");
+          if (button) {
+            localStorage.setItem("study-current-category", button.dataset.filter);
+            localStorage.removeItem("study-current-question");
+            setFilter(button.dataset.filter);
+          }
+        });
+
+        document.querySelector("aside").addEventListener("click", function (event) {
+          const link = event.target.closest("a[href^='#']");
+          if (link) {
+            event.preventDefault();
+            const id = link.getAttribute("href").slice(1);
+            const question = state.questions.find(function (item) {
+              return item.id === id || questionStorageKey(item) === id;
+            });
+            if (question) {
+              jumpToQuestion(question);
+            }
+            return;
+          }
+
+          const group = event.target.closest(".toc-group");
+          if (group && group.dataset.filter) {
+            localStorage.setItem("study-current-category", group.dataset.filter);
+            localStorage.removeItem("study-current-question");
+            setFilter(group.dataset.filter);
+          }
+        });
+
+        compactBtn.addEventListener("click", function () {
+          document.body.classList.toggle("compact");
+          const enabled = document.body.classList.contains("compact");
+          localStorage.setItem("study-compact", enabled ? "1" : "0");
+          compactBtn.textContent = enabled ? "\u8be6\u7ec6\u6a21\u5f0f" : "\u6838\u5fc3\u901f\u89c8";
+        });
+
+        darkBtn.addEventListener("click", function () {
+          document.body.classList.toggle("dark");
+          const enabled = document.body.classList.contains("dark");
+          localStorage.setItem("study-dark", enabled ? "1" : "0");
+          darkBtn.textContent = enabled ? "\u6d45\u8272\u6a21\u5f0f" : "\u6df1\u8272\u6a21\u5f0f";
+        });
+
+        if (localStorage.getItem("study-compact") === "1") {
+          document.body.classList.add("compact");
+          compactBtn.textContent = "\u8be6\u7ec6\u6a21\u5f0f";
         }
 
-        const group = event.target.closest(".toc-group");
-        if (group && group.dataset.filter) {
-          localStorage.setItem("study-current-category", group.dataset.filter);
-          localStorage.removeItem("study-current-question");
-          setFilter(group.dataset.filter);
+        if (localStorage.getItem("study-dark") === "1") {
+          document.body.classList.add("dark");
+          darkBtn.textContent = "\u6d45\u8272\u6a21\u5f0f";
         }
-      });
-
-      compactBtn.addEventListener("click", function () {
-        document.body.classList.toggle("compact");
-        const enabled = document.body.classList.contains("compact");
-        localStorage.setItem("study-compact", enabled ? "1" : "0");
-        compactBtn.textContent = enabled ? "\u8be6\u7ec6\u6a21\u5f0f" : "\u6838\u5fc3\u901f\u89c8";
-      });
-
-      darkBtn.addEventListener("click", function () {
-        document.body.classList.toggle("dark");
-        const enabled = document.body.classList.contains("dark");
-        localStorage.setItem("study-dark", enabled ? "1" : "0");
-        darkBtn.textContent = enabled ? "\u6d45\u8272\u6a21\u5f0f" : "\u6df1\u8272\u6a21\u5f0f";
-      });
-
-      if (localStorage.getItem("study-compact") === "1") {
-        document.body.classList.add("compact");
-        compactBtn.textContent = "\u8be6\u7ec6\u6a21\u5f0f";
-      }
-
-      if (localStorage.getItem("study-dark") === "1") {
-        document.body.classList.add("dark");
-        darkBtn.textContent = "\u6d45\u8272\u6a21\u5f0f";
-      }
 
       restoreLastQuestion();
     })();

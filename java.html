@@ -6,6 +6,7 @@
   <title>Java / JVM 高频问题整理</title>
   <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
 </head>
 <body data-category="java">
   <div class="layout">
@@ -45,9 +46,8 @@
 
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
-
 <section id="jvm-memory">
-        <h2>6. JVM 运行时内存结构</h2>
+        <h2>JVM 运行时内存结构</h2>
         <pre><code>线程共享：
 - 堆
 - 方法区 / 元空间
@@ -59,48 +59,41 @@
         <h3>堆</h3>
         <p>存放对象实例，是垃圾回收的主要区域。</p>
         <pre><code class="language-java">User user = new User();</code></pre>
-
         <h3>方法区 / 元空间</h3>
         <p>存放类信息、常量、静态变量、方法元数据等。JDK 8 之后，方法区的实现主要是 Metaspace 元空间，使用本地内存。</p>
-
         <h3>虚拟机栈</h3>
         <p>每个线程私有。每次方法调用都会创建一个栈帧，包含局部变量表、操作数栈、方法返回地址、动态链接等。</p>
-
         <h3>本地方法栈与程序计数器</h3>
         <p>本地方法栈用于执行 Native 方法。程序计数器记录当前线程执行到哪一条字节码指令。</p>
       </section>
 
 <section id="jvm-heap">
-        <h2>7. JVM 堆里面年轻代、老年代是什么？</h2>
+        <h2>JVM 堆里面年轻代、老年代是什么？</h2>
         <p>JVM 堆通常分为年轻代和老年代。</p>
-
         <h3>年轻代</h3>
         <p>新对象大多数先进入年轻代。年轻代又分为：</p>
         <pre><code>Eden 区
 Survivor From 区
 Survivor To 区</code></pre>
         <p>对象一般先分配到 Eden 区。当年轻代空间不足时，会触发 Minor GC。存活下来的对象会进入 Survivor 区，多次存活后晋升到老年代。</p>
-
         <h3>老年代</h3>
         <p>老年代存放生命周期较长的对象，例如长期存在的缓存对象、Spring 单例 Bean、大集合、多次 GC 后仍存活的对象。</p>
-        <pre><code>新对象 -> Eden
-Minor GC 后存活 -> Survivor
-多次存活 -> 老年代
-老年代不足 -> Major GC / Full GC</code></pre>
+        <pre><code>新对象 -&gt; Eden
+Minor GC 后存活 -&gt; Survivor
+多次存活 -&gt; 老年代
+老年代不足 -&gt; Major GC / Full GC</code></pre>
       </section>
 
 <section id="volatile">
-        <h2>8. volatile 作用</h2>
+        <h2>volatile 作用</h2>
         <p><code>volatile</code> 是 Java 中的轻量级同步机制，主要解决变量在多线程之间的可见性和指令重排序问题。它适合状态标记、配置开关、单例双重检查等场景，但不能替代锁。</p>
         <pre><code>保证可见性
 禁止指令重排序
 不保证复合操作的原子性</code></pre>
-
         <h3>保证可见性</h3>
         <p>普通变量可能被线程缓存到工作内存中，一个线程修改后，另一个线程不一定立刻看到。<code>volatile</code> 会要求写入及时刷新到主内存，读取时从主内存获取最新值。</p>
         <pre><code class="language-java">private volatile boolean running = true;</code></pre>
         <p>这类写法常用于线程停止标记：一个线程把 <code>running</code> 改成 false，另一个循环线程能尽快感知。</p>
-
         <h3>禁止指令重排序</h3>
         <p><code>volatile</code> 会在读写前后加入内存屏障，限制编译器和 CPU 对相关指令进行危险重排。经典例子是双重检查单例，避免对象引用先暴露、构造尚未完成的问题。</p>
         <pre><code class="language-java">public class Singleton {
@@ -119,7 +112,6 @@ Minor GC 后存活 -> Survivor
         return instance;
     }
 }</code></pre>
-
         <h3>不保证原子性</h3>
         <pre><code class="language-java">volatile int count = 0;
 count++;</code></pre>
@@ -140,7 +132,7 @@ count++;</code></pre>
       </section>
 
 <section id="locks">
-        <h2>9. synchronized 和 ReentrantLock 区别</h2>
+        <h2>synchronized 和 ReentrantLock 区别</h2>
         <p><code>synchronized</code> 和 <code>ReentrantLock</code> 都能实现互斥访问，并且都是可重入锁。区别在于：<code>synchronized</code> 是 JVM 关键字，写法简单、自动释放；<code>ReentrantLock</code> 是 JUC 工具类，功能更灵活，但必须手动释放。</p>
         <table>
           <thead>
@@ -158,12 +150,10 @@ count++;</code></pre>
             <tr><td>队列</td><td>/</td><td>支持</td></tr>
           </tbody>
         </table>
-
         <pre><code class="language-java">
 public synchronized void method() {
     // 临界区
 }</code></pre>
-
         <pre><code class="language-java">
 private final ReentrantLock lock = new ReentrantLock();
 
@@ -181,7 +171,6 @@ private final ReentrantLock lock = new ReentrantLock();
 private final Condition notEmpty = lock.newCondition(); // 队列非空
 private final Condition notFull = lock.newCondition();  // 队列未满
 </code></pre>
-
         <p>一般优先使用 <code>synchronized</code>。需要尝试加锁、可中断锁、公平锁、多条件队列或复杂同步控制时，再使用 <code>ReentrantLock</code>。</p>
         <h3>选择建议</h3>
         <ul>
@@ -193,7 +182,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="proxy">
-        <h2>10. Java 动态代理是什么？</h2>
+        <h2>Java 动态代理是什么？</h2>
         <p>代理模式是在不直接访问目标对象的情况下，通过代理对象间接访问目标对象，并在调用前后增强额外逻辑。Java 动态代理是在运行时生成代理对象，常见用途包括 AOP、日志、权限校验、事务管理、RPC、MyBatis Mapper 代理。</p>
         <table>
           <thead>
@@ -208,22 +197,19 @@ private final Condition notFull = lock.newCondition();  // 队列未满
             <tr><td>动态代理</td><td>运行阶段</td><td>运行时生成代理类或子类，适合框架统一增强。</td></tr>
           </tbody>
         </table>
-
         <h3>JDK 动态代理</h3>
         <p>JDK 动态代理要求目标类实现接口，底层通过 <code>Proxy</code> 和 <code>InvocationHandler</code> 拦截接口方法调用。</p>
         <pre><code class="language-java">interface UserService {
     void save();
 }</code></pre>
-        <pre><code class="language-java">InvocationHandler handler = (proxy, method, args) -> {
-    System.out.println("before");
+        <pre><code class="language-java">InvocationHandler handler = (proxy, method, args) -&gt; {
+    System.out.println(&quot;before&quot;);
     Object result = method.invoke(target, args);
-    System.out.println("after");
+    System.out.println(&quot;after&quot;);
     return result;
 };</code></pre>
-
         <h3>CGLIB 动态代理</h3>
         <p>通过生成目标类的子类实现代理。不要求接口，但不能代理 <code>final</code> 类和 <code>final</code> 方法。</p>
-
         <table>
           <thead>
             <tr>
@@ -241,16 +227,16 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="hashmap-principle">
-        <h2>23. HashMap 原理是什么？</h2>
+        <h2>HashMap 原理是什么？</h2>
         <p><code>HashMap</code> 是基于数组、链表和红黑树实现的 key-value 容器。核心思路是先通过 key 的 <code>hashCode()</code> 计算哈希值，再定位到数组桶位；如果多个 key 落到同一个桶，就通过链表或红黑树解决哈希冲突。</p>
         <pre><code>put 流程：
 计算 key 的 hash
--> 定位数组下标
--> 桶为空：直接放入
--> 桶不为空：比较 hash 和 equals
--> key 已存在：覆盖 value
--> key 不存在：追加到链表或红黑树
--> 元素数量超过阈值：触发扩容</code></pre>
+-&gt; 定位数组下标
+-&gt; 桶为空：直接放入
+-&gt; 桶不为空：比较 hash 和 equals
+-&gt; key 已存在：覆盖 value
+-&gt; key 不存在：追加到链表或红黑树
+-&gt; 元素数量超过阈值：触发扩容</code></pre>
         <h3>JDK 8 后的结构变化</h3>
         <p>JDK 8 之后，桶内元素较少时使用链表；当链表长度达到阈值且数组容量足够大时，会转成红黑树，把极端冲突下的查询复杂度从 O(n) 降到 O(log n)。</p>
         <table>
@@ -271,7 +257,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="hashmap-vs-concurrenthashmap">
-        <h2>24. HashMap 和 ConcurrentHashMap 区别？</h2>
+        <h2>HashMap 和 ConcurrentHashMap 区别？</h2>
         <p>二者都用于保存 key-value 映射，但核心差异是并发语义。<code>HashMap</code> 适合单线程或外部同步场景，<code>ConcurrentHashMap</code> 面向多线程并发读写。</p>
         <table>
           <thead>
@@ -294,7 +280,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="thread-pool-params">
-        <h2>25. Java 线程池核心参数有哪些？</h2>
+        <h2>Java 线程池核心参数有哪些？</h2>
         <p><code>ThreadPoolExecutor</code> 通过线程数、队列和拒绝策略共同控制任务执行能力。核心参数不是孤立配置，而是决定“任务来了以后先创建线程、先排队，还是直接拒绝”。</p>
         <p>线程池优先用核心线程处理任务；核心线程满了才放入队列；队列也满了才创建非核心线程；线程数达到最大线程数后再来任务，就触发拒绝策略。</p>
         <table>
@@ -325,13 +311,13 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="thread-pool-flow">
-        <h2>26. Java 线程池执行流程是什么？</h2>
+        <h2>Java 线程池执行流程是什么？</h2>
         <p>线程池提交任务后，不是直接无限创建线程，而是按照核心线程、任务队列、最大线程、拒绝策略的顺序控制资源。</p>
         <pre><code>提交任务
--> 核心线程未满：创建核心线程执行
--> 核心线程已满：进入任务队列
--> 队列已满：创建非核心线程
--> 线程达到最大值且队列仍满：执行拒绝策略</code></pre>
+-&gt; 核心线程未满：创建核心线程执行
+-&gt; 核心线程已满：进入任务队列
+-&gt; 队列已满：创建非核心线程
+-&gt; 线程达到最大值且队列仍满：执行拒绝策略</code></pre>
         <h3>配置思路</h3>
         <ul>
           <li>CPU 密集型任务：线程数通常接近 CPU 核心数，避免过多上下文切换。</li>
@@ -343,11 +329,11 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="threadlocal">
-        <h2>27. ThreadLocal 原理和风险？</h2>
+        <h2>ThreadLocal 原理和风险？</h2>
         <p><code>ThreadLocal</code> 的作用是让每个线程拥有一份独立变量副本，避免多个线程共享同一个变量。常见场景包括用户上下文、链路追踪traceId、数据库连接等。</p>
         <pre><code>Thread
--> ThreadLocalMap
--> Entry(ThreadLocal 弱引用, value 强引用)</code></pre>
+-&gt; ThreadLocalMap
+-&gt; Entry(ThreadLocal 弱引用, value 强引用)</code></pre>
         <p>它并不是把数据存在 <code>ThreadLocal</code> 对象里，而是存在当前线程的 <code>ThreadLocalMap</code> 中，<code>ThreadLocal</code> 只是访问这个 Map 的 key。</p>
         <h3>主要风险</h3>
         <ul>
@@ -365,7 +351,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="class-loading">
-        <h2>28. Java 类加载过程是什么？</h2>
+        <h2>Java 类加载过程是什么？</h2>
         <p>类加载是 JVM 把 <code>.class</code> 字节码变成运行时 <code>Class</code> 对象的过程。完整过程通常分为加载、验证、准备、解析、初始化，其中验证、准备、解析合称连接。</p>
         <pre><code>加载：读取 class 字节码
 验证：校验字节码安全性
@@ -388,33 +374,41 @@ private final Condition notFull = lock.newCondition();  // 队列未满
           </tbody>
         </table>
         <p>类加载就是：把 class 搬进 JVM，检查一下，准备静态变量，执行 static 初始化，然后就能用了</p>
-
         <p>类初始化通常发生在首次主动使用时，例如 <code>new</code> 对象、访问静态字段、调用静态方法、反射调用等。</p>
         <p><span class="em-warn">双亲委派模型 </span>可以避免核心类被重复或恶意替换，例如应用自定义的 <code>java.lang.String</code> 不应该覆盖 JDK 自带类。</p>
       </section>
 
-      <section id="classloaders">
-        <h2>170. 类加载器有哪些？</h2>
-        <p>常见类加载器包括 Bootstrap ClassLoader、Platform/Extension ClassLoader、Application ClassLoader 和自定义 ClassLoader。</p>
+<section id="classloaders">
+        <h2>类加载器有哪些？</h2>
+        <p>常见类加载器包括<mark> Bootstrap ClassLoader启动类加载器</mark>、<mark>Platform/Extension ClassLoader扩展类加载器</mark>、<mark>Application ClassLoader应用类加载器</mark> 和自定义类加载器 ClassLoader。</p>
         <ul>
-          <li>Bootstrap 加载 Java 核心类库。</li>
-          <li>Platform/Extension 加载平台扩展类库。</li>
-          <li>Application 加载应用 classpath/module-path 下的类，自定义加载器常用于隔离、热部署、插件化。</li>
+          <li>Bootstrap 加载 Java JDK核心类库  主要负责加载 <code>%JAVA_HOME%/lib</code> 目录下</li>
+          <li>Platform/Extension 加载平台扩展类库 主要负责加载 <code>%JRE_HOME%/lib/ext</code> 目录下</li>
+          <li>Application 面向我们用户的加载器，负责加载当前应用 classpath 下的所有 jar 包和类 </li>
+          <li>自定义加载器常用于隔离、热部署、插件化。</li>
         </ul>
       </section>
 
 <section id="parent-delegation">
-        <h2>171. 双亲委派模型解决什么问题？</h2>
+        <h2>双亲委派模型解决什么问题？</h2>
         <p>双亲委派模型指类加载器加载类时，先把请求委派给父加载器，父加载器无法加载时，子加载器才尝试加载。</p>
+        <p>自定义 ClassLoader</p>
+        <p>   ↓ 先委托</p>
+        <p>AppClassLoader</p>
+        <p>   ↓ 先委托</p>
+        <p>Platform/ExtClassLoader</p>
+        <p>   ↓ 先委托</p>
+        <p>BootstrapClassLoader</p>
+        <p>父加载器找不到，子加载器才自己加载</p>
         <ul>
           <li>它保证 Java 核心类库优先由顶层加载器加载，避免应用伪造 <code>java.lang.String</code> 等核心类。</li>
           <li>它能减少重复加载，保证同名核心类在 JVM 中的一致性。</li>
-          <li>SPI、OSGi、Tomcat、某些热部署框架会为了隔离或扩展打破部分委派规则。</li>
+          <li>SPI、Tomcat、某些热部署框架会为了隔离或扩展打破部分委派规则。</li>
         </ul>
       </section>
 
 <section id="break-parent-delegation">
-        <h2>172. 如何打破双亲委派模型？</h2>
+        <h2>如何打破双亲委派模型？</h2>
         <p>打破双亲委派通常是让子加载器优先加载某些类，或通过线程上下文类加载器让父层代码反向使用子层实现。</p>
         <ul>
           <li>JDBC SPI 使用线程上下文类加载器加载厂商 Driver，实现由应用侧提供。</li>
@@ -424,7 +418,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="gc-roots">
-        <h2>29. Java 常见 GC Roots 有哪些？</h2>
+        <h2>Java 常见 GC Roots 有哪些？</h2>
         <p>JVM 判断对象是否存活主要使用可达性分析：从一组根对象 GC Roots 出发，沿引用链向下搜索；能够被搜索到的对象是可达的，不可达对象才可能被回收。</p>
         <table>
           <thead>
@@ -446,13 +440,13 @@ private final Condition notFull = lock.newCondition();  // 队列未满
       </section>
 
 <section id="virtual-threads">
-        <h2>55. Java 虚拟线程是什么？</h2>
+        <h2>Java 虚拟线程是什么？</h2>
         <p>虚拟线程是 JDK 21 正式引入的轻量级线程，属于 Project Loom 的核心能力。它仍然是 <code>java.lang.Thread</code>，但不再一一绑定操作系统线程，而是由 JDK 调度到少量平台线程上执行。</p>
         <pre><code>传统平台线程：
-Java Thread -> OS Thread
+Java Thread -&gt; OS Thread
 
 虚拟线程：
-大量 Virtual Thread -> 少量 Platform Thread -> OS Thread</code></pre>
+大量 Virtual Thread -&gt; 少量 Platform Thread -&gt; OS Thread</code></pre>
         <h3>适合场景</h3>
         <ul>
           <li>大量阻塞式 IO：HTTP 调用、数据库访问、RPC 调用、文件 IO 等。</li>
@@ -465,7 +459,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="record-vs-bean">
-        <h2>56. Record 相比 Java Bean 有什么优势？</h2>
+        <h2>Record 相比 Java Bean 有什么优势？</h2>
         <p><code>record</code> 适合表达不可变数据载体。它把“这个类只是承载一组数据”的语义直接写进类型声明里，编译器会自动生成构造器、访问方法、<code>equals()</code>、<code>hashCode()</code> 和 <code>toString()</code>。</p>
         <pre><code class="language-java">public record UserDTO(Long id, String name, String email) {
 }</code></pre>
@@ -488,7 +482,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="pattern-matching">
-        <h2>57. Pattern Matching 解决什么问题？</h2>
+        <h2>Pattern Matching 解决什么问题？</h2>
         <p>Pattern Matching 解决的是“先判断类型，再强制转换，再使用变量”这类重复代码。它把类型判断、类型转换和局部变量绑定合在一起，让分支逻辑更清晰。</p>
         <pre><code class="language-java">if (obj instanceof String s) {
     System.out.println(s.length());
@@ -508,7 +502,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="minor-vs-full-gc">
-        <h2>58. Minor GC 和 Full GC 区别？</h2>
+        <h2>Minor GC 和 Full GC 区别？</h2>
         <p>Minor GC 和 Full GC 的区别主要在回收范围、触发原因和停顿成本。Minor GC 通常回收年轻代，Full GC 往往会回收整个堆以及相关元数据区域，停顿更重。</p>
         <table>
           <thead>
@@ -526,16 +520,16 @@ Java Thread -> OS Thread
           </tbody>
         </table>
         <pre><code>新对象大量分配
--> Eden 不足
--> Minor GC
--> 存活对象进入 Survivor 或晋升老年代
--> 老年代压力过大
--> Major GC / Full GC</code></pre>
+-&gt; Eden 不足
+-&gt; Minor GC
+-&gt; 存活对象进入 Survivor 或晋升老年代
+-&gt; 老年代压力过大
+-&gt; Major GC / Full GC</code></pre>
         <p>频繁 Minor GC 不一定是严重问题，但会增加 CPU 消耗；频繁 Full GC 通常是明显风险信号，需要结合 GC 日志、<code>jstat</code>、heap dump 和对象分配链路排查。</p>
       </section>
 
 <section id="java-features">
-        <h2>119. Java 语言有哪些特点？</h2>
+        <h2>Java 语言有哪些特点？</h2>
         <p>Java 是一门面向对象、静态类型、跨平台的通用编程语言。它通过 JVM 屏蔽底层操作系统差异，通过 GC 管理内存，通过丰富的标准库和生态支持 Web、后端、中间件、大数据等场景。</p>
         <ul>
           <li>面向对象：封装、继承、多态是核心抽象方式，接口和抽象类常用于解耦。</li>
@@ -545,7 +539,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="jvm-jdk-jre">
-        <h2>120. JVM、JDK、JRE 有什么区别？</h2>
+        <h2>JVM、JDK、JRE 有什么区别？</h2>
         <p>JVM、JRE、JDK 是 Java 运行体系的三个层次。JVM 负责执行字节码，JRE 提供运行环境，JDK 提供开发、编译和诊断工具。</p>
         <table>
           <thead>
@@ -565,7 +559,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="java-bytecode">
-        <h2>121. Java 字节码是什么？为什么 Java 可以跨平台？</h2>
+        <h2>Java 字节码是什么？为什么 Java 可以跨平台？</h2>
         <p>Java 字节码是 <code>.java</code> 文件经过 <code>javac</code> 编译后生成的 <code>.class</code> 指令集。JVM 负责加载、校验、解释执行或 JIT 编译这些字节码。</p>
         <ul>
           <li>跨平台的关键是字节码格式统一，不同平台提供对应 JVM 实现。</li>
@@ -575,7 +569,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="compile-and-interpret">
-        <h2>122. 为什么说 Java 是编译与解释并存的语言？</h2>
+        <h2>为什么说 Java 是编译与解释并存的语言？</h2>
         <p>Java 先通过 javac 编译成字节码，运行时 JVM 可以解释执行字节码，也可以把热点代码 JIT 编译成本地机器码，因此是编译与解释并存。</p>
         <ul>
           <li>编译阶段把源码转换成平台无关字节码，便于分发和校验。</li>
@@ -585,7 +579,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="jit-vs-aot">
-        <h2>123. JIT 和 AOT 有什么区别？</h2>
+        <h2>JIT 和 AOT 有什么区别？</h2>
         <p>JIT 是运行时编译，AOT 是运行前编译。JIT 更依赖运行时信息，峰值性能和动态优化能力更强；AOT 启动更快、运行时依赖更少。</p>
         <table>
           <thead>
@@ -607,7 +601,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="aot-pros-cons">
-        <h2>124. AOT 有什么优点？为什么 Java 不全部使用 AOT？</h2>
+        <h2>AOT 有什么优点？为什么 Java 不全部使用 AOT？</h2>
         <p>AOT 的主要优点是启动快、内存占用低、运行时依赖少，适合冷启动敏感或短生命周期场景。但 Java 不全部使用 AOT，是因为 Java 生态高度依赖运行时动态能力。</p>
         <ul>
           <li>优点：减少启动预热时间，降低部分运行时开销，部署产物更接近原生可执行程序。</li>
@@ -618,7 +612,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="oracle-vs-openjdk">
-        <h2>125. Oracle JDK 和 OpenJDK 有什么区别？</h2>
+        <h2>Oracle JDK 和 OpenJDK 有什么区别？</h2>
         <p>OpenJDK 是 Java 平台的开源实现，Oracle JDK 基于 OpenJDK 构建并带有 Oracle 的发行、支持和许可策略。现代版本中二者核心代码差异已经很小。</p>
         <ul>
           <li>选择时主要看许可证、长期支持、补丁更新、公司合规要求和运行环境。</li>
@@ -628,7 +622,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="java-vs-cpp">
-        <h2>126. Java 和 C++ 有什么区别？</h2>
+        <h2>Java 和 C++ 有什么区别？</h2>
         <p>Java 和 C++ 都支持面向对象，但运行模型和内存管理差异很大。Java 运行在 JVM 上，自动 GC；C++ 编译成本地代码，开发者直接管理对象生命周期。</p>
         <ul>
           <li>Java 没有指针算术和多继承实现类，内存安全边界更强。</li>
@@ -638,7 +632,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="java-comments">
-        <h2>127. Java 中注释有哪几种？</h2>
+        <h2>Java 中注释有哪几种？</h2>
         <p>Java 注释分为单行注释、多行注释和文档注释。注释不会参与运行逻辑，文档注释可以被 javadoc 工具提取成 API 文档。</p>
         <ul>
           <li><code>//</code> 用于单行说明。</li>
@@ -648,7 +642,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="identifier-vs-keyword">
-        <h2>128. Java 标识符和关键字有什么区别？</h2>
+        <h2>Java 标识符和关键字有什么区别？</h2>
         <p>标识符是开发者给类、方法、变量、包起的名字；关键字是 Java 语言预留的语法单词，不能作为普通标识符使用。</p>
         <ul>
           <li>标识符可以包含字母、数字、下划线、美元符号，但不能以数字开头。</li>
@@ -658,7 +652,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="iplusplus">
-        <h2>129. Java 中 ++i 和 i++ 有什么区别？</h2>
+        <h2>Java 中 ++i 和 i++ 有什么区别？</h2>
         <p><code>++i</code> 是先自增再取值，<code>i++</code> 是先取值再自增。单独作为语句时二者最终结果相同，放在表达式中结果不同。</p>
         <ul>
           <li><code>int a = ++i;</code> 中，i 先加 1，再赋值给 a。</li>
@@ -668,7 +662,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="primitive-types">
-        <h2>130. Java 中基本数据类型有哪些？</h2>
+        <h2>Java 中基本数据类型有哪些？</h2>
         <p>Java 有 8 种基本数据类型：byte、short、int、long、float、double、char、boolean。它们不是对象，直接保存具体值。</p>
         <ul>
           <li>整数类型：byte、short、int、long，默认整数字面量是 int。</li>
@@ -678,7 +672,7 @@ Java Thread -> OS Thread
       </section>
 
 <section id="autoboxing">
-        <h2>131. 自动装箱和拆箱是什么？</h2>
+        <h2>自动装箱和拆箱是什么？</h2>
         <p>自动装箱是基本类型自动转换为包装类型，拆箱是包装类型自动转换为基本类型。编译器会在字节码层面插入 <code>valueOf()</code> 和 <code>xxxValue()</code> 调用。</p>
         <ul>
           <li><code>Integer i = 1</code> 会调用 <code>Integer.valueOf(1)</code>。</li>
@@ -691,7 +685,7 @@ int total = count; // NullPointerException</code></pre>
       </section>
 
 <section id="wrapper-cache">
-        <h2>132. 包装类型的缓存机制是什么？</h2>
+        <h2>包装类型的缓存机制是什么？</h2>
         <p>包装类型缓存是 <code>valueOf()</code> 对常用值复用对象，减少频繁创建包装对象。最常见的是 Integer 默认缓存 -128 到 127。</p>
         <ul>
           <li><code>Integer.valueOf(127)</code> 多次调用可能返回同一个对象。</li>
@@ -709,7 +703,7 @@ System.out.println(c == d); // false，通常未命中缓存</code></pre>
       </section>
 
 <section id="float-precision">
-        <h2>133. 为什么浮点数运算可能丢失精度？</h2>
+        <h2>为什么浮点数运算可能丢失精度？</h2>
         <p>浮点数使用二进制表示，很多十进制小数无法被精确表示，例如 0.1、0.2。运算过程中会出现舍入误差。</p>
         <ul>
           <li><code>double</code> 和 <code>float</code> 适合科学计算、统计估算，不适合金额精确计算。</li>
@@ -719,17 +713,17 @@ System.out.println(c == d); // false，通常未命中缓存</code></pre>
       </section>
 
 <section id="bigdecimal">
-        <h2>134. BigDecimal 为什么适合金额计算？</h2>
+        <h2>BigDecimal 为什么适合金额计算？</h2>
         <p><code>BigDecimal</code> 使用十进制高精度表示，适合金额和精确小数计算。它能避免二进制浮点无法精确表示十进制小数的问题。</p>
         <ul>
-          <li>创建时推荐 <code>new BigDecimal("0.1")</code> 或 <code>BigDecimal.valueOf(0.1)</code>。</li>
+          <li>创建时推荐 <code>new BigDecimal(&quot;0.1&quot;)</code> 或 <code>BigDecimal.valueOf(0.1)</code>。</li>
           <li>除法可能出现无限循环小数，需要指定精度和 <code>RoundingMode</code>。</li>
           <li>比较数值大小通常使用 <code>compareTo()</code>，因为 <code>equals()</code> 会同时比较 scale。</li>
         </ul>
       </section>
 
 <section id="generics-erasure">
-        <h2>135. Java 泛型是什么？类型擦除是什么？</h2>
+        <h2>Java 泛型是什么？类型擦除是什么？</h2>
         <p>Java 泛型用于在编译期提供类型约束，减少强制类型转换和运行时类型错误。类型擦除指大部分泛型信息在编译后被擦除为原始类型或边界类型。</p>
         <ul>
           <li><code>List&lt;String&gt;</code> 和 <code>List&lt;Integer&gt;</code> 运行时通常都是 <code>List</code>。</li>
@@ -737,27 +731,27 @@ System.out.println(c == d); // false，通常未命中缓存</code></pre>
           <li>框架需要泛型信息时常用 <code>ParameterizedType</code>、<code>TypeReference</code> 等方式保留类型描述。</li>
         </ul>
         <pre><code class="language-java">List&lt;String&gt; names = new ArrayList&lt;&gt;();
-names.add("ren");
+names.add(&quot;ren&quot;);
 
 // 编译后主要保留为 List，泛型约束由编译器检查</code></pre>
         <p>泛型的价值主要在编译期类型安全。运行期如果需要完整泛型信息，通常要借助匿名子类、反射 Type 或框架提供的类型引用对象。</p>
       </section>
 
 <section id="reflection">
-        <h2>136. Java 反射是什么？有哪些使用场景？</h2>
+        <h2>Java 反射是什么？有哪些使用场景？</h2>
         <p>反射允许程序在运行时获取类、字段、方法、构造器、注解等元信息，并动态创建对象或调用方法。</p>
         <ul>
           <li>Spring 的 Bean 创建、依赖注入、注解扫描、AOP 代理都大量依赖反射或类似机制。</li>
           <li>MyBatis、Jackson、Hibernate 等框架也会通过反射读写属性、调用构造器、解析注解。</li>
           <li>反射灵活但有性能、封装破坏和安全边界问题，高频路径通常会缓存反射对象或用字节码生成优化。</li>
         </ul>
-        <pre><code class="language-java">Class&lt;?&gt; clazz = Class.forName("com.example.User");
+        <pre><code class="language-java">Class&lt;?&gt; clazz = Class.forName(&quot;com.example.User&quot;);
 Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
         <p>回答时可以说：反射是框架“根据配置或注解在运行期操作对象”的基础，但业务代码不应滥用反射，否则可读性、性能和封装边界都会变差。</p>
       </section>
 
 <section id="java-spi">
-        <h2>137. Java SPI 机制是什么？</h2>
+        <h2>Java SPI 机制是什么？</h2>
         <p>SPI 是 Service Provider Interface，用于把接口定义和具体实现解耦。调用方依赖接口，运行时通过配置发现实现类。</p>
         <ul>
           <li>Java 原生 SPI 通过 <code>META-INF/services/接口全限定名</code> 文件声明实现类。</li>
@@ -767,7 +761,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="serialization">
-        <h2>138. Java 序列化和反序列化是什么？</h2>
+        <h2>Java 序列化和反序列化是什么？</h2>
         <p>序列化是把对象转换成可存储或可传输的数据格式，反序列化是把数据还原成对象。Java 原生序列化、JSON、Protobuf、Kryo 都属于不同序列化方案。</p>
         <ul>
           <li>Java 原生序列化要求实现 <code>Serializable</code>，但性能、可读性和安全性都不适合很多现代服务场景。</li>
@@ -777,7 +771,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="collection-framework">
-        <h2>139. Java 集合框架整体结构是什么？</h2>
+        <h2>Java 集合框架整体结构是什么？</h2>
         <p>Java 集合框架主要分为 Collection 和 Map 两大体系。Collection 表示单列元素集合，Map 表示 key-value 映射。</p>
         <ul>
           <li>List 有序可重复，典型实现有 ArrayList、LinkedList。</li>
@@ -787,7 +781,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="collection-vs-collections">
-        <h2>140. Collection 和 Collections 有什么区别？</h2>
+        <h2>Collection 和 Collections 有什么区别？</h2>
         <p><code>Collection</code> 是集合接口，表示一组元素；<code>Collections</code> 是工具类，提供排序、查找、同步包装、不可变包装等静态方法。</p>
         <ul>
           <li><code>List</code>、<code>Set</code>、<code>Queue</code> 都继承自 <code>Collection</code>。</li>
@@ -797,7 +791,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="list-set-queue-map">
-        <h2>141. List、Set、Queue、Map 分别适合什么场景？</h2>
+        <h2>List、Set、Queue、Map 分别适合什么场景？</h2>
         <p>List、Set、Queue、Map 的区别来自数据语义：是否有序、是否允许重复、是否按 key 访问、是否表达排队关系。</p>
         <ul>
           <li>List 适合按顺序保存元素并通过下标访问。</li>
@@ -807,7 +801,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="arraylist-expansion">
-        <h2>142. ArrayList 扩容机制是什么？</h2>
+        <h2>ArrayList 扩容机制是什么？</h2>
         <p>ArrayList 底层是数组。容量不足时会创建更大的新数组，并把旧数组元素复制过去，因此扩容会带来 O(n) 的复制成本。</p>
         <ul>
           <li>JDK 8 中常见扩容约为原容量的 1.5 倍。</li>
@@ -817,7 +811,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="arraylist-unsafe">
-        <h2>143. ArrayList 为什么线程不安全？</h2>
+        <h2>ArrayList 为什么线程不安全？</h2>
         <p>ArrayList 没有同步控制，多线程同时修改时，size 更新、数组写入、扩容复制都可能交叉执行，导致数据覆盖、丢失或越界。</p>
         <ul>
           <li>两个线程同时 add 可能读到相同 size，写入同一个位置。</li>
@@ -827,7 +821,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="linkedlist-insert">
-        <h2>144. LinkedList 为什么不一定比 ArrayList 插入删除快？</h2>
+        <h2>LinkedList 为什么不一定比 ArrayList 插入删除快？</h2>
         <p>LinkedList 插入删除只是在已定位节点后修改指针，但定位节点本身通常需要 O(n) 遍历；ArrayList 虽然移动元素，但数组内存连续，CPU 缓存友好。</p>
         <ul>
           <li>随机访问场景 ArrayList 明显更快。</li>
@@ -837,7 +831,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="hashset-hashmap">
-        <h2>145. HashSet 底层为什么基于 HashMap？</h2>
+        <h2>HashSet 底层为什么基于 HashMap？</h2>
         <p>HashSet 底层基于 HashMap 实现，Set 中的元素作为 HashMap 的 key，value 使用一个固定的占位对象。</p>
         <ul>
           <li>Set 需要去重，而 HashMap 的 key 天然唯一。</li>
@@ -847,7 +841,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="linkedhashmap-order">
-        <h2>146. LinkedHashMap 如何保证插入顺序？</h2>
+        <h2>LinkedHashMap 如何保证插入顺序？</h2>
         <p>LinkedHashMap 在 HashMap 的哈希表结构基础上，额外维护一条双向链表，用来记录插入顺序或访问顺序。</p>
         <ul>
           <li>默认按插入顺序遍历。</li>
@@ -857,7 +851,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="treemap-vs-hashmap">
-        <h2>147. TreeMap 和 HashMap 有什么区别？</h2>
+        <h2>TreeMap 和 HashMap 有什么区别？</h2>
         <p>HashMap 基于哈希表，关注快速查找；TreeMap 基于红黑树，关注 key 的有序性。</p>
         <ul>
           <li>HashMap 平均 put/get 是 O(1)，不保证遍历顺序。</li>
@@ -867,7 +861,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="priorityqueue">
-        <h2>148. PriorityQueue 底层原理是什么？</h2>
+        <h2>PriorityQueue 底层原理是什么？</h2>
         <p>PriorityQueue 是优先队列，底层通常是二叉堆。出队时返回优先级最高或最低的元素，具体顺序由自然排序或 Comparator 决定。</p>
         <ul>
           <li>插入和删除堆顶通常是 O(log n)。</li>
@@ -877,7 +871,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="blocking-queue-compare">
-        <h2>149. ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？</h2>
+        <h2>ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？</h2>
         <p>ArrayBlockingQueue 基于数组，是有界阻塞队列；LinkedBlockingQueue 基于链表，可以指定容量，不指定时容量非常大。</p>
         <ul>
           <li>ArrayBlockingQueue 内存连续、容量固定，生产消费共用一把锁。</li>
@@ -887,7 +881,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="delayqueue">
-        <h2>150. DelayQueue 适合什么场景？</h2>
+        <h2>DelayQueue 适合什么场景？</h2>
         <p>DelayQueue 是延迟队列，元素必须实现 Delayed 接口，只有到期元素才能被取出。</p>
         <ul>
           <li>底层通常用优先队列按过期时间排序。</li>
@@ -897,7 +891,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="fail-fast-fail-safe">
-        <h2>151. fail-fast 和 fail-safe 是什么？</h2>
+        <h2>fail-fast 和 fail-safe 是什么？</h2>
         <p>fail-fast 是快速失败机制，集合在迭代过程中检测到结构性修改会抛出 ConcurrentModificationException；fail-safe 通常基于副本或弱一致迭代，不直接抛该异常。</p>
         <ul>
           <li>ArrayList、HashMap 的普通迭代器通常是 fail-fast。</li>
@@ -907,7 +901,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="iterator-remove">
-        <h2>152. Iterator 删除元素为什么比 for 循环更安全？</h2>
+        <h2>Iterator 删除元素为什么比 for 循环更安全？</h2>
         <p>Iterator 的 remove 方法会同步更新迭代器内部状态，避免集合结构修改计数和迭代器期望计数不一致。</p>
         <ul>
           <li>增强 for 本质也是迭代器，循环中直接调用集合 remove 容易触发 ConcurrentModificationException。</li>
@@ -917,17 +911,17 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="isempty">
-        <h2>153. 集合判空为什么推荐 isEmpty()？</h2>
+        <h2>集合判空为什么推荐 isEmpty()？</h2>
         <p>集合判空推荐使用 <code>isEmpty()</code>，语义明确，并避免通过 <code>size() == 0</code> 暴露不必要的计数细节。</p>
         <ul>
           <li><code>isEmpty()</code> 可读性更强，直接表达是否为空。</li>
           <li>某些集合或视图计算 size 可能不是常数成本。</li>
-          <li>判空前仍要处理 null；常见写法是 <code>collection != null && !collection.isEmpty()</code>。</li>
+          <li>判空前仍要处理 null；常见写法是 <code>collection != null &amp;&amp; !collection.isEmpty()</code>。</li>
         </ul>
       </section>
 
 <section id="thread-lifecycle">
-        <h2>154. 线程的生命周期有哪些状态？</h2>
+        <h2>线程的生命周期有哪些状态？</h2>
         <p>Java 线程状态定义在 <code>Thread.State</code> 中，包括 NEW、RUNNABLE、BLOCKED、WAITING、TIMED_WAITING、TERMINATED。</p>
         <ul>
           <li>NEW 表示线程对象已创建但未 start。</li>
@@ -937,7 +931,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="sleep-vs-wait">
-        <h2>155. sleep() 和 wait() 有什么区别？</h2>
+        <h2>sleep() 和 wait() 有什么区别？</h2>
         <p><code>sleep()</code> 是 Thread 的静态方法，让当前线程暂停指定时间；<code>wait()</code> 是 Object 方法，让线程释放对象锁并进入等待队列。</p>
         <ul>
           <li><code>sleep()</code> 不释放已持有的锁。</li>
@@ -947,7 +941,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="notify-vs-notifyall">
-        <h2>156. notify() 和 notifyAll() 有什么区别？</h2>
+        <h2>notify() 和 notifyAll() 有什么区别？</h2>
         <p><code>notify()</code> 随机唤醒一个等待在同一对象 monitor 上的线程，<code>notifyAll()</code> 唤醒所有等待线程，让它们重新竞争锁。</p>
         <ul>
           <li>notify 可能唤醒的不是期望条件对应的线程，复杂条件下容易造成线程继续等待。</li>
@@ -957,7 +951,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="create-thread">
-        <h2>157. 创建线程有哪几种方式？</h2>
+        <h2>创建线程有哪几种方式？</h2>
         <p>Java 创建线程的常见方式包括继承 Thread、实现 Runnable、实现 Callable 配合 FutureTask、提交任务到线程池。</p>
         <ul>
           <li>Thread 和 Runnable 本质都是定义线程要执行的任务。</li>
@@ -967,7 +961,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="runnable-callable">
-        <h2>158. Runnable 和 Callable 有什么区别？</h2>
+        <h2>Runnable 和 Callable 有什么区别？</h2>
         <p>Runnable 表示无返回值任务，不能直接抛出受检异常；Callable 表示有返回值任务，可以抛出异常。</p>
         <ul>
           <li><code>Runnable.run()</code> 返回 void。</li>
@@ -977,7 +971,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="future-completablefuture">
-        <h2>159. Future 和 CompletableFuture 有什么区别？</h2>
+        <h2>Future 和 CompletableFuture 有什么区别？</h2>
         <p>Future 表示异步计算结果，但组合能力弱；CompletableFuture 在 Future 基础上提供回调、编排、组合和异常处理能力。</p>
         <ul>
           <li>Future 主要通过 get 阻塞等待结果。</li>
@@ -987,7 +981,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="optimistic-pessimistic-lock">
-        <h2>160. 乐观锁和悲观锁有什么区别？</h2>
+        <h2>乐观锁和悲观锁有什么区别？</h2>
         <p>悲观锁假设冲突经常发生，操作前先加锁；乐观锁假设冲突较少，更新时通过版本号、CAS 或条件判断检测冲突。</p>
         <ul>
           <li>悲观锁适合写冲突高、数据一致性要求强的场景。</li>
@@ -997,7 +991,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="atomic-classes">
-        <h2>161. Java 中 Atomic 原子类的原理是什么？</h2>
+        <h2>Java 中 Atomic 原子类的原理是什么？</h2>
         <p>Atomic 原子类通过 volatile 保证可见性，通过 CAS 保证单变量更新的原子性。</p>
         <ul>
           <li>CAS 比较内存旧值是否等于期望值，匹配则写入新值。</li>
@@ -1007,7 +1001,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="aqs">
-        <h2>162. AQS 的核心思想是什么？</h2>
+        <h2>AQS 的核心思想是什么？</h2>
         <p>AQS 是 AbstractQueuedSynchronizer，是 Java 并发包中很多锁和同步器的基础框架。</p>
         <ul>
           <li>它用 volatile state 表示同步状态，用 CAS 修改状态。</li>
@@ -1017,7 +1011,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="read-write-lock">
-        <h2>163. ReentrantReadWriteLock 适合什么场景？</h2>
+        <h2>ReentrantReadWriteLock 适合什么场景？</h2>
         <p>ReentrantReadWriteLock 是读写锁，允许多个读线程并发访问，但写线程需要独占访问。</p>
         <ul>
           <li>适合读多写少、读操作耗时明显、共享数据结构需要一致保护的场景。</li>
@@ -1027,7 +1021,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="stamped-lock">
-        <h2>164. StampedLock 是什么？</h2>
+        <h2>StampedLock 是什么？</h2>
         <p>StampedLock 是 Java 8 引入的锁，支持写锁、悲观读锁和乐观读。它通过 stamp 标识锁状态。</p>
         <ul>
           <li>乐观读不阻塞写，但读取后需要 validate 检查期间是否发生写入。</li>
@@ -1037,7 +1031,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="concurrent-containers">
-        <h2>165. 并发容器有哪些？</h2>
+        <h2>并发容器有哪些？</h2>
         <p>并发容器是为多线程访问设计的数据结构，常见有 ConcurrentHashMap、CopyOnWriteArrayList、BlockingQueue、ConcurrentLinkedQueue 等。</p>
         <ul>
           <li>ConcurrentHashMap 适合高并发 key-value 读写。</li>
@@ -1047,7 +1041,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="forkjoinpool">
-        <h2>166. ForkJoinPool 适合什么场景？</h2>
+        <h2>ForkJoinPool 适合什么场景？</h2>
         <p>ForkJoinPool 适合把大任务拆成多个小任务并行执行，再合并结果。它使用工作窃取算法提高线程利用率。</p>
         <ul>
           <li>典型场景包括递归计算、分治任务、并行流。</li>
@@ -1057,7 +1051,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="executors-why-not">
-        <h2>167. 线程池为什么不建议使用 Executors 快捷方法？</h2>
+        <h2>线程池为什么不建议使用 Executors 快捷方法？</h2>
         <p>Executors 的快捷工厂方法隐藏了队列和线程数细节，容易创建无界队列或无界线程池，导致 OOM 或线程耗尽。</p>
         <ul>
           <li><code>newFixedThreadPool</code> 使用无界 LinkedBlockingQueue，任务堆积可能撑爆内存。</li>
@@ -1067,7 +1061,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="thread-pool-shutdown">
-        <h2>168. 线程池如何优雅关闭？</h2>
+        <h2>线程池如何优雅关闭？</h2>
         <p>线程池优雅关闭通常先调用 <code>shutdown()</code> 停止接收新任务，再等待已提交任务完成，超时后再调用 <code>shutdownNow()</code> 尝试中断。</p>
         <ul>
           <li><code>shutdown()</code> 不会立即杀掉正在执行的任务。</li>
@@ -1077,7 +1071,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="class-file-structure">
-        <h2>169. 类文件结构包含哪些内容？</h2>
+        <h2>类文件结构包含哪些内容？</h2>
         <p>Class 文件是 JVM 识别的二进制格式，包含魔数、版本号、常量池、访问标志、类索引、字段表、方法表和属性表。</p>
         <ul>
           <li>魔数 <code>0xCAFEBABE</code> 用于识别 class 文件。</li>
@@ -1086,10 +1080,8 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
         </ul>
       </section>
 
-
-
 <section id="metaspace-method-area">
-        <h2>173. 方法区和永久代、元空间是什么关系？</h2>
+        <h2>方法区和永久代、元空间是什么关系？</h2>
         <p>方法区是 JVM 规范中的运行时内存区域，用于存放类元数据、常量、静态变量等；永久代和元空间是 HotSpot 对方法区的具体实现。</p>
         <ul>
           <li>JDK 8 之前 HotSpot 使用永久代，受 JVM 堆相关参数影响。</li>
@@ -1099,7 +1091,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="off-heap-memory">
-        <h2>174. 堆外内存是什么？</h2>
+        <h2>堆外内存是什么？</h2>
         <p>堆外内存是不在 Java 堆中的内存，通常通过 DirectByteBuffer、Unsafe、JNI 或本地库分配。</p>
         <ul>
           <li>Netty、NIO、数据库驱动、压缩加密库都可能使用堆外内存。</li>
@@ -1109,7 +1101,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="direct-memory-risk">
-        <h2>175. 直接内存有什么风险？</h2>
+        <h2>直接内存有什么风险？</h2>
         <p>直接内存主要通过 DirectByteBuffer 使用，适合减少 Java 堆和 native IO 之间的数据复制。</p>
         <ul>
           <li>它的释放依赖 Cleaner 或显式管理，释放不及时可能导致进程内存持续上涨。</li>
@@ -1119,7 +1111,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="stop-the-world">
-        <h2>176. 什么是 Stop The World？</h2>
+        <h2>什么是 Stop The World？</h2>
         <p>Stop The World 指 JVM 暂停所有用户线程，让 GC 或某些 JVM 内部操作在安全点执行。</p>
         <ul>
           <li>STW 期间业务线程无法继续处理请求，会体现为延迟尖刺。</li>
@@ -1129,7 +1121,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="gc-collector-choice">
-        <h2>177. 如何选择垃圾收集器？</h2>
+        <h2>如何选择垃圾收集器？</h2>
         <p>垃圾收集器选择取决于堆大小、延迟目标、吞吐目标、JDK 版本和服务类型。</p>
         <ul>
           <li>吞吐优先的批处理任务可考虑 Parallel GC。</li>
@@ -1139,7 +1131,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="g1-region">
-        <h2>178. G1 的 Region 是什么？</h2>
+        <h2>G1 的 Region 是什么？</h2>
         <p>G1 把 Java 堆划分为多个大小相等的 Region，不再固定划分连续的新生代和老年代区域。</p>
         <ul>
           <li>Region 可以扮演 Eden、Survivor、Old、Humongous 等角色。</li>
@@ -1149,7 +1141,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="gc-types">
-        <h2>179. Minor GC、Major GC、Mixed GC、Full GC 分别是什么？</h2>
+        <h2>Minor GC、Major GC、Mixed GC、Full GC 分别是什么？</h2>
         <p>Minor GC 通常回收年轻代；Major GC 常被用来表示老年代回收；Mixed GC 是 G1 中同时回收年轻代和部分老年代 Region；Full GC 会更彻底地回收整个堆，停顿通常更长。</p>
         <ul>
           <li>Minor GC 频繁通常说明对象分配速率高或年轻代过小。</li>
@@ -1159,7 +1151,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="jvm-params">
-        <h2>180. JVM 常用参数有哪些？</h2>
+        <h2>JVM 常用参数有哪些？</h2>
         <p>JVM 常用参数主要分为堆内存、GC、日志、诊断和容器适配几类。</p>
         <ul>
           <li><code>-Xms</code>、<code>-Xmx</code> 设置堆初始值和最大值。</li>
@@ -1169,7 +1161,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="jvm-tools">
-        <h2>181. jps、jstack、jmap、jstat 分别用来做什么？</h2>
+        <h2>jps、jstack、jmap、jstat 分别用来做什么？</h2>
         <p>这些是 JVM 常用诊断工具：jps 看进程，jstack 看线程栈，jmap 看堆，jstat 看 GC 和内存统计。</p>
         <ul>
           <li>jstack 适合分析死锁、线程阻塞、线程池耗尽。</li>
@@ -1179,7 +1171,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="deadlock-analysis">
-        <h2>182. 如何分析线程死锁？</h2>
+        <h2>如何分析线程死锁？</h2>
         <p>线程死锁通常是多个线程互相持有对方需要的锁，导致都无法继续执行。</p>
         <ul>
           <li>先用 <code>jstack</code> 导出线程栈，JVM 通常会直接标出 Found one Java-level deadlock。</li>
@@ -1189,7 +1181,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="frequent-gc">
-        <h2>183. 如何分析频繁 GC？</h2>
+        <h2>如何分析频繁 GC？</h2>
         <p>频繁 GC 可能来自对象分配过快、年轻代过小、老年代压力大、内存泄漏、大对象分配或 GC 参数不合理。</p>
         <ul>
           <li>先看 GC 日志，区分 Minor GC 频繁、Mixed GC 频繁还是 Full GC 频繁。</li>
@@ -1199,7 +1191,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="bio-nio-aio">
-        <h2>184. BIO、NIO、AIO 有什么区别？</h2>
+        <h2>BIO、NIO、AIO 有什么区别？</h2>
         <p>BIO 是同步阻塞 IO，NIO 是同步非阻塞 IO，AIO 是异步 IO。三者的差异在于线程是否阻塞等待、是否由操作系统完成后通知。</p>
         <table>
           <thead>
@@ -1219,7 +1211,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="sync-async-block-nonblock">
-        <h2>185. 同步、异步、阻塞、非阻塞有什么区别？</h2>
+        <h2>同步、异步、阻塞、非阻塞有什么区别？</h2>
         <p>同步/异步描述调用结果由谁主动获取，阻塞/非阻塞描述等待结果时线程是否被挂起。</p>
         <table>
           <thead>
@@ -1240,7 +1232,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="nio-components">
-        <h2>186. Java NIO 的 Channel、Buffer、Selector 分别是什么？</h2>
+        <h2>Java NIO 的 Channel、Buffer、Selector 分别是什么？</h2>
         <p>Channel、Buffer、Selector 是 Java NIO 的核心组件。Channel 表示数据通道，Buffer 表示读写缓冲区，Selector 负责监听多个 Channel 的就绪事件。</p>
         <ul>
           <li>数据从 Channel 读入 Buffer，再从 Buffer 写入 Channel。</li>
@@ -1250,7 +1242,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="io-multiplexing">
-        <h2>187. IO 多路复用是什么？</h2>
+        <h2>IO 多路复用是什么？</h2>
         <p>IO 多路复用是用一个或少量线程同时监听多个连接的 IO 就绪事件，避免每个连接都占用一个阻塞线程。</p>
         <ul>
           <li>Linux 下常见实现有 select、poll、epoll。</li>
@@ -1260,12 +1252,12 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="reactor-model">
-        <h2>188. Reactor 模型是什么？</h2>
+        <h2>Reactor 模型是什么？</h2>
         <p>Reactor 模型是一种事件驱动网络模型，由事件多路复用器监听 IO 事件，再分发给对应 Handler 处理。</p>
         <pre><code>Selector 监听 IO 事件
--> 事件就绪
--> 分发给 Handler
--> Handler 处理读写、编解码或业务任务</code></pre>
+-&gt; 事件就绪
+-&gt; 分发给 Handler
+-&gt; Handler 处理读写、编解码或业务任务</code></pre>
         <ul>
           <li>单 Reactor 单线程模型简单，但 IO 和业务都在一个线程中，容易被慢任务阻塞。</li>
           <li>单 Reactor 多线程会把业务处理交给工作线程池。</li>
@@ -1274,7 +1266,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="zero-copy">
-        <h2>189. 零拷贝是什么？</h2>
+        <h2>零拷贝是什么？</h2>
         <p>零拷贝是减少数据在内核态和用户态之间复制次数的技术总称，常用于文件传输和网络发送。</p>
         <ul>
           <li>传统 IO 往往需要磁盘到内核缓冲区、内核到用户缓冲区、用户到 socket 缓冲区等多次复制。</li>
@@ -1284,7 +1276,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="io-patterns">
-        <h2>190. Java 中有哪些常见 IO 设计模式？</h2>
+        <h2>Java 中有哪些常见 IO 设计模式？</h2>
         <p>Java IO 中常见设计模式包括装饰器模式、适配器模式和组合式封装。</p>
         <ul>
           <li>InputStream/OutputStream 的各种包装类体现装饰器模式，例如 BufferedInputStream 增强缓冲能力。</li>
@@ -1294,7 +1286,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="netty-performance">
-        <h2>191. Netty 为什么性能高？</h2>
+        <h2>Netty 为什么性能高？</h2>
         <p>Netty 性能高来自 NIO 多路复用、事件循环线程模型、内存池、零拷贝思想和成熟的编解码 pipeline。</p>
         <table>
           <thead>
@@ -1315,7 +1307,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="netty-eventloop">
-        <h2>192. Netty 的 EventLoop 是什么？</h2>
+        <h2>Netty 的 EventLoop 是什么？</h2>
         <p>EventLoop 是 Netty 的事件循环，一个 EventLoop 通常绑定一个线程，负责处理注册在其上的多个 Channel 的 IO 事件和任务队列。</p>
         <ul>
           <li>同一个 Channel 的 IO 事件通常在同一个 EventLoop 线程中执行，减少并发同步成本。</li>
@@ -1325,7 +1317,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 
 <section id="netty-bytebuf">
-        <h2>193. Netty 的 ByteBuf 相比 ByteBuffer 有什么优势？</h2>
+        <h2>Netty 的 ByteBuf 相比 ByteBuffer 有什么优势？</h2>
         <p>ByteBuf 是 Netty 提供的字节缓冲区，相比 JDK ByteBuffer 更适合网络编程。</p>
         <table>
           <thead>
@@ -1349,6 +1341,8 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
   <script src="assets/study-legacy-map.js"></script>
   <script src="assets/study.js"></script>
   <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
 </body>
 </html>
 

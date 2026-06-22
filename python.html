@@ -6,6 +6,7 @@
   <title>Python 高频问题整理</title>
   <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
 </head>
 <body data-category="python">
   <div class="layout">
@@ -46,26 +47,24 @@
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
 <section id="gil">
-        <h2>1. Python GIL 是什么？</h2>
+        <h2>Python GIL 是什么？</h2>
         <p>GIL 全称 <strong>Global Interpreter Lock（全局解释器锁）</strong>。</p>
-        <p>它是 CPython 解释器中的一把全局互斥锁，保证同一时刻只有一个线程执行 Python 字节码。</p>
-
+        <p>它是 CPython 解释器中的一把<strong>全局互斥锁</strong>，保证同一时刻只有一个线程执行 Python 字节码。</p>
         <h3>为什么有 GIL？</h3>
         <p>主要是为了简化 CPython 内存管理。引用计数需要线程安全，GIL 让解释器内部不必为每个对象加细粒度锁。</p>
         <pre><code class="language-python">a = []
 b = a</code></pre>
-        <p>如果多线程同时修改引用计数，可能出现竞态。GIL 用粗粒度锁换实现简单和整体安全。</p>
-
+        <p>如果多线程同时修改引用计数，可能出现并发竞争。GIL 用粗粒度锁换实现简单和整体安全。</p>
         <h3>GIL 的影响</h3>
         <ul>
-          <li>多线程可以并发，但在 CPython 中同一时刻通常只有一个线程执行 Python 字节码。</li>
+          <li><span class="em-warn">多线程可以并发</span>，但在 CPython 中同一时刻通常只有一个线程执行 Python 字节码。</li>
           <li>对 CPU 密集型任务，多线程难以利用多核。</li>
           <li>对 IO 密集型任务影响较小，线程等待 IO 时会释放 GIL。</li>
         </ul>
       </section>
 
 <section id="concurrency">
-        <h2>2. Python 多线程、多进程、协程区别？</h2>
+        <h2>Python 多线程、多进程、协程区别？</h2>
         <p>三种并发模型解决不同问题：多线程适合 IO 密集，多进程适合 CPU 密集，协程适合高并发 IO 且成本更低。</p>
         <table>
           <thead>
@@ -78,65 +77,43 @@ b = a</code></pre>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>多线程</td>
-              <td>多个线程共享进程内存</td>
-              <td>否</td>
-              <td>IO 密集型</td>
-              <td>较低</td>
-            </tr>
-            <tr>
-              <td>多进程</td>
-              <td>多个独立进程</td>
-              <td>是</td>
-              <td>CPU 密集型</td>
-              <td>较高</td>
-            </tr>
-            <tr>
-              <td>协程</td>
-              <td>单线程内协作式切换</td>
-              <td>不涉及 GIL 竞争</td>
-              <td>高并发 IO</td>
-              <td>很低</td>
-            </tr>
+            <tr><td>多线程</td><td>多个线程共享进程内存</td><td>否</td><td>IO 密集型</td><td>较低</td></tr>
+            <tr><td>多进程</td><td>多个独立进程</td><td>是</td><td>CPU 密集型</td><td>较高</td></tr>
+            <tr><td>协程</td><td>单线程内协作式切换</td><td>不涉及 GIL 竞争</td><td>高并发 IO</td><td>很低</td></tr>
           </tbody>
         </table>
-
         <h3>多线程</h3>
         <p>使用 <code>threading</code>，同一进程内多线程共享内存。适合网络请求、文件读写等 IO 场景，线程等待 IO 时会释放 GIL。</p>
         <pre><code class="language-python">import threading
 
 def task():
-    print("hello")
+    print(&quot;hello&quot;)
 
 t = threading.Thread(target=task)
 t.start()
 t.join()</code></pre>
         <p>注意线程安全问题，共享可变状态需要锁或原子操作。</p>
-
         <h3>多进程</h3>
         <p>使用 <code>multiprocessing</code>，每个进程有独立内存和 GIL，可真正并行利用多核 CPU。</p>
         <pre><code class="language-python">from multiprocessing import Process
 
 def task():
-    print("hello")
+    print(&quot;hello&quot;)
 
 p = Process(target=task)
 p.start()
 p.join()</code></pre>
         <p>进程间通信成本更高，常用 Queue、Pipe 等方式。</p>
-
         <h3>协程</h3>
         <p>使用 <code>asyncio</code> 和 <code>async / await</code>，在单线程事件循环中切换，遇到 <code>await</code> 时让出执行权。</p>
         <pre><code class="language-python">import asyncio
 
 async def task():
     await asyncio.sleep(1)
-    print("done")
+    print(&quot;done&quot;)
 
 asyncio.run(task())</code></pre>
         <p>协程切换成本低，但不适合长时间占用 CPU 的同步代码。</p>
-
         <h3>三者对比</h3>
         <table>
           <thead>
@@ -159,7 +136,7 @@ asyncio.run(task())</code></pre>
       </section>
 
 <section id="multiprocessing">
-        <h2>3. multiprocessing 怎么绕过 GIL？</h2>
+        <h2>multiprocessing 怎么绕过 GIL？</h2>
         <p><code>multiprocessing</code> 通过 <strong>多进程</strong> 绕过 GIL。</p>
         <p>GIL 是 CPython 解释器进程级别的锁。每个子进程有自己的解释器和 GIL，因此可以并行执行。</p>
         <pre><code>线程 1、线程 2、线程 3
@@ -179,37 +156,34 @@ asyncio.run(task())</code></pre>
         <ul>
           <li>进程之间内存隔离，不能像线程一样直接共享对象</li>
           <li>进程间通信需要序列化，有额外开销</li>
-          <li>Windows 默认 spawn，注意 <code>if __name__ == "__main__":</code> 保护</li>
+          <li>Windows 默认 spawn，注意 <code>if __name__ == &quot;__main__&quot;:</code> 保护</li>
         </ul>
         <p>多进程适合“算得重、通信少”的任务，不适合频繁共享大状态。</p>
       </section>
 
 <section id="async-await">
-        <h2>4. async / await 原理与适用场景</h2>
+        <h2>async / await 原理与适用场景</h2>
         <p><code>async / await</code> 是 Python 协程语法糖，基于单线程事件循环，在 IO 等待时切换任务。</p>
         <pre><code>事件循环 + 协程 + 非阻塞 IO + 主动让出执行权</code></pre>
         <p>执行到 <code>await some_io()</code> 时，若 IO 未完成，当前协程挂起，事件循环去执行其他任务。</p>
-
         <pre><code class="language-python">import asyncio
 
 async def fetch():
     await asyncio.sleep(1)
-    return "ok"
+    return &quot;ok&quot;
 
 async def main():
     result = await fetch()
     print(result)
 
 asyncio.run(main())</code></pre>
-
         <h3>执行流程</h3>
         <pre><code>async def 定义协程函数
--> 调用后得到协程对象
--> create_task / await 交给事件循环
--> await 遇到未完成 IO 时挂起当前协程
--> 事件循环调度其他协程
--> IO 完成后恢复原协程继续执行</code></pre>
-
+-&gt; 调用后得到协程对象
+-&gt; create_task / await 交给事件循环
+-&gt; await 遇到未完成 IO 时挂起当前协程
+-&gt; 事件循环调度其他协程
+-&gt; IO 完成后恢复原协程继续执行</code></pre>
         <h3>适用场景</h3>
         <ul>
           <li>高并发网络服务</li>
@@ -227,12 +201,12 @@ asyncio.run(main())</code></pre>
       </section>
 
 <section id="cpython-gc">
-        <h2>5. CPython GC 机制</h2>
+        <h2>CPython GC 机制</h2>
         <p>CPython 垃圾回收机制主要包括：</p>
         <p>
-          <span style="color:#D46B08;font-weight:600;">引用计数</span>
+          引用计数
           为主，
-          <span style="color:#D46B08;font-weight:600;">分代回收</span>
+          分代回收
           处理循环引用。
         </p>
         <h3>引用计数</h3>
@@ -240,14 +214,12 @@ asyncio.run(main())</code></pre>
         <pre><code class="language-python">a = []
 b = a
 del a</code></pre>
-
         <h3>循环引用问题</h3>
         <p>引用计数无法回收互相引用的对象。</p>
         <pre><code class="language-python">a = []
 b = []
 a.append(b)
-b.append(a)</pre></code>
-
+b.append(a)</code></pre>
         <h3>分代回收</h3>
         <pre><code>第 0 代 Young Generation：新创建对象
 第 1 代 Middle Generation：经历过一次 GC 的对象
@@ -256,7 +228,7 @@ b.append(a)</pre></code>
       </section>
 
 <section id="deep-copy-shallow-copy">
-        <h2>16. Python 深拷贝和浅拷贝区别？</h2>
+        <h2>Python 深拷贝和浅拷贝区别？</h2>
         <p>浅拷贝只复制最外层容器，嵌套对象仍共享；深拷贝递归复制所有层级，完全独立。</p>
         <table>
           <thead>
@@ -286,7 +258,7 @@ print(c)  # [[1], [2]]</code></pre>
       </section>
 
 <section id="decorator">
-        <h2>17. Python 装饰器是什么？</h2>
+        <h2>Python 装饰器是什么？</h2>
         <p>装饰器是在不修改原函数代码的前提下，给函数增加日志、鉴权、缓存、计时等横切能力的高阶写法。</p>
         <p>本质是函数接收函数、返回函数。<code>@decorator</code> 等价于 <code>func = decorator(func)</code>。</p>
         <pre><code class="language-python">from functools import wraps
@@ -294,18 +266,18 @@ print(c)  # [[1], [2]]</code></pre>
 def log(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        print("before")
+        print(&quot;before&quot;)
         return func(*args, **kwargs)
     return wrapper
 
 @log
 def hello():
-    print("hello")</code></pre>
+    print(&quot;hello&quot;)</code></pre>
         <p>建议使用 <code>functools.wraps</code> 保留原函数元信息。</p>
       </section>
 
 <section id="decorator-vs-aop">
-        <h2>494. Python 装饰器与 Java 动态代理 / Spring AOP 的区别？</h2>
+        <h2>Python 装饰器与 Java 动态代理 / Spring AOP 的区别？</h2>
         <p>三者都用于在不改业务代码的前提下增强行为，但实现机制不同。</p>
         <table>
           <thead>
@@ -326,7 +298,7 @@ def hello():
       </section>
 
 <section id="iterator-generator">
-        <h2>18. 迭代器和生成器区别？</h2>
+        <h2>迭代器和生成器区别？</h2>
         <p>迭代器实现 <code>__iter__()</code> 和 <code>__next__()</code>；生成器是用 <code>yield</code> 简化创建的迭代器。</p>
         <pre><code class="language-python">def nums():
     yield 1
@@ -338,7 +310,7 @@ for x in nums():
       </section>
 
 <section id="builtin-types">
-        <h2>19. Python list、tuple、dict、set 的底层特点？</h2>
+        <h2>Python list、tuple、dict、set 的底层特点？</h2>
         <table>
           <thead>
             <tr>
@@ -358,27 +330,25 @@ for x in nums():
       </section>
 
 <section id="context-manager">
-        <h2>20. Python 上下文管理器是什么？</h2>
+        <h2>Python 上下文管理器是什么？</h2>
         <p>上下文管理器配合 <code>with</code> 使用，进入时调用 <code>__enter__</code>，退出时调用 <code>__exit__</code>，保证资源释放。</p>
-        <pre><code class="language-python">with open("demo.txt", "w", encoding="utf-8") as f:
-    f.write("hello")</code></pre>
+        <pre><code class="language-python">with open(&quot;demo.txt&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    f.write(&quot;hello&quot;)</code></pre>
         <h3>执行流程</h3>
         <pre><code>进入 with
--> 调用 __enter__
--> 执行业务代码
--> 正常或异常退出
--> 调用 __exit__ 做清理</code></pre>
+-&gt; 调用 __enter__
+-&gt; 执行业务代码
+-&gt; 正常或异常退出
+-&gt; 调用 __exit__ 做清理</code></pre>
         <p><code>with</code> 能保证即使发生异常也会执行清理逻辑。</p>
       </section>
 
-      <section id="memory-leak">
-        <h2>21. Python 内存泄漏常见原因</h2>
-      
+<section id="memory-leak">
+        <h2>Python 内存泄漏常见原因</h2>
         <p>
           Python 有自动垃圾回收机制，但如果对象仍然被引用，就不会被释放。
           内存泄漏本质上通常是：对象已经不再需要，但仍被全局变量、缓存、闭包、任务或第三方库持有。
         </p>
-      
         <h3>常见原因</h3>
         <ul>
           <li>全局变量、单例对象、模块级 <code>list</code> / <code>dict</code> 持续增长</li>
@@ -389,56 +359,50 @@ for x in nums():
           <li>异常对象和 traceback 被长期保存，间接持有局部变量</li>
           <li>文件、数据库连接、HTTP Client、Session 等资源没有及时关闭</li>
           <li>C 扩展或第三方库内存未释放，例如 <code>numpy</code>、<code>pandas</code>、<code>torch</code>、<code>opencv</code></li>
-          <li>Java 静态集合长期持有对象，例如 static Map 只放不删。</li> 
+          <li>Java 静态集合长期持有对象，例如 static Map 只放不删。</li>
           <li>缓存没有设置过期时间、最大容量或淘汰策略。</li>
-          <li>Java中ThreadLocal 使用后没有 remove，在线程池场景下尤其容易泄漏。</li> 
+          <li>Java中ThreadLocal 使用后没有 remove，在线程池场景下尤其容易泄漏。</li>
           <li>监听器、回调、事件订阅注册后没有取消。
-          </li> <li>Java中 对象仍然存在于 List、Map、Queue 等集合中，没有被及时移除。</li>
+          </li>
+          <li>Java中 对象仍然存在于 List、Map、Queue 等集合中，没有被及时移除。</li>
         </ul>
-      
         <h3>排查思路</h3>
         <pre><code>观察进程 RSS / Python heap / 对象数量是否持续增长
-      -> 用 tracemalloc 对比内存快照
-      -> 用 gc 查看不可达对象和引用关系
-      -> 检查全局变量、缓存、闭包、回调、后台任务
-      -> 检查异常日志、traceback 是否长期保存大对象
-      -> 如果 Python 对象不多但 RSS 很高，重点关注 C 扩展和 native 内存</code></pre>
-      
+      -&gt; 用 tracemalloc 对比内存快照
+      -&gt; 用 gc 查看不可达对象和引用关系
+      -&gt; 检查全局变量、缓存、闭包、回调、后台任务
+      -&gt; 检查异常日志、traceback 是否长期保存大对象
+      -&gt; 如果 Python 对象不多但 RSS 很高，重点关注 C 扩展和 native 内存</code></pre>
         <h3>常用工具</h3>
         <ul>
           <li><code>tracemalloc</code>：定位 Python 内存分配来源</li>
           <li><code>gc</code>：查看对象回收和循环引用情况</li>
         </ul>
-      
       </section>
 
-      <section id="python-del">
-        <h2>22. 什么是 Python 的 <code>__del__</code> 析构方法？</h2>
-      
+<section id="python-del">
+        <h2>什么是 Python 的 __del__ 析构方法？</h2>
         <p>
           <code>__del__</code> 是 Python 中的析构方法，当对象即将被销毁时，
           Python 会尝试自动调用该方法。它通常用于对象销毁前的收尾逻辑。
         </p>
-      
         <h3>基本示例</h3>
         <pre><code>class User:
           def __init__(self, name):
               self.name = name
-              print(f"{self.name} 创建了")
+              print(f&quot;{self.name} 创建了&quot;)
       
           def __del__(self):
-              print(f"{self.name} 被销毁了")
+              print(f&quot;{self.name} 被销毁了&quot;)
       
       
-      u = User("Tom")
+      u = User(&quot;Tom&quot;)
       del u</code></pre>
-      
         <p>
           需要注意的是，<code>del u</code> 删除的是变量 <code>u</code> 对对象的引用，
           并不一定代表对象会立即销毁。只有当对象没有其他引用时，才可能触发
           <code>__del__</code>。
         </p>
-      
         <h3>为什么不建议依赖 <code>__del__</code> 释放资源？</h3>
         <ul>
           <li><code>__del__</code> 的执行时机不完全可控</li>
@@ -446,16 +410,14 @@ for x in nums():
           <li>解释器退出时，部分全局变量可能已经被清理，导致析构逻辑异常</li>
           <li>如果析构方法中出现异常，通常不会像普通异常一样正常抛出</li>
         </ul>
-      
         <h3>推荐做法</h3>
         <p>
           实际开发中，不建议依赖 <code>__del__</code> 释放文件、数据库连接、
           HTTP 连接等资源，更推荐使用 <code>with</code> 上下文管理器或显式
           <code>close()</code> 方法。
         </p>
-      
         <pre><code># 推荐：使用 with 自动释放资源
-      with open("data.txt", "r") as f:
+      with open(&quot;data.txt&quot;, &quot;r&quot;) as f:
           data = f.read()
       
       
@@ -465,7 +427,6 @@ for x in nums():
           client.request()
       finally:
           client.close()</code></pre>
-      
         <p>
           面试中可以总结为：<code>__del__</code> 是对象销毁前自动调用的析构方法，
           但由于执行时机不稳定，生产环境中不应依赖它管理关键资源。
@@ -473,29 +434,25 @@ for x in nums():
         </p>
       </section>
 
-      <section id="wsgi-asgi">
-        <h2>22. WSGI 和 ASGI 区别</h2>
-      
+<section id="wsgi-asgi">
+        <h2>WSGI 和 ASGI 区别</h2>
         <p>
           WSGI 全称是 <code>Web Server Gateway Interface</code>，
           ASGI 全称是 <code>Asynchronous Server Gateway Interface</code>。
           它们都是 Python Web 应用和 Web 服务器之间的接口规范。
         </p>
-      
         <h3>一句话区别</h3>
         <p>
           WSGI 是同步接口，主要用于传统 HTTP 请求；
           ASGI 是异步接口，支持 <code>async / await</code>，
           更适合 WebSocket、SSE、长连接和高并发 IO 场景。
         </p>
-      
         <h3>常见组合</h3>
         <ul>
           <li>Flask / Django 传统应用：通常运行在 WSGI Server 上，例如 <code>Gunicorn</code>、<code>uWSGI</code></li>
           <li>FastAPI / Starlette：通常运行在 ASGI Server 上，例如 <code>Uvicorn</code>、<code>Hypercorn</code></li>
           <li>Django 新版本也支持 ASGI，可用于异步接口和 WebSocket 场景</li>
         </ul>
-      
         <h3>核心区别</h3>
         <table>
           <thead>
@@ -506,46 +463,20 @@ for x in nums():
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>全称</td>
-              <td>Web Server Gateway Interface</td>
-              <td>Asynchronous Server Gateway Interface</td>
-            </tr>
-            <tr>
-              <td>编程模型</td>
-              <td>同步</td>
-              <td>异步，也兼容同步</td>
-            </tr>
-            <tr>
-              <td>典型框架</td>
-              <td>Flask、Django 传统模式</td>
-              <td>FastAPI、Starlette、Django Channels</td>
-            </tr>
-            <tr>
-              <td>典型服务器</td>
-              <td>Gunicorn、uWSGI</td>
-              <td>Uvicorn、Hypercorn、Daphne</td>
-            </tr>
-            <tr>
-              <td>支持协议</td>
-              <td>主要是 HTTP</td>
-              <td>HTTP、WebSocket、SSE、长连接</td>
-            </tr>
-            <tr>
-              <td>适合场景</td>
-              <td>传统 Web 应用、后台管理、普通接口</td>
-              <td>高并发 IO、实时通信、AI 流式输出</td>
-            </tr>
+            <tr><td>全称</td><td>Web Server Gateway Interface</td><td>Asynchronous Server Gateway Interface</td></tr>
+            <tr><td>编程模型</td><td>同步</td><td>异步，也兼容同步</td></tr>
+            <tr><td>典型框架</td><td>Flask、Django 传统模式</td><td>FastAPI、Starlette、Django Channels</td></tr>
+            <tr><td>典型服务器</td><td>Gunicorn、uWSGI</td><td>Uvicorn、Hypercorn、Daphne</td></tr>
+            <tr><td>支持协议</td><td>主要是 HTTP</td><td>HTTP、WebSocket、SSE、长连接</td></tr>
+            <tr><td>适合场景</td><td>传统 Web 应用、后台管理、普通接口</td><td>高并发 IO、实时通信、AI 流式输出</td></tr>
           </tbody>
         </table>
-      
         <h3>简单理解</h3>
         <pre><code>浏览器请求
-        -> Nginx / Web Server
-        -> WSGI / ASGI Server
-        -> Python Web 框架
-        -> 业务代码</code></pre>
-      
+        -&gt; Nginx / Web Server
+        -&gt; WSGI / ASGI Server
+        -&gt; Python Web 框架
+        -&gt; 业务代码</code></pre>
         <h3>面试总结</h3>
         <p>
           WSGI 是 Python 传统同步 Web 服务接口规范，适合普通 HTTP 请求；
@@ -554,19 +485,15 @@ for x in nums():
           FastAPI 通常基于 ASGI 运行，Flask 传统模式通常基于 WSGI 运行。
         </p>
       </section>
-      
 
-      <section id="closure">
-        <h2>51. Python 闭包是什么？</h2>
-      
+<section id="closure">
+        <h2>Python 闭包是什么？</h2>
         <p>
           闭包是指：内部函数引用了外部函数中的变量，并且这个内部函数被返回到外部继续使用。
           即使外部函数已经执行结束，被引用的外部变量仍然会被保留下来。
         </p>
-      
         <h3>闭包的本质</h3>
         <pre><code>闭包 = 函数 + 被函数捕获的外部变量</code></pre>
-      
         <h3>保存状态示例</h3>
         <pre><code>def counter():
           count = 0
@@ -584,13 +511,11 @@ for x in nums():
       print(c())  # 1
       print(c())  # 2
       print(c())  # 3</code></pre>
-      
         <p>
           这里的 <code>count</code> 没有定义成全局变量，
           但每次调用 <code>c()</code> 时都能记住上一次的值。
           这说明闭包可以让函数保存自己的状态。
         </p>
-      
         <h3>常见使用场景</h3>
         <ul>
           <li>装饰器：在不修改原函数代码的情况下增强功能</li>
@@ -598,7 +523,6 @@ for x in nums():
           <li>封装状态：避免使用全局变量</li>
           <li>函数工厂：根据不同参数生成不同行为的函数</li>
         </ul>
-      
         <h3>和 Go 闭包的关系</h3>
         <p>
           Python 闭包和 Go 闭包本质上是同一个概念，
@@ -606,18 +530,15 @@ for x in nums():
           区别主要在语法上：Python 修改外层变量需要使用 <code>nonlocal</code>，
           Go 的匿名函数可以直接修改外层变量。
         </p>
-      
         <h3>面试总结</h3>
         <p>
           Python 闭包是指内部函数引用外部函数的变量，并且内部函数被返回后仍然可以访问这些变量。
           它的核心是函数能够记住创建它时的上下文，常用于装饰器、回调函数、状态封装和延迟执行等场景。
         </p>
       </section>
-      
-
 
 <section id="nonlocal">
-        <h2>52. nonlocal 关键字是什么？</h2>
+        <h2>nonlocal 关键字是什么？</h2>
         <p><code>nonlocal</code> 用于在内层函数中修改外层非全局变量。没有它时，赋值会被视为创建局部变量，可能触发 <code>UnboundLocalError</code>。</p>
         <pre><code class="language-python">def make_counter():
     count = 0
@@ -643,15 +564,13 @@ for x in nums():
         </table>
       </section>
 
-      <section id="pydantic">
-        <h2>53. Pydantic 适合解决什么问题？</h2>
-      
+<section id="pydantic">
+        <h2>Pydantic 适合解决什么问题？</h2>
         <p>
           Pydantic 是 Python 中常用的<strong>数据校验和数据解析工具</strong>，
           主要用于解决“外部数据结构不可靠”的问题。
           它可以基于类型注解，对接口参数、配置项、JSON 数据和大模型输出进行类型校验、类型转换、必填校验和默认值处理。
         </p>
-      
         <h3>常见使用场景</h3>
         <ul>
           <li>FastAPI 接口入参和响应体校验</li>
@@ -659,14 +578,11 @@ for x in nums():
           <li>嵌套 JSON 数据校验</li>
           <li>AI Agent / RAG 中校验大模型输出结构</li>
         </ul>
-      
         <h3>常用功能</h3>
-      
         <h4>1. BaseModel：定义数据模型</h4>
         <p>
           <code>BaseModel</code> 是 Pydantic 的核心，用来定义数据结构，并自动完成字段校验、类型转换和默认值处理。
         </p>
-      
         <pre><code class="language-python">from pydantic import BaseModel
       
       class User(BaseModel):
@@ -674,45 +590,39 @@ for x in nums():
           age: int
           is_active: bool = True
       
-      user = User(name="Tom", age="18")
+      user = User(name=&quot;Tom&quot;, age=&quot;18&quot;)
       print(user.age)  # 18</code></pre>
-      
         <h4>2. Field：字段约束</h4>
         <p>
           <code>Field</code> 用于设置字段限制，例如长度、范围、默认值和描述信息。
         </p>
-      
         <pre><code class="language-python">from pydantic import BaseModel, Field
       
       class Product(BaseModel):
           name: str = Field(min_length=2, max_length=50)
           price: float = Field(gt=0)
           stock: int = Field(default=0, ge=0)</code></pre>
-      
         <h4>3. Validator：自定义校验</h4>
         <p>
           Pydantic v2 常用 <code>field_validator</code> 和 <code>model_validator</code>，
           分别用于单字段校验和多字段联合校验。
         </p>
-      
         <pre><code class="language-python">from pydantic import BaseModel, field_validator
       
       class UserRegister(BaseModel):
           username: str
       
-          @field_validator("username")
+          @field_validator(&quot;username&quot;)
           @classmethod
           def check_username(cls, value):
-              if " " in value:
-                  raise ValueError("用户名不能包含空格")
+              if &quot; &quot; in value:
+                  raise ValueError(&quot;用户名不能包含空格&quot;)
               return value</code></pre>
-      
         <h3>AI 场景示例</h3>
         <p>
           在 AI Agent / RAG 项目中，Pydantic 常用于校验大模型返回的 JSON 结构，
           避免字段缺失、类型错误或格式不稳定导致后续流程异常。
         </p>
-      
         <pre><code class="language-python">from pydantic import BaseModel
       from typing import List
       
@@ -722,13 +632,10 @@ for x in nums():
           sources: List[str]
       
       result = LLMAnswer.model_validate_json(llm_output)</code></pre>
-      
-      
       </section>
 
-
 <section id="coroutine">
-        <h2>114. Python 协程是什么？</h2>
+        <h2>Python 协程是什么？</h2>
         <p>Python 协程是一种可暂停和恢复的函数，通过 <code>async def</code> 定义，用 <code>await</code> 等待 IO 并让出执行权。</p>
         <p>协程不是操作系统线程，适合高并发 IO 场景；不适合直接承担 CPU 密集计算</p>
         <p>线程是操作系统管理的 切换时需要保存和恢复寄存器、程序计数器、栈指针等上下文，成本较高; 协程主要是程序自己管理的。</p>
@@ -737,15 +644,13 @@ for x in nums():
 
 async def fetch():
     await asyncio.sleep(1)
-    return "ok"
+    return &quot;ok&quot;
 
 asyncio.run(fetch())</code></pre>
       </section>
 
-
-
 <section id="python-bytecode">
-        <h2>324. Python 字节码是什么？</h2>
+        <h2>Python 字节码是什么？</h2>
         <p>Python 字节码是 CPython 将 <code>.py</code> 源码编译后得到的一组指令，运行时由解释器执行。通常缓存在 <code>__pycache__</code> 的 <code>.pyc</code> 文件中。</p>
         <ul>
           <li>编译链路：源码 → AST → code object → 字节码指令</li>
@@ -761,7 +666,7 @@ dis.dis(add)</code></pre>
       </section>
 
 <section id="is-vs-equals">
-        <h2>325. Python 中 is 和 == 有什么区别？</h2>
+        <h2>Python 中 is 和 == 有什么区别？</h2>
         <p><code>is</code> 比较对象身份（是否同一对象），<code>==</code> 比较值是否相等（通常调用 <code>__eq__</code>）。</p>
         <ul>
           <li><code>a is b</code> 等价于 <code>id(a) == id(b)</code></li>
@@ -777,7 +682,7 @@ print(a is b)  # False</code></pre>
       </section>
 
 <section id="mutable-immutable">
-        <h2>326. Python 中可变类型和不可变类型有什么区别？</h2>
+        <h2>Python 中可变类型和不可变类型有什么区别？</h2>
         <p>可变对象创建后内容可原地修改；不可变对象一旦创建，任何“修改”都会绑定到新对象。</p>
         <ul>
           <li>常见可变类型：<code>list</code>、<code>dict</code>、<code>set</code></li>
@@ -787,13 +692,13 @@ print(a is b)  # False</code></pre>
         <pre><code class="language-python">nums = [1, 2]
 nums.append(3)      # 原地修改
 
-s = "ab"
-s = s + "c"         # 绑定到新字符串对象</code></pre>
+s = &quot;ab&quot;
+s = s + &quot;c&quot;         # 绑定到新字符串对象</code></pre>
         <p>函数默认参数不要直接使用可变对象，避免共享同一默认实例。</p>
       </section>
 
 <section id="parameter-passing">
-        <h2>327. Python 参数传递是值传递还是引用传递？</h2>
+        <h2>Python 参数传递是值传递还是引用传递？</h2>
         <p>Python 更准确说是“传对象引用”：传递的是对象引用的副本，既不是纯值传递，也不是 C++ 那种引用别名。</p>
         <ul>
           <li>对可变对象，函数内原地修改会影响外部</li>
@@ -814,7 +719,7 @@ print(a)  # [1, 2, 3]</code></pre>
       </section>
 
 <section id="mro">
-        <h2>328. Python 中 MRO 是什么？</h2>
+        <h2>Python 中 MRO 是什么？</h2>
         <p>MRO（Method Resolution Order）是方法解析顺序，决定多继承时 Python 按什么顺序查找父类方法。</p>
         <ul>
           <li>Python 3 使用 C3 线性化算法，保证顺序一致且符合局部优先原则</li>
@@ -826,11 +731,11 @@ class B(A): pass
 class C(A): pass
 class D(B, C): pass
 
-print(D.mro())  # D -> B -> C -> A -> object</code></pre>
+print(D.mro())  # D -&gt; B -&gt; C -&gt; A -&gt; object</code></pre>
       </section>
 
 <section id="new-vs-init">
-        <h2>329. Python __new__ 和 __init__ 有什么区别？</h2>
+        <h2>Python __new__ 和 __init__ 有什么区别？</h2>
         <p><code>__new__</code> 负责创建实例并返回对象；<code>__init__</code> 负责初始化已创建实例。创建时先 <code>__new__</code> 再 <code>__init__</code>。</p>
         <ul>
           <li><code>__new__</code> 是静态方法，必须返回实例；<code>__init__</code> 不能返回值</li>
@@ -839,16 +744,16 @@ print(D.mro())  # D -> B -> C -> A -> object</code></pre>
         </ul>
         <pre><code class="language-python">class User:
     def __new__(cls, *args, **kwargs):
-        print("create")
+        print(&quot;create&quot;)
         return super().__new__(cls)
 
     def __init__(self, name):
-        print("init")
+        print(&quot;init&quot;)
         self.name = name</code></pre>
       </section>
 
 <section id="metaclass">
-        <h2>330. Python 元类是什么？</h2>
+        <h2>Python 元类是什么？</h2>
         <p>元类是“类的类”。普通类默认由 <code>type</code> 创建，元类可以控制类的创建过程。</p>
         <ul>
           <li>元类可在类创建时修改属性、注入校验、自动注册</li>
@@ -863,7 +768,7 @@ print(type(User()))    # &lt;class '__main__.User'&gt;</code></pre>
       </section>
 
 <section id="property-decorator">
-        <h2>331. Python 中 property 装饰器是什么？</h2>
+        <h2>Python 中 property 装饰器是什么？</h2>
         <p><code>property</code> 把方法包装成属性访问形式，可配合 getter、setter、deleter 做校验和封装。</p>
         <ul>
           <li>对外像属性，对内可控制读写逻辑</li>
@@ -881,12 +786,12 @@ print(type(User()))    # &lt;class '__main__.User'&gt;</code></pre>
     @age.setter
     def age(self, value):
         if value &lt; 0:
-            raise ValueError("age must be positive")
+            raise ValueError(&quot;age must be positive&quot;)
         self._age = value</code></pre>
       </section>
 
 <section id="dataclass">
-        <h2>332. Python dataclass 适合什么场景？</h2>
+        <h2>Python dataclass 适合什么场景？</h2>
         <p><code>dataclass</code> 适合定义以数据为主的类，自动生成 <code>__init__</code>、<code>__repr__</code>、<code>__eq__</code> 等样板代码。</p>
         <ul>
           <li>适合 DTO、配置对象、简单值对象</li>
@@ -902,7 +807,7 @@ class User:
       </section>
 
 <section id="exception-handling">
-        <h2>333. Python 异常处理最佳实践？</h2>
+        <h2>Python 异常处理最佳实践？</h2>
         <p>Python 使用异常传递错误，从调用栈向上传播，直到被匹配的 <code>except</code> 捕获或终止程序。</p>
         <ul>
           <li><code>try/except</code> 捕获异常；<code>else</code> 在无异常时执行；<code>finally</code> 无论是否异常都执行</li>
@@ -914,13 +819,13 @@ class User:
 except ZeroDivisionError:
     result = 0
 else:
-    print("success")
+    print(&quot;success&quot;)
 finally:
-    print("cleanup")</code></pre>
+    print(&quot;cleanup&quot;)</code></pre>
       </section>
 
 <section id="gather-vs-create-task">
-        <h2>334. asyncio.gather 和 asyncio.create_task 有什么区别？</h2>
+        <h2>asyncio.gather 和 asyncio.create_task 有什么区别？</h2>
         <p><code>asyncio.create_task</code> 把协程包装成 Task 并调度到事件循环；<code>asyncio.gather</code> 并发等待多个 awaitable 并收集结果。</p>
         <ul>
           <li><code>create_task(coro)</code> 创建单个后台任务，可单独 await、cancel</li>
@@ -932,7 +837,7 @@ result1, result2 = await asyncio.gather(fetch_a(), fetch_b())</code></pre>
       </section>
 
 <section id="asyncio-timeout-cancel">
-        <h2>335. Python 协程如何做超时、取消和异常？</h2>
+        <h2>Python 协程如何做超时、取消和异常？</h2>
         <p>协程超时和取消需要显式处理，避免任务泄漏和异常被吞掉。常用 <code>asyncio.wait_for</code>、<code>asyncio.timeout</code>、<code>Task.cancel()</code>。</p>
         <ul>
           <li>对外部 HTTP、数据库、LLM 调用设置超时，避免无限等待</li>
@@ -948,7 +853,7 @@ finally:
       </section>
 
 <section id="fastapi-di">
-        <h2>336. FastAPI 依赖注入机制是什么？</h2>
+        <h2>FastAPI 依赖注入机制是什么？</h2>
         <p>FastAPI 通过 <code>Depends</code> 声明依赖，在请求进入路由前解析并注入，用于鉴权、数据库会话、配置等横切逻辑。</p>
         <ul>
           <li>适合获取当前用户、校验权限、创建 DB Session</li>
@@ -958,15 +863,15 @@ finally:
         <pre><code class="language-python">from fastapi import Depends
 
 def get_current_user():
-    return {"name": "ren"}
+    return {&quot;name&quot;: &quot;ren&quot;}
 
-@app.get("/profile")
+@app.get(&quot;/profile&quot;)
 def profile(user = Depends(get_current_user)):
     return user</code></pre>
       </section>
 
 <section id="fastapi-vs-flask-django">
-        <h2>337. FastAPI 与 Flask / Django 的差异是什么？</h2>
+        <h2>FastAPI 与 Flask / Django 的差异是什么？</h2>
         <p>三者都是 Python Web 框架，但定位不同：FastAPI 偏现代 API 和异步，Flask 偏轻量灵活，Django 偏全栈后台。</p>
         <ul>
           <li>FastAPI：ASGI、类型注解、Pydantic 校验、OpenAPI 文档，适合 API 和 AI/RAG 服务</li>
@@ -977,7 +882,7 @@ def profile(user = Depends(get_current_user)):
       </section>
 
 <section id="dependency-management">
-        <h2>338. Python 项目依赖管理最佳实践？</h2>
+        <h2>Python 项目依赖管理最佳实践？</h2>
         <p>项目应通过虚拟环境和锁文件隔离依赖，保证开发、测试、生产环境一致。</p>
         <ul>
           <li>推荐 <code>venv</code> + <code>requirements.txt</code>，或 Poetry、PDM、uv 等现代工具</li>
@@ -995,5 +900,7 @@ pip install -r requirements.txt</code></pre>
   <script src="assets/study-legacy-map.js"></script>
   <script src="assets/study.js"></script>
   <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
 </body>
 </html>
