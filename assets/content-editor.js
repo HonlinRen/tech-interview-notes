@@ -203,6 +203,39 @@
     });
   }
 
+  function normalizeOrphanInlines(root) {
+    const inlineWrap = new Set(["MARK", "SPAN", "STRONG", "B", "EM", "I", "A", "FONT", "U"]);
+    Array.from(root.childNodes).forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+        const p = document.createElement("p");
+        p.textContent = node.textContent;
+        node.replaceWith(p);
+        return;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE && inlineWrap.has(node.tagName)) {
+        const p = document.createElement("p");
+        node.replaceWith(p);
+        p.appendChild(node);
+      }
+    });
+  }
+
+  function debugLog(location, message, data, hypothesisId) {
+    fetch("/api/debug-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "5803c5",
+        location: location,
+        message: message,
+        data: data,
+        hypothesisId: hypothesisId,
+        runId: "post-fix-2",
+        timestamp: Date.now()
+      })
+    }).catch(function () {});
+  }
+
   function normalizeLists(root) {
     Array.from(root.querySelectorAll("p")).forEach(function (p) {
       const lists = Array.from(p.children).filter(function (el) {
@@ -230,6 +263,16 @@
         const child = div.firstElementChild;
         if (child && (child.tagName === "UL" || child.tagName === "OL")) {
           div.replaceWith(child);
+          return;
+        }
+      }
+      if (!div.querySelector("pre, ul, ol, table, p, h3, h4")) {
+        const p = document.createElement("p");
+        while (div.firstChild) {
+          p.appendChild(div.firstChild);
+        }
+        if (p.textContent.trim()) {
+          div.replaceWith(p);
         }
       }
     });
@@ -429,6 +472,7 @@
       if (enabled) {
         const answer = getSectionAnswer(section);
         if (answer) {
+          normalizeOrphanInlines(answer);
           normalizeCodeBlocks(answer);
           normalizeLists(answer);
           protectCodeBlocks(answer);
@@ -660,13 +704,35 @@
     saveExitBtn.disabled = true;
 
     try {
+      // #region agent log
+      const _dbgTarget = document.getElementById("compile-and-interpret");
+      const _dbgAnsBefore = _dbgTarget && getSectionAnswer(_dbgTarget);
+      debugLog("content-editor.js:savePage:before-normalize", "DOM before normalize", {
+        innerHTML: _dbgAnsBefore ? _dbgAnsBefore.innerHTML : null,
+        childTags: _dbgAnsBefore ? Array.from(_dbgAnsBefore.children).map(function (c) { return c.tagName + ":" + c.className; }) : null,
+        childNodes: _dbgAnsBefore ? Array.from(_dbgAnsBefore.childNodes).map(function (n) {
+          return n.nodeType === 3 ? "#text:" + n.textContent.trim().slice(0, 60) : n.tagName + ":" + n.className;
+        }) : null,
+        textContent: _dbgAnsBefore ? _dbgAnsBefore.textContent : null
+      }, "B,C,F,G");
+      // #endregion
       getSections().forEach(function (section) {
         const answer = getSectionAnswer(section);
         if (answer) {
+          normalizeOrphanInlines(answer);
           normalizeCodeBlocks(answer);
           normalizeLists(answer);
+          normalizeOrphanInlines(answer);
         }
       });
+
+      // #region agent log
+      const _dbgAnsAfter = _dbgTarget && getSectionAnswer(_dbgTarget);
+      debugLog("content-editor.js:savePage:after-normalize", "DOM after normalize", {
+        innerHTML: _dbgAnsAfter ? _dbgAnsAfter.innerHTML : null,
+        childTags: _dbgAnsAfter ? Array.from(_dbgAnsAfter.children).map(function (c) { return c.tagName + ":" + c.className; }) : null
+      }, "C");
+      // #endregion
 
       let sectionsHtml;
       try {
@@ -674,6 +740,16 @@
       } catch (serializeError) {
         throw new Error("内容序列化失败：" + (serializeError.message || serializeError));
       }
+
+      // #region agent log
+      const _dbgSection = window.HtmlSerializer.serializeSection(_dbgTarget);
+      debugLog("content-editor.js:savePage:after-serialize", "Serialized section", {
+        hasGraalVM: _dbgSection.indexOf("GraalVM") !== -1,
+        hasEmWarn: _dbgSection.indexOf("em-warn") !== -1,
+        hasMark: _dbgSection.indexOf("<mark>") !== -1,
+        sectionSnippet: _dbgSection.slice(-500)
+      }, "A,D,E,F,G");
+      // #endregion
 
       if (!sectionsHtml.trim()) {
         throw new Error("没有可保存的题目内容，请刷新页面后重试");

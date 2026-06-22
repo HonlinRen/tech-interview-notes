@@ -45,6 +45,17 @@ app.get("/favicon.ico", function (req, res) {
   res.sendFile(path.join(ROOT, "assets", "favicon.svg"));
 });
 
+app.post("/api/debug-log", function (req, res) {
+  try {
+    const line =
+      JSON.stringify(Object.assign({ timestamp: Date.now() }, req.body || {})) + "\n";
+    fs.appendFileSync(path.join(ROOT, "debug-5803c5.log"), line, "utf8");
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
 app.post("/api/save", function (req, res) {
   try {
     const file = req.body && req.body.file;
@@ -82,6 +93,24 @@ app.post("/api/save", function (req, res) {
 
     const prefix = emptyStateMatch[1];
     const trimmedSections = sections.replace(/^\s+|\s+$/g, "");
+    try {
+      const debugLine =
+        JSON.stringify({
+          timestamp: Date.now(),
+          sessionId: "5803c5",
+          location: "dev-server.js:/api/save",
+          message: "save payload",
+          data: {
+            file: file,
+            hasGraalVM: trimmedSections.indexOf("GraalVM") !== -1,
+            compileSection: (trimmedSections.match(/<section id="compile-and-interpret"[\s\S]*?<\/section>/) || [""])[0].slice(-500)
+          },
+          runId: "post-fix-2"
+        }) + "\n";
+      fs.appendFileSync(path.join(ROOT, "debug-5803c5.log"), debugLine, "utf8");
+    } catch (logError) {
+      /* ignore */
+    }
     const newMainInner = prefix + "\n\n" + trimmedSections + "\n";
     html = html.replace(/<main>[\s\S]*?<\/main>/i, "<main>" + newMainInner + "</main>");
 

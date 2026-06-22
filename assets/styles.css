@@ -28,7 +28,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
+      grid-template-columns: 350px minmax(0, 1fr);
       gap: 28px;
       width: min(1280px, 100%);
       margin: 0 auto;
@@ -146,6 +146,22 @@
     .toc-group a {
       padding-left: 16px;
       font-size: 13px;
+    }
+
+    .toc-group a.learned {
+      color: var(--learned);
+    }
+
+    .toc-group a.learned:hover {
+      color: var(--learned-border);
+    }
+
+    .toc-group a.learned::before {
+      content: "\2713";
+      color: var(--learned);
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 5px;
     }
 
     .toc-summary {

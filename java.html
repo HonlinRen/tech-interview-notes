@@ -383,11 +383,10 @@ private final Condition notFull = lock.newCondition();  // 队列未满
 
 <section id="classloaders">
         <h2>类加载器有哪些？</h2>
-        <p>常见类加载器包括<mark> Bootstrap ClassLoader启动类加载器</mark>、<mark>Platform/Extension ClassLoader扩展类加载器</mark>、<mark>Application ClassLoader应用类加载器</mark> 和自定义类加载器 ClassLoader。</p>
         <ul>
-          <li>Bootstrap 加载 Java JDK核心类库  主要负责加载 <code>%JAVA_HOME%/lib</code> 目录下</li>
-          <li>Platform/Extension 加载平台扩展类库 主要负责加载 <code>%JRE_HOME%/lib/ext</code> 目录下</li>
-          <li>Application 面向我们用户的加载器，负责加载当前应用 classpath 下的所有 jar 包和类 </li>
+          <li><mark> Bootstrap ClassLoader</mark>启动类加载器  Java JDK核心类库  主要负责加载 <code>%JAVA_HOME%/lib</code> 目录下</li>
+          <li><mark>Platform/Extension ClassLoader</mark>扩展类加载器加载平台扩展类库 主要负责加载 <code>%JRE_HOME%/lib/ext</code> 目录下</li>
+          <li><mark>Application ClassLoader应用类加载器</mark>  面向用户的加载器，负责加载当前应用 classpath 下的所有 jar 包和类 </li>
           <li>自定义加载器常用于隔离、热部署、插件化。</li>
         </ul>
       </section>
@@ -444,11 +443,26 @@ AppClassLoader
             <tr><td>常量引用</td><td>运行时常量池、字符串常量等引用的对象。</td></tr>
             <tr><td>JNI 引用</td><td>本地方法栈中 Native 方法持有的引用。</td></tr>
             <tr><td>同步锁持有对象</td><td>被 <code>synchronized</code> 锁住的对象。</td></tr>
-            <tr><td>JVM 内部引用</td><td>系统类加载器、异常对象、基础类元数据等。</td></tr>
           </tbody>
         </table>
         <p>注意“不可达”不等于立刻回收。对象如果重写了 <code>finalize()</code>，历史版本中还可能经历一次终结机会；</p>
         <p>现代 Java 中不推荐依赖 finalize，资源释放应使用 <code>try-with-resources</code> 或显式关闭。</p>
+        <p>JNI （Java Native Interface）作用是：</p>
+        <p>  Java 代码  -&gt;  JNI  -&gt;  C/C++ 代码 （操作系统 图像音频处理）</p>
+        <pre><code class="language-java">public class HelloJNI {
+
+    static {
+        System.loadLibrary(&quot;hello&quot;);
+    }
+
+    public native void sayHello();
+
+    public static void main(String[] args) {
+        new HelloJNI().sayHello();
+    }
+}</code></pre>
+        <p>
+</p>
       </section>
 
 <section id="virtual-threads">
@@ -472,7 +486,9 @@ Java Thread -&gt; OS Thread
 
 <section id="record-vs-bean">
         <h2>Record 相比 Java Bean 有什么优势？</h2>
-        <p><code>record</code> 适合表达不可变数据载体。它把“这个类只是承载一组数据”的语义直接写进类型声明里，编译器会自动生成构造器、访问方法、<code>equals()</code>、<code>hashCode()</code> 和 <code>toString()</code>。</p>
+        <p><code>record</code> 适合表达不可变数据载体。</p>
+        <p>类似于使用 <code>class</code> 定义类，同时使用了 lombok 插件，并打上了 <code>@Getter,@ToString,@EqualsAndHashCode</code> 注解。</p>
+        <p>它把“这个类只是承载一组数据”的语义直接写进类型声明里，编译器会自动生成构造器、访问方法、<code>equals()</code>、<code>hashCode()</code> 和 <code>toString()</code>。</p>
         <pre><code class="language-java">public record UserDTO(Long id, String name, String email) {
 }</code></pre>
         <table>
@@ -495,7 +511,7 @@ Java Thread -&gt; OS Thread
 
 <section id="pattern-matching">
         <h2>Pattern Matching 解决什么问题？</h2>
-        <p>Pattern Matching 解决的是“先判断类型，再强制转换，再使用变量”这类重复代码。它把类型判断、类型转换和局部变量绑定合在一起，让分支逻辑更清晰。</p>
+        <p>Pattern Matching 解决的是“先<span class="em-warn">判断类型</span>，再强<span class="em-warn">制转换</span>，再<span class="em-warn">定义变量</span>”这类重复代码。它把类型判断、类型转换和局部变量绑定合在一起，让分支逻辑更清晰。</p>
         <pre><code class="language-java">if (obj instanceof String s) {
     System.out.println(s.length());
 }</code></pre>
@@ -510,12 +526,13 @@ Java Thread -&gt; OS Thread
           <li>让 <code>if</code>、<code>switch</code> 中的类型分支更紧凑。</li>
           <li>配合 sealed class / sealed interface 表达有限类型集合时，分支覆盖关系更清楚。</li>
         </ul>
-        <p>面试可以这样说：Pattern Matching 不只是语法糖，它让 Java 在处理多态数据、协议对象、表达式树、领域事件时更容易写出类型安全且可读的分支代码。</p>
+        <p>面试可以这样说：<mark>Pattern Matching 不只是语法糖</mark>，它让 Java 在处理多态数据、协议对象、表达式树、领域事件时更容易写出类型安全且可读的分支代码。</p>
       </section>
 
 <section id="minor-vs-full-gc">
         <h2>Minor GC 和 Full GC 区别？</h2>
-        <p>Minor GC 和 Full GC 的区别主要在回收范围、触发原因和停顿成本。Minor GC 通常回收年轻代，Full GC 往往会回收整个堆以及相关元数据区域，停顿更重。</p>
+        <p>Minor GC 和 Full GC 的区别主要在回收范围、触发原因和停顿成本。</p>
+        <p>Minor GC 通常<span class="em-warn">回收年轻代</span>，Full GC 往往会回收<span class="em-warn">整个堆</span>以及相关元数据区域，<strong>停顿更重</strong>。</p>
         <table>
           <thead>
             <tr>
@@ -537,7 +554,11 @@ Java Thread -&gt; OS Thread
 -&gt; 存活对象进入 Survivor 或晋升老年代
 -&gt; 老年代压力过大
 -&gt; Major GC / Full GC</code></pre>
-        <p>频繁 Minor GC 不一定是严重问题，但会增加 CPU 消耗；频繁 Full GC 通常是明显风险信号，需要结合 GC 日志、<code>jstat</code>、heap dump 和对象分配链路排查。</p>
+        <p>频繁 Minor GC 不一定是严重问题，但会增加 CPU 消耗；</p>
+        <p><span class="em-warn">频繁 Full GC 通常是明显风险信号</span>，需要结合 GC 日志、<code>jstat</code>、heap dump 和对象分配链路排查。</p>
+        <p><mark>GC日志：</mark>GC频率、 GC停顿时间、 GC前后堆大小变化</p>
+        <p><mark>jstat：</mark>YongGC FullGC 次数 、老年代 元空间使用率</p>
+        <p><mark>heap dump：</mark>具体对象内存占用和引用 、异常大的Map List</p>
       </section>
 
 <section id="java-features">
@@ -563,21 +584,31 @@ Java Thread -&gt; OS Thread
             </tr>
           </thead>
           <tbody>
-            <tr><td>JVM</td><td>类加载、字节码执行、运行时内存管理、垃圾回收</td><td>运行 Java 字节码</td></tr>
+            <tr><td>JVM</td><td>类加载、字节码执行、内存管理、垃圾回收GC、JIT即时编译</td><td>运行 Java 字节码</td></tr>
             <tr><td>JRE</td><td>包含 JVM 和 Java 基础类库</td><td>只运行 Java 程序</td></tr>
             <tr><td>JDK</td><td>包含 JRE 以及 javac、jar、javadoc、jstack、jmap、jstat 等工具</td><td>开发、编译、诊断 Java 程序</td></tr>
           </tbody>
         </table>
         <p>简单说：运行程序最低需要 JRE，开发程序需要 JDK；JVM 是真正执行字节码的核心。</p>
+        <pre><code class="language-cpp">JDK
+ ├── JRE
+ │    ├── JVM
+ │    └── Java 核心类库
+ └── 开发工具
+      ├── javac // 编译代码
+      ├── jps //查看Java进程
+      ├── jmap//内存分析工具 堆内存 对象分布 可以导出heap dump
+      └── jstat //排查线程问题</code></pre>
       </section>
 
 <section id="java-bytecode">
         <h2>Java 字节码是什么？为什么 Java 可以跨平台？</h2>
-        <p>Java 字节码是 <code>.java</code> 文件经过 <code>javac</code> 编译后生成的 <code>.class</code> 指令集。JVM 负责加载、校验、解释执行或 JIT 编译这些字节码。</p>
+        <p>Java 字节码是 <code>.java</code> 文件经过 <code>javac</code> 编译后生成的 <code>.class</code> 指令集。</p>
+        <p>JVM 负责加载、校验、解释执行或 JIT 编译这些字节码。</p>
         <ul>
           <li>跨平台的关键是字节码格式统一，不同平台提供对应 JVM 实现。</li>
           <li>字节码在执行前会经过类加载和字节码校验，防止非法指令破坏运行时安全。</li>
-          <li>热点代码会被 JIT 编译成本地机器码，提高长期运行服务的执行效率。</li>
+          <li><mark>热点代码会被 JIT 编译成本地机器码</mark>，提高长期运行服务的执行效率。</li>
         </ul>
       </section>
 
@@ -589,6 +620,7 @@ Java Thread -&gt; OS Thread
           <li>解释执行让程序可以快速启动并保持动态能力。</li>
           <li>JIT 根据运行时 profiling 信息优化热点路径，例如方法内联、逃逸分析、锁消除。</li>
         </ul>
+        <p>GraalVM Native Image ：构建时提前把 Java 应用编译成本地可执行文件。</p>
       </section>
 
 <section id="jit-vs-aot">

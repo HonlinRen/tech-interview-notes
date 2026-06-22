@@ -224,18 +224,59 @@
     return lines.join("\n");
   }
 
+  const BLOCK_TAGS = new Set(["P", "UL", "OL", "PRE", "TABLE", "H3", "H4", "DIV"]);
+
+  function hasBlockChild(el) {
+    return Array.from(el.children).some(function (child) {
+      return BLOCK_TAGS.has(child.tagName);
+    });
+  }
+
+  function serializeInlineBlock(el, baseIndent) {
+    const inner = Array.from(el.childNodes).map(serializeInline).join("");
+    if (!inner.trim()) {
+      return "";
+    }
+    return baseIndent + "<p>" + inner + "</p>";
+  }
+
   function serializeBlock(el, baseIndent) {
     const tag = el.tagName;
     if (tag === "DIV") {
       if (el.children.length === 1 && el.firstElementChild && el.firstElementChild.tagName === "PRE") {
         return serializePre(el.firstElementChild, baseIndent);
       }
-      return Array.from(el.children)
+      if (!hasBlockChild(el)) {
+        return serializeInlineBlock(el, baseIndent);
+      }
+      const divResult = Array.from(el.children)
         .map(function (child) {
           return serializeBlock(child, baseIndent);
         })
         .filter(Boolean)
         .join("\n");
+      // #region agent log
+      if (!divResult && el.textContent.trim() && typeof fetch === "function") {
+        fetch("/api/debug-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: "5803c5",
+            location: "html-serializer.js:serializeBlock:div-empty",
+            message: "DIV serialized to empty",
+            data: {
+              text: el.textContent.trim().slice(0, 120),
+              childTags: Array.from(el.children).map(function (c) { return c.tagName + ":" + c.className; }),
+              inSection: (el.closest("section") || {}).id
+            },
+            hypothesisId: "A",
+            runId: "post-fix-2",
+            timestamp: Date.now()
+          })
+        }).catch(function () {});
+      }
+      // #endregion
+      return divResult;
     }
     if (tag === "P") {
       return serializeParagraph(el, baseIndent);
@@ -252,17 +293,35 @@
     if (tag === "UL" || tag === "OL") {
       return serializeList(el, tag.toLowerCase(), baseIndent);
     }
+    if (tag === "SPAN" || tag === "MARK") {
+      return serializeInlineBlock(el, baseIndent);
+    }
+    if (!hasBlockChild(el) && el.textContent && el.textContent.trim()) {
+      return serializeInlineBlock(el, baseIndent);
+    }
     return "";
   }
 
   function getSectionContentNodes(section) {
     const answer = section.querySelector(":scope > .answer");
-    if (answer) {
-      return Array.from(answer.children);
-    }
-    return Array.from(section.children).filter(function (child) {
-      return !child.classList.contains("question-heading");
+    const container = answer || section;
+    const nodes = [];
+    Array.from(container.childNodes).forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent.trim()) {
+          nodes.push(node);
+        }
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      if (node.classList.contains("question-heading")) {
+        return;
+      }
+      nodes.push(node);
     });
+    return nodes;
   }
 
   function getSectionTitle(section) {
@@ -282,9 +341,34 @@
     const title = getSectionTitle(section);
     const blocks = getSectionContentNodes(section)
       .map(function (node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return "        <p>" + escapeHtml(node.textContent.trim()) + "</p>";
+        }
         return serializeBlock(node, "        ");
       })
       .filter(Boolean);
+
+    // #region agent log
+    if (id === "compile-and-interpret" && typeof fetch === "function") {
+      fetch("/api/debug-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "5803c5",
+          location: "html-serializer.js:serializeSection",
+          message: "Section node analysis",
+          data: {
+            elementChildCount: blocks.length,
+            blockTags: blocks.map(function (b) { return b.trim().slice(0, 40); }),
+            hasGraalVM: blocks.join("\n").indexOf("GraalVM") !== -1
+          },
+          hypothesisId: "B,G",
+          runId: "post-fix-2",
+          timestamp: Date.now()
+        })
+      }).catch(function () {});
+    }
+    // #endregion
 
     const lines = ['<section id="' + escapeHtml(id) + '">'];
     if (title) {

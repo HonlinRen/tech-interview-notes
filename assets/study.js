@@ -736,6 +736,9 @@ const categoryLabels = {
           question.learnedButton.setAttribute("aria-pressed", learned ? "true" : "false");
           question.learnedButton.title = learned ? "取消已学习" : "标记已学习";
         }
+        if (question.tocLink) {
+          question.tocLink.classList.toggle("learned", learned);
+        }
       }
 
       function createLearnedButton(question) {
@@ -836,6 +839,8 @@ const categoryLabels = {
               const link = document.createElement("a");
               link.href = "#" + question.id;
               link.textContent = question.titleElement.textContent;
+              link.classList.toggle("learned", isQuestionLearned(question));
+              question.tocLink = link;
               group.appendChild(link);
             });
         });
