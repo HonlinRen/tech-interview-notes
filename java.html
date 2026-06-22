@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Java / JVM 高频问题整理</title>
+  <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-category="java">
@@ -152,19 +153,19 @@ count++;</code></pre>
           <tbody>
             <tr><td>类型</td><td>JVM 关键字</td><td>JDK 类</td></tr>
             <tr><td>释放锁</td><td>自动释放</td><td>手动释放</td></tr>
-            <tr><td>可中断</td><td>不支持等待中断</td><td>支持</td></tr>
             <tr><td>尝试加锁</td><td>不支持</td><td>支持 <code>tryLock()</code></td></tr>
             <tr><td>公平锁</td><td>不支持配置</td><td>支持公平 / 非公平</td></tr>
-            <tr><td>条件队列</td><td>单一条件</td><td>多个 <code>Condition</code></td></tr>
-            <tr><td>使用复杂度</td><td>简单</td><td>更灵活但更容易写错</td></tr>
+            <tr><td>队列</td><td>/</td><td>支持</td></tr>
           </tbody>
         </table>
 
-        <pre><code class="language-java">public synchronized void method() {
+        <pre><code class="language-java">
+public synchronized void method() {
     // 临界区
 }</code></pre>
 
-        <pre><code class="language-java">private final ReentrantLock lock = new ReentrantLock();
+        <pre><code class="language-java">
+private final ReentrantLock lock = new ReentrantLock();
 
 public void method() {
     lock.lock();
@@ -173,14 +174,20 @@ public void method() {
     } finally {
         lock.unlock();
     }
-}</code></pre>
+}
+// 队列  ReentrantLock 可以创建多个条件队列
+private final ReentrantLock lock = new ReentrantLock();
+
+private final Condition notEmpty = lock.newCondition(); // 队列非空
+private final Condition notFull = lock.newCondition();  // 队列未满
+</code></pre>
 
         <p>一般优先使用 <code>synchronized</code>。需要尝试加锁、可中断锁、公平锁、多条件队列或复杂同步控制时，再使用 <code>ReentrantLock</code>。</p>
         <h3>选择建议</h3>
         <ul>
           <li>普通临界区保护、代码简单优先用 <code>synchronized</code>。</li>
           <li>需要 <code>tryLock()</code> 避免长时间等待，或需要等待可中断时，用 <code>ReentrantLock</code>。</li>
-          <li>需要多个条件队列，例如生产者消费者中“队列非空”和“队列未满”分别唤醒时，用 <code>Condition</code> 更合适。</li>
+          <li>需要多个条件队列，例如生产者消费者中“队列非空”和“队列未满”分别唤醒时，用 <code>ReentrantLock</code> 更合适。</li>
           <li>使用 <code>ReentrantLock</code> 必须在 <code>finally</code> 中释放锁，否则异常路径容易死锁。</li>
         </ul>
       </section>
@@ -289,6 +296,7 @@ public void method() {
 <section id="thread-pool-params">
         <h2>25. Java 线程池核心参数有哪些？</h2>
         <p><code>ThreadPoolExecutor</code> 通过线程数、队列和拒绝策略共同控制任务执行能力。核心参数不是孤立配置，而是决定“任务来了以后先创建线程、先排队，还是直接拒绝”。</p>
+        <p>线程池优先用核心线程处理任务；核心线程满了才放入队列；队列也满了才创建非核心线程；线程数达到最大线程数后再来任务，就触发拒绝策略。</p>
         <table>
           <thead>
             <tr>
@@ -300,8 +308,8 @@ public void method() {
           <tbody>
             <tr><td><code>corePoolSize</code></td><td>核心线程数</td><td>长期保留的基础处理能力。</td></tr>
             <tr><td><code>maximumPoolSize</code></td><td>最大线程数</td><td>队列满后还能扩展到的上限。</td></tr>
-            <tr><td><code>keepAliveTime</code></td><td>空闲线程存活时间</td><td>通常作用于非核心线程，也可配置核心线程超时。</td></tr>
             <tr><td><code>workQueue</code></td><td>任务队列</td><td>决定削峰能力，也决定任务堆积风险。</td></tr>
+            <tr><td><code>keepAliveTime</code></td><td>空闲线程存活时间</td><td>通常作用于非核心线程，也可配置核心线程超时。</td></tr>
             <tr><td><code>threadFactory</code></td><td>线程工厂</td><td>用于命名线程、设置优先级、异常处理等。</td></tr>
             <tr><td><code>handler</code></td><td>拒绝策略</td><td>线程数和队列都满时如何处理新任务。</td></tr>
           </tbody>
@@ -336,16 +344,16 @@ public void method() {
 
 <section id="threadlocal">
         <h2>27. ThreadLocal 原理和风险？</h2>
-        <p><code>ThreadLocal</code> 的作用是让每个线程拥有一份独立变量副本，避免多个线程共享同一个变量。常见场景包括用户上下文、traceId、租户信息、数据库连接、事务上下文等。</p>
+        <p><code>ThreadLocal</code> 的作用是让每个线程拥有一份独立变量副本，避免多个线程共享同一个变量。常见场景包括用户上下文、链路追踪traceId、数据库连接等。</p>
         <pre><code>Thread
 -> ThreadLocalMap
 -> Entry(ThreadLocal 弱引用, value 强引用)</code></pre>
         <p>它并不是把数据存在 <code>ThreadLocal</code> 对象里，而是存在当前线程的 <code>ThreadLocalMap</code> 中，<code>ThreadLocal</code> 只是访问这个 Map 的 key。</p>
         <h3>主要风险</h3>
         <ul>
-          <li>线程池线程会被复用，如果请求结束不清理，旧上下文可能污染下一个请求。</li>
-          <li><code>ThreadLocalMap</code> 的 key 是弱引用，但 value 是强引用；key 被回收后 value 仍可能留在线程里，造成内存泄漏。</li>
-          <li>异步执行或线程切换后，原线程的 ThreadLocal 值不会自动传递到新线程。</li>
+          <li> <span class="em-danger">污染</span>  线程池线程会被复用，如果请求结束不清理，旧上下文可能污染下一个请求。</li>
+          <li> <span class="em-danger">泄漏</span>  <code> ThreadLocalMap</code> 的 key 是弱引用，但 value 是强引用；key 被回收后 value 仍可能留在线程里，造成内存泄漏。</li>
+          <li> <span class="em-danger">异步无法使用</span> 异步执行或线程切换后，原线程的 ThreadLocal 值不会自动传递到新线程。</li>
         </ul>
         <pre><code class="language-java">try {
     context.set(userId);
@@ -379,7 +387,40 @@ public void method() {
             <tr><td>初始化</td><td>执行静态变量显式赋值和 <code>static</code> 代码块。</td></tr>
           </tbody>
         </table>
-        <p>类初始化通常发生在首次主动使用时，例如 <code>new</code> 对象、访问静态字段、调用静态方法、反射调用等。双亲委派模型可以避免核心类被重复或恶意替换，例如应用自定义的 <code>java.lang.String</code> 不应该覆盖 JDK 自带类。</p>
+        <p>类加载就是：把 class 搬进 JVM，检查一下，准备静态变量，执行 static 初始化，然后就能用了</p>
+
+        <p>类初始化通常发生在首次主动使用时，例如 <code>new</code> 对象、访问静态字段、调用静态方法、反射调用等。</p>
+        <p><span class="em-warn">双亲委派模型 </span>可以避免核心类被重复或恶意替换，例如应用自定义的 <code>java.lang.String</code> 不应该覆盖 JDK 自带类。</p>
+      </section>
+
+      <section id="classloaders">
+        <h2>170. 类加载器有哪些？</h2>
+        <p>常见类加载器包括 Bootstrap ClassLoader、Platform/Extension ClassLoader、Application ClassLoader 和自定义 ClassLoader。</p>
+        <ul>
+          <li>Bootstrap 加载 Java 核心类库。</li>
+          <li>Platform/Extension 加载平台扩展类库。</li>
+          <li>Application 加载应用 classpath/module-path 下的类，自定义加载器常用于隔离、热部署、插件化。</li>
+        </ul>
+      </section>
+
+<section id="parent-delegation">
+        <h2>171. 双亲委派模型解决什么问题？</h2>
+        <p>双亲委派模型指类加载器加载类时，先把请求委派给父加载器，父加载器无法加载时，子加载器才尝试加载。</p>
+        <ul>
+          <li>它保证 Java 核心类库优先由顶层加载器加载，避免应用伪造 <code>java.lang.String</code> 等核心类。</li>
+          <li>它能减少重复加载，保证同名核心类在 JVM 中的一致性。</li>
+          <li>SPI、OSGi、Tomcat、某些热部署框架会为了隔离或扩展打破部分委派规则。</li>
+        </ul>
+      </section>
+
+<section id="break-parent-delegation">
+        <h2>172. 如何打破双亲委派模型？</h2>
+        <p>打破双亲委派通常是让子加载器优先加载某些类，或通过线程上下文类加载器让父层代码反向使用子层实现。</p>
+        <ul>
+          <li>JDBC SPI 使用线程上下文类加载器加载厂商 Driver，实现由应用侧提供。</li>
+          <li>Tomcat 为每个 Web 应用提供独立 ClassLoader，使不同应用可以加载不同版本的依赖。</li>
+          <li>打破委派会带来类冲突、ClassCastException、依赖隔离复杂等问题，需要明确类加载边界。</li>
+        </ul>
       </section>
 
 <section id="gc-roots">
@@ -1045,35 +1086,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
         </ul>
       </section>
 
-<section id="classloaders">
-        <h2>170. 类加载器有哪些？</h2>
-        <p>常见类加载器包括 Bootstrap ClassLoader、Platform/Extension ClassLoader、Application ClassLoader 和自定义 ClassLoader。</p>
-        <ul>
-          <li>Bootstrap 加载 Java 核心类库。</li>
-          <li>Platform/Extension 加载平台扩展类库。</li>
-          <li>Application 加载应用 classpath/module-path 下的类，自定义加载器常用于隔离、热部署、插件化。</li>
-        </ul>
-      </section>
 
-<section id="parent-delegation">
-        <h2>171. 双亲委派模型解决什么问题？</h2>
-        <p>双亲委派模型指类加载器加载类时，先把请求委派给父加载器，父加载器无法加载时，子加载器才尝试加载。</p>
-        <ul>
-          <li>它保证 Java 核心类库优先由顶层加载器加载，避免应用伪造 <code>java.lang.String</code> 等核心类。</li>
-          <li>它能减少重复加载，保证同名核心类在 JVM 中的一致性。</li>
-          <li>SPI、OSGi、Tomcat、某些热部署框架会为了隔离或扩展打破部分委派规则。</li>
-        </ul>
-      </section>
-
-<section id="break-parent-delegation">
-        <h2>172. 如何打破双亲委派模型？</h2>
-        <p>打破双亲委派通常是让子加载器优先加载某些类，或通过线程上下文类加载器让父层代码反向使用子层实现。</p>
-        <ul>
-          <li>JDBC SPI 使用线程上下文类加载器加载厂商 Driver，实现由应用侧提供。</li>
-          <li>Tomcat 为每个 Web 应用提供独立 ClassLoader，使不同应用可以加载不同版本的依赖。</li>
-          <li>打破委派会带来类冲突、ClassCastException、依赖隔离复杂等问题，需要明确类加载边界。</li>
-        </ul>
-      </section>
 
 <section id="metaspace-method-area">
         <h2>173. 方法区和永久代、元空间是什么关系？</h2>
@@ -1332,8 +1345,10 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
       </section>
 </main>
   </div>
+  <script src="assets/highlight.min.js"></script>
   <script src="assets/study-legacy-map.js"></script>
   <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
 </body>
 </html>
 

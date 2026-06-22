@@ -664,3 +664,60 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
+    /* 正文重点样式：编辑 HTML 时直接使用 class，无需富文本编辑器 */
+    .em-key {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .em-warn {
+      color: #b45309;
+      font-weight: 600;
+    }
+
+    .em-danger {
+      color: #b91c1c;
+      font-weight: 600;
+    }
+
+    .em-ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    .em-muted {
+      color: var(--muted);
+    }
+
+    .em-accent {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    body.dark .em-warn {
+      color: #fbbf24;
+    }
+
+    body.dark .em-danger {
+      color: #f87171;
+    }
+
+    body.dark .em-ok {
+      color: #5eead4;
+    }
+
+    /* Highlight.js：与现有 pre 代码块样式对齐 */
+    pre code.hljs {
+      display: block;
+      overflow-x: auto;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    code.hljs {
+      padding: 0;
+      background: transparent;
+      font-size: inherit;
+    }
