@@ -19,50 +19,78 @@ const ALLOWED_FILES = new Set([
   "security.html"
 ]);
 
+const CATEGORY_TO_FILE = {
+  python: "python.html",
+  java: "java.html",
+  spring: "spring.html",
+  mysql: "mysql.html",
+  redis: "redis.html",
+  rocketmq: "rocketmq.html",
+  "docker-k8s": "docker-k8s.html",
+  ai: "ai.html",
+  architecture: "architecture.html",
+  observability: "observability.html",
+  security: "security.html"
+};
+
 const app = express();
 app.use(express.json({ limit: "20mb" }));
 
-app.post("/api/save", function (req, res) {
-  const file = req.body && req.body.file;
-  const sections = req.body && req.body.sections;
-
-  if (!file || typeof file !== "string" || !ALLOWED_FILES.has(file)) {
-    res.status(400).json({ ok: false, error: "Invalid file" });
-    return;
-  }
-
-  if (!sections || typeof sections !== "string") {
-    res.status(400).json({ ok: false, error: "Missing sections HTML" });
-    return;
-  }
-
-  const filePath = path.join(ROOT, file);
-  if (!fs.existsSync(filePath)) {
-    res.status(404).json({ ok: false, error: "File not found" });
-    return;
-  }
-
-  let html = fs.readFileSync(filePath, "utf8");
-  const mainMatch = html.match(/<main>([\s\S]*?)<\/main>/i);
-  if (!mainMatch) {
-    res.status(400).json({ ok: false, error: "No <main> found" });
-    return;
-  }
-
-  const mainInner = mainMatch[1];
-  const emptyStateMatch = mainInner.match(/([\s\S]*?<div id="emptyState"[^>]*>[\s\S]*?<\/div>)/i);
-  if (!emptyStateMatch) {
-    res.status(400).json({ ok: false, error: "No emptyState div found" });
-    return;
-  }
-
-  const prefix = emptyStateMatch[1];
-  const trimmedSections = sections.replace(/^\s+|\s+$/g, "");
-  const newMainInner = prefix + "\n\n" + trimmedSections + "\n";
-  html = html.replace(/<main>[\s\S]*?<\/main>/i, "<main>" + newMainInner + "</main>");
-
-  fs.writeFileSync(filePath, html, "utf8");
+app.get("/api/editor-health", function (req, res) {
   res.json({ ok: true });
+});
+
+app.get("/favicon.ico", function (req, res) {
+  res.type("image/svg+xml");
+  res.sendFile(path.join(ROOT, "assets", "favicon.svg"));
+});
+
+app.post("/api/save", function (req, res) {
+  try {
+    const file = req.body && req.body.file;
+    const sections = req.body && req.body.sections;
+
+    if (!file || typeof file !== "string" || !ALLOWED_FILES.has(file)) {
+      res.status(400).json({ ok: false, error: "Invalid file: " + String(file) });
+      return;
+    }
+
+    if (!sections || typeof sections !== "string") {
+      res.status(400).json({ ok: false, error: "Missing sections HTML" });
+      return;
+    }
+
+    const filePath = path.join(ROOT, file);
+    if (!fs.existsSync(filePath)) {
+      res.status(404).json({ ok: false, error: "File not found: " + file });
+      return;
+    }
+
+    let html = fs.readFileSync(filePath, "utf8");
+    const mainMatch = html.match(/<main>([\s\S]*?)<\/main>/i);
+    if (!mainMatch) {
+      res.status(400).json({ ok: false, error: "No <main> found" });
+      return;
+    }
+
+    const mainInner = mainMatch[1];
+    const emptyStateMatch = mainInner.match(/([\s\S]*?<div id="emptyState"[^>]*>[\s\S]*?<\/div>)/i);
+    if (!emptyStateMatch) {
+      res.status(400).json({ ok: false, error: "No emptyState div found" });
+      return;
+    }
+
+    const prefix = emptyStateMatch[1];
+    const trimmedSections = sections.replace(/^\s+|\s+$/g, "");
+    const newMainInner = prefix + "\n\n" + trimmedSections + "\n";
+    html = html.replace(/<main>[\s\S]*?<\/main>/i, "<main>" + newMainInner + "</main>");
+
+    fs.writeFileSync(filePath, html, "utf8");
+    res.json({ ok: true, file: file });
+  } catch (error) {
+    console.error("[save]", error);
+    res.status(500).json({ ok: false, error: error.message || "Server write failed" });
+  }
 });
 
 app.use(express.static(ROOT));

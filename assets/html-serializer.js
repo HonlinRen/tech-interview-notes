@@ -62,6 +62,45 @@
   }
 
   function serializeParagraph(p, baseIndent) {
+    const lists = Array.from(p.children).filter(function (el) {
+      return el.tagName === "UL" || el.tagName === "OL";
+    });
+    if (lists.length > 0) {
+      const parts = [];
+      Array.from(p.childNodes).forEach(function (node) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          if (node.tagName === "UL" || node.tagName === "OL") {
+            parts.push(serializeList(node, node.tagName.toLowerCase(), baseIndent));
+            return;
+          }
+          parts.push(serializeInline(node));
+          return;
+        }
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+          parts.push(baseIndent + "<p>" + escapeHtml(node.textContent) + "</p>");
+        }
+      });
+      return parts.filter(Boolean).join("\n");
+    }
+
+    const code = p.querySelector(":scope > code");
+    if (code) {
+      const onlyCode = Array.from(p.childNodes).every(function (node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return !node.textContent.trim();
+        }
+        return node === code;
+      });
+      if (onlyCode) {
+        const text = code.textContent.replace(/\r\n/g, "\n");
+        if (text.indexOf("\n") !== -1 || text.length >= 120) {
+          const langMatch = code.className.match(/language-([\w+-]+)/);
+          const langClass = langMatch ? ' class="language-' + langMatch[1] + '"' : "";
+          return baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text) + "</code></pre>";
+        }
+      }
+    }
+
     const inner = Array.from(p.childNodes).map(serializeInline).join("");
     return baseIndent + "<p>" + inner + "</p>";
   }
@@ -187,6 +226,17 @@
 
   function serializeBlock(el, baseIndent) {
     const tag = el.tagName;
+    if (tag === "DIV") {
+      if (el.children.length === 1 && el.firstElementChild && el.firstElementChild.tagName === "PRE") {
+        return serializePre(el.firstElementChild, baseIndent);
+      }
+      return Array.from(el.children)
+        .map(function (child) {
+          return serializeBlock(child, baseIndent);
+        })
+        .filter(Boolean)
+        .join("\n");
+    }
     if (tag === "P") {
       return serializeParagraph(el, baseIndent);
     }

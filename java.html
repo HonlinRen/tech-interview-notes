@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <title>Java / JVM 高频问题整理</title>
   <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
@@ -57,14 +58,16 @@
 - 本地方法栈
 - 程序计数器</code></pre>
         <h3>堆</h3>
-        <p>存放对象实例，是垃圾回收的主要区域。</p>
+        <p><span class="em-warn">存放对象实例</span>，是垃圾回收的主要区域。</p>
         <pre><code class="language-java">User user = new User();</code></pre>
         <h3>方法区 / 元空间</h3>
         <p>存放类信息、常量、静态变量、方法元数据等。JDK 8 之后，方法区的实现主要是 Metaspace 元空间，使用本地内存。</p>
         <h3>虚拟机栈</h3>
         <p>每个线程私有。每次方法调用都会创建一个栈帧，包含局部变量表、操作数栈、方法返回地址、动态链接等。</p>
         <h3>本地方法栈与程序计数器</h3>
-        <p>本地方法栈用于执行 Native 方法。程序计数器记录当前线程执行到哪一条字节码指令。</p>
+        <ul>
+          <li>本地方法栈用于执行 Native 方法。程序计数器记录当前线程执行到哪一条字节码指令。</li>
+        </ul>
       </section>
 
 <section id="jvm-heap">
@@ -392,18 +395,25 @@ private final Condition notFull = lock.newCondition();  // 队列未满
 <section id="parent-delegation">
         <h2>双亲委派模型解决什么问题？</h2>
         <p>双亲委派模型指类加载器加载类时，先把请求委派给父加载器，父加载器无法加载时，子加载器才尝试加载。</p>
-        <p>自定义 ClassLoader</p>
-        <p>   ↓ 先委托</p>
-        <p>AppClassLoader</p>
-        <p>   ↓ 先委托</p>
-        <p>Platform/ExtClassLoader</p>
-        <p>   ↓ 先委托</p>
-        <p>BootstrapClassLoader</p>
-        <p>父加载器找不到，子加载器才自己加载</p>
+        <pre><code class="language-cpp">BootstrapClassLoader
+
+↑委托   ↓ 加载  
+
+ExtClassLoader
+
+↑委托   ↓ 加载  
+
+AppClassLoader
+
+↑委托   ↓ 加载  
+
+自定义 ClassLoader  
+
+// 向上委托 向下加载
+// 父加载器找不到，子加载器才自己加载</code></pre>
         <ul>
-          <li>它保证 Java 核心类库优先由顶层加载器加载，避免应用伪造 <code>java.lang.String</code> 等核心类。</li>
-          <li>它能减少重复加载，保证同名核心类在 JVM 中的一致性。</li>
-          <li>SPI、Tomcat、某些热部署框架会为了隔离或扩展打破部分委派规则。</li>
+          <li><span class="em-warn">安全性 </span>它保证 Java 核心类库优先由顶层加载器加载，避免应用伪造 <code>java.lang.String</code> 等核心类。</li>
+          <li><span class="em-warn">高效性</span> 它能减少重复加载，保证同名核心类在 JVM 中的一致性。</li>
         </ul>
       </section>
 
@@ -413,13 +423,14 @@ private final Condition notFull = lock.newCondition();  // 队列未满
         <ul>
           <li>JDBC SPI 使用线程上下文类加载器加载厂商 Driver，实现由应用侧提供。</li>
           <li>Tomcat 为每个 Web 应用提供独立 ClassLoader，使不同应用可以加载不同版本的依赖。</li>
-          <li>打破委派会带来类冲突、ClassCastException、依赖隔离复杂等问题，需要明确类加载边界。</li>
         </ul>
       </section>
 
 <section id="gc-roots">
         <h2>Java 常见 GC Roots 有哪些？</h2>
-        <p>JVM 判断对象是否存活主要使用可达性分析：从一组根对象 GC Roots 出发，沿引用链向下搜索；能够被搜索到的对象是可达的，不可达对象才可能被回收。</p>
+        <p>JVM 判断对象是否存活主要使用可达性分析：</p>
+        <p>从一组根对象 GC Roots 出发，沿引用链向下搜索；</p>
+        <p>能够被搜索到的对象是可达的，不可达对象才可能被回收。</p>
         <table>
           <thead>
             <tr>
@@ -436,7 +447,8 @@ private final Condition notFull = lock.newCondition();  // 队列未满
             <tr><td>JVM 内部引用</td><td>系统类加载器、异常对象、基础类元数据等。</td></tr>
           </tbody>
         </table>
-        <p>注意“不可达”不等于立刻回收。对象如果重写了 <code>finalize()</code>，历史版本中还可能经历一次终结机会；现代 Java 中不推荐依赖 finalize，资源释放应使用 <code>try-with-resources</code> 或显式关闭。</p>
+        <p>注意“不可达”不等于立刻回收。对象如果重写了 <code>finalize()</code>，历史版本中还可能经历一次终结机会；</p>
+        <p>现代 Java 中不推荐依赖 finalize，资源释放应使用 <code>try-with-resources</code> 或显式关闭。</p>
       </section>
 
 <section id="virtual-threads">
@@ -535,6 +547,7 @@ Java Thread -&gt; OS Thread
           <li>面向对象：封装、继承、多态是核心抽象方式，接口和抽象类常用于解耦。</li>
           <li>跨平台：源码编译成字节码，字节码运行在不同平台的 JVM 上。</li>
           <li>工程生态成熟：Spring、Netty、Dubbo、MyBatis、JVM 诊断工具链都非常完善。</li>
+          <li>高并发 多线程 事务支持</li>
         </ul>
       </section>
 

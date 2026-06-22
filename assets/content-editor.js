@@ -1,5 +1,18 @@
 (function () {
   const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+  const CATEGORY_TO_FILE = {
+    python: "python.html",
+    java: "java.html",
+    spring: "spring.html",
+    mysql: "mysql.html",
+    redis: "redis.html",
+    rocketmq: "rocketmq.html",
+    "docker-k8s": "docker-k8s.html",
+    ai: "ai.html",
+    architecture: "architecture.html",
+    observability: "observability.html",
+    security: "security.html"
+  };
   const CODE_LANGUAGES = [
     { value: "", label: "无高亮" },
     { value: "java", label: "Java" },
@@ -18,7 +31,9 @@
 
   const state = {
     editing: false,
-    activePre: null
+    activePre: null,
+    savedRange: null,
+    lastEditable: null
   };
 
   const studyTools = document.querySelector(".study-tools");
@@ -32,21 +47,19 @@
   sidebarControls.className = "editor-sidebar-controls";
   sidebarControls.innerHTML =
     '<button type="button" class="tool-btn editor-sidebar-btn" data-action="edit-primary">编辑模式</button>' +
-    '<button type="button" class="tool-btn editor-sidebar-btn editor-sidebar-edit-only" data-action="cancel" hidden>取消</button>' +
-    '<div class="editor-sidebar-tools" hidden>' +
+    '<button type="button" class="tool-btn editor-sidebar-btn editor-sidebar-edit-only" data-action="cancel">取消</button>' +
+    '<div class="editor-sidebar-tools">' +
     '<div class="editor-sidebar-tools-row">' +
     '<button type="button" class="tool-btn editor-format-btn" data-action="bold"><strong>B</strong></button>' +
     '<button type="button" class="tool-btn editor-format-btn" data-action="highlight">高亮</button>' +
     '<button type="button" class="tool-btn editor-format-btn em-orange-preview" data-action="orange">橙色</button>' +
-    '<button type="button" class="tool-btn editor-format-btn" data-action="strike"><del>删</del></button>' +
+    '<button type="button" class="tool-btn editor-format-btn" data-action="bullet">标题点</button>' +
     "</div>" +
     '<div class="editor-sidebar-tools-row">' +
-    '<button type="button" class="tool-btn editor-format-btn editor-code-btn" data-action="insert-code-python">+Py</button>' +
-    '<button type="button" class="tool-btn editor-format-btn editor-code-btn" data-action="insert-code-java">+Java</button>' +
-    '<button type="button" class="tool-btn editor-format-btn editor-code-btn" data-action="insert-code-sql">+SQL</button>' +
+    '<button type="button" class="tool-btn editor-format-btn editor-code-btn editor-code-btn-full" data-action="insert-code">Code</button>' +
     "</div>" +
     "</div>" +
-    '<button type="button" class="tool-btn editor-sidebar-btn editor-sidebar-edit-only" data-action="save-exit" hidden>保存并退出</button>' +
+    '<button type="button" class="tool-btn editor-sidebar-btn editor-sidebar-edit-only" data-action="save-exit">保存并退出</button>' +
     '<span class="editor-sidebar-status" aria-live="polite"></span>';
   homeLink.insertAdjacentElement("afterend", sidebarControls);
 
@@ -145,15 +158,234 @@
     return element.closest(".answer[contenteditable='true'], h2[contenteditable='true']");
   }
 
-  function insertCodeBlock(lang) {
+  function protectCodeBlocks(root) {
+    root.querySelectorAll("pre").forEach(function (pre) {
+      pre.contentEditable = "false";
+    });
+  }
+
+  function normalizeCodeBlocks(root) {
+    root.querySelectorAll("div").forEach(function (div) {
+      if (div.children.length === 1 && div.firstElementChild && div.firstElementChild.tagName === "PRE") {
+        div.replaceWith(div.firstElementChild);
+      }
+    });
+
+    root.querySelectorAll("p").forEach(function (p) {
+      const code = p.querySelector(":scope > code");
+      if (!code) {
+        return;
+      }
+      const onlyInline = Array.from(p.childNodes).every(function (node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return !node.textContent.trim();
+        }
+        return node === code;
+      });
+      if (!onlyInline) {
+        return;
+      }
+      const text = code.textContent.replace(/\r\n/g, "\n");
+      if (text.indexOf("\n") === -1 && text.length < 120) {
+        return;
+      }
+
+      const pre = document.createElement("pre");
+      const newCode = document.createElement("code");
+      newCode.className = code.className || "";
+      if (!newCode.className && langSelect.value) {
+        newCode.className = "language-" + langSelect.value;
+      }
+      newCode.textContent = text;
+      pre.contentEditable = "false";
+      pre.appendChild(newCode);
+      p.replaceWith(pre);
+    });
+  }
+
+  function normalizeLists(root) {
+    Array.from(root.querySelectorAll("p")).forEach(function (p) {
+      const lists = Array.from(p.children).filter(function (el) {
+        return el.tagName === "UL" || el.tagName === "OL";
+      });
+      if (lists.length === 0) {
+        return;
+      }
+      lists.forEach(function (list) {
+        p.parentNode.insertBefore(list, p.nextSibling);
+      });
+      const hasContent = Array.from(p.childNodes).some(function (node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return node.textContent.trim();
+        }
+        return node.nodeType === Node.ELEMENT_NODE;
+      });
+      if (!hasContent) {
+        p.remove();
+      }
+    });
+
+    root.querySelectorAll("div").forEach(function (div) {
+      if (div.children.length === 1) {
+        const child = div.firstElementChild;
+        if (child && (child.tagName === "UL" || child.tagName === "OL")) {
+          div.replaceWith(child);
+        }
+      }
+    });
+
+    root.querySelectorAll("li > div:only-child, li > p:only-child").forEach(function (wrapper) {
+      const li = wrapper.parentElement;
+      if (!li || li.tagName !== "LI") {
+        return;
+      }
+      while (wrapper.firstChild) {
+        li.insertBefore(wrapper.firstChild, wrapper);
+      }
+      wrapper.remove();
+    });
+  }
+
+  function captureSelection() {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    if (getEditableContainer(range.commonAncestorContainer)) {
+      state.savedRange = range.cloneRange();
+    }
+  }
+
+  function restoreSelection() {
+    if (!state.savedRange) {
+      return false;
+    }
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(state.savedRange);
+    return true;
+  }
+
+  function focusEditable(editable) {
+    if (!editable) {
+      return;
+    }
+    editable.focus();
+    const selection = window.getSelection();
+    if (!state.savedRange || !editable.contains(state.savedRange.commonAncestorContainer)) {
+      const range = document.createRange();
+      range.selectNodeContents(editable);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      state.savedRange = range.cloneRange();
+      return;
+    }
+    restoreSelection();
+  }
+
+  function placeCaret(node) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    state.savedRange = range.cloneRange();
+  }
+
+  function getActiveEditable() {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const editable = getEditableContainer(selection.getRangeAt(0).commonAncestorContainer);
+      if (editable) {
+        return editable;
+      }
+    }
+    if (state.savedRange) {
+      return getEditableContainer(state.savedRange.commonAncestorContainer);
+    }
+    return state.lastEditable;
+  }
+
+  function insertBulletListManual(editable) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return false;
+    }
+
+    const range = selection.getRangeAt(0);
+    let node = range.commonAncestorContainer;
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentElement;
+    }
+
+    const currentLi = node && node.closest("li");
+    const currentList = currentLi && currentLi.closest("ul, ol");
+
+    if (currentList && editable.contains(currentList)) {
+      const newLi = document.createElement("li");
+      newLi.appendChild(document.createElement("br"));
+      currentLi.insertAdjacentElement("afterend", newLi);
+      placeCaret(newLi);
+      return true;
+    }
+
+    const ul = document.createElement("ul");
+    const li = document.createElement("li");
+    if (!range.collapsed) {
+      li.appendChild(range.extractContents());
+    } else {
+      li.appendChild(document.createElement("br"));
+    }
+    ul.appendChild(li);
+
+    const blockP = node && node.closest("p");
+    if (blockP && editable.contains(blockP) && blockP.parentElement === editable) {
+      blockP.insertAdjacentElement("afterend", ul);
+    } else {
+      range.collapse(true);
+      range.insertNode(ul);
+    }
+
+    const paragraph = document.createElement("p");
+    paragraph.appendChild(document.createElement("br"));
+    ul.insertAdjacentElement("afterend", paragraph);
+    placeCaret(li);
+    return true;
+  }
+
+  function insertBulletList() {
+    const editable = getActiveEditable();
+    if (!editable) {
       setStatus("请先将光标放在可编辑区域", true);
       return;
     }
 
-    const editable = getEditableContainer(selection.anchorNode);
+    focusEditable(editable);
+
+    const executed = document.execCommand("insertUnorderedList");
+    if (!executed) {
+      insertBulletListManual(editable);
+    }
+    normalizeLists(editable);
+
+    captureSelection();
+    setStatus("");
+  }
+
+  function insertCodeBlock() {
+    const editable = getActiveEditable();
     if (!editable) {
+      setStatus("请先将光标放在可编辑区域", true);
+      return;
+    }
+
+    focusEditable(editable);
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
       setStatus("请先将光标放在可编辑区域", true);
       return;
     }
@@ -162,9 +394,9 @@
     range.deleteContents();
 
     const pre = document.createElement("pre");
+    pre.contentEditable = "false";
     const code = document.createElement("code");
-    code.className = "language-" + lang;
-    code.textContent = "\n";
+    code.textContent = "";
     pre.appendChild(code);
 
     const paragraph = document.createElement("p");
@@ -175,19 +407,7 @@
     fragment.appendChild(paragraph);
     range.insertNode(fragment);
 
-    if (window.hljs) {
-      delete code.dataset.highlighted;
-      code.removeAttribute("data-highlighted");
-      window.hljs.highlightElement(code);
-    }
-
-    const textNode = document.createTextNode("");
-    code.appendChild(textNode);
-    const cursorRange = document.createRange();
-    cursorRange.setStart(textNode, 0);
-    cursorRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(cursorRange);
+    openCodePanel(pre);
     setStatus("");
   }
 
@@ -195,9 +415,6 @@
     state.editing = enabled;
     document.body.classList.toggle("edit-mode", enabled);
     primaryBtn.hidden = enabled;
-    cancelBtn.hidden = !enabled;
-    saveExitBtn.hidden = !enabled;
-    sidebarTools.hidden = !enabled;
 
     getSections().forEach(function (section) {
       const answer = getSectionAnswer(section);
@@ -210,6 +427,12 @@
       }
       section.classList.toggle("editor-section-active", enabled);
       if (enabled) {
+        const answer = getSectionAnswer(section);
+        if (answer) {
+          normalizeCodeBlocks(answer);
+          normalizeLists(answer);
+          protectCodeBlocks(answer);
+        }
         attachTableControls(section);
       } else {
         detachTableControls(section);
@@ -354,6 +577,7 @@
 
     code.textContent = codeTextarea.value.replace(/\r\n/g, "\n");
     setCodeLanguage(code, langSelect.value);
+    state.activePre.contentEditable = "false";
 
     if (window.hljs) {
       delete code.dataset.highlighted;
@@ -365,45 +589,138 @@
   }
 
   function currentPageFile() {
-    const parts = window.location.pathname.split("/");
-    return parts[parts.length - 1] || "index.html";
+    const fromPath = window.location.pathname.split("/").filter(Boolean).pop() || "";
+    if (Object.values(CATEGORY_TO_FILE).includes(fromPath)) {
+      return fromPath;
+    }
+    const category = document.body.dataset.category;
+    if (category && CATEGORY_TO_FILE[category]) {
+      return CATEGORY_TO_FILE[category];
+    }
+    return fromPath;
+  }
+
+  function formatSaveError(error, response, rawBody) {
+    const message = error && error.message ? error.message : "保存失败";
+    if (error && error.name === "TypeError" && /fetch|network|failed/i.test(message)) {
+      return (
+        "无法连接保存服务。请确认：1) 终端已运行 npm run dev；2) 地址栏是 http://localhost:3000/" +
+        (currentPageFile() || "java.html") +
+        "（不要用 Live Server 或其他端口）"
+      );
+    }
+    if (response && !response.ok && rawBody) {
+      try {
+        const payload = JSON.parse(rawBody);
+        if (payload.error) {
+          return payload.error;
+        }
+      } catch (parseError) {
+        return "服务器返回异常 HTTP " + response.status + "，请确认使用 npm run dev 打开的页面";
+      }
+    }
+    if (/unexpected token|json/i.test(message)) {
+      return "服务器返回异常，请确认使用 npm run dev 打开的 http://localhost:3000";
+    }
+    return message;
+  }
+
+  async function verifyEditorServer() {
+    try {
+      const response = await fetch("/api/editor-health", { method: "GET" });
+      if (!response.ok) {
+        return false;
+      }
+      const payload = await response.json();
+      return Boolean(payload && payload.ok);
+    } catch (error) {
+      return false;
+    }
   }
 
   async function savePage() {
     if (!window.HtmlSerializer) {
+      console.warn("[editor save] HtmlSerializer 未加载");
       setStatus("序列化模块未加载", true);
       return;
+    }
+
+    const pageFile = currentPageFile();
+    if (!pageFile || !Object.values(CATEGORY_TO_FILE).includes(pageFile)) {
+      console.warn("[editor save] 无法识别页面文件:", pageFile);
+      setStatus("无法识别当前页面文件：" + (pageFile || "(空)") + "，请从 http://localhost:3000/java.html 这类地址打开", true);
+      return;
+    }
+
+    if (!codePanel.hidden && state.activePre) {
+      applyCodePanel();
     }
 
     setStatus("保存中…");
     saveExitBtn.disabled = true;
 
     try {
+      getSections().forEach(function (section) {
+        const answer = getSectionAnswer(section);
+        if (answer) {
+          normalizeCodeBlocks(answer);
+          normalizeLists(answer);
+        }
+      });
+
+      let sectionsHtml;
+      try {
+        sectionsHtml = window.HtmlSerializer.serializeMainSections();
+      } catch (serializeError) {
+        throw new Error("内容序列化失败：" + (serializeError.message || serializeError));
+      }
+
+      if (!sectionsHtml.trim()) {
+        throw new Error("没有可保存的题目内容，请刷新页面后重试");
+      }
+
       const response = await fetch("/api/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          file: currentPageFile(),
-          sections: window.HtmlSerializer.serializeMainSections()
+          file: pageFile,
+          sections: sectionsHtml
         })
       });
 
-      const payload = await response.json();
-      if (!response.ok || !payload.ok) {
-        throw new Error((payload && payload.error) || "保存失败");
+      const rawBody = await response.text();
+      let payload = null;
+      try {
+        payload = rawBody ? JSON.parse(rawBody) : null;
+      } catch (parseError) {
+        throw new Error(formatSaveError(parseError, response, rawBody));
+      }
+
+      if (!response.ok || !payload || !payload.ok) {
+        throw new Error((payload && payload.error) || formatSaveError(new Error("保存失败"), response, rawBody));
       }
 
       setStatus("已保存，正在刷新…");
+      setEditMode(false);
       window.location.reload();
     } catch (error) {
-      setStatus(error.message || "保存失败", true);
+      console.error("[editor save]", error);
+      setStatus(formatSaveError(error), true);
       saveExitBtn.disabled = false;
     }
   }
 
   function handleEditorAction(action) {
     if (action === "edit-primary") {
-      setEditMode(true);
+      verifyEditorServer().then(function (ok) {
+        if (!ok) {
+          setStatus(
+            "保存服务未就绪。请运行 npm run dev，并访问 http://localhost:3000/" + (currentPageFile() || "java.html"),
+            true
+          );
+        }
+        setEditMode(true);
+      });
       return;
     }
     if (action === "save-exit") {
@@ -414,42 +731,89 @@
       window.location.reload();
       return;
     }
+
+    const editable = getActiveEditable();
+    if (editable) {
+      focusEditable(editable);
+    }
+
     if (action === "bold") {
       document.execCommand("bold");
+      captureSelection();
       return;
     }
     if (action === "highlight") {
       wrapSelection("mark");
+      captureSelection();
       return;
     }
     if (action === "orange") {
       wrapSelectionWithClass("span", "em-warn");
+      captureSelection();
       return;
     }
-    if (action === "strike") {
-      wrapSelection("del");
+    if (action === "bullet") {
+      insertBulletList();
       return;
     }
-    if (action === "insert-code-python") {
-      insertCodeBlock("python");
-      return;
-    }
-    if (action === "insert-code-java") {
-      insertCodeBlock("java");
-      return;
-    }
-    if (action === "insert-code-sql") {
-      insertCodeBlock("sql");
+    if (action === "insert-code") {
+      insertCodeBlock();
       return;
     }
   }
+
+  saveExitBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    handleEditorAction("save-exit");
+  });
+
+  cancelBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    handleEditorAction("cancel");
+  });
+
+  sidebarControls.addEventListener("mousedown", function (event) {
+    const button = event.target.closest("button[data-action]");
+    if (!button) {
+      return;
+    }
+    const action = button.dataset.action;
+    if (action === "edit-primary" || action === "save-exit" || action === "cancel") {
+      return;
+    }
+    event.preventDefault();
+  });
 
   sidebarControls.addEventListener("click", function (event) {
     const button = event.target.closest("button[data-action]");
     if (!button) {
       return;
     }
-    handleEditorAction(button.dataset.action);
+    const action = button.dataset.action;
+    if (action === "save-exit" || action === "cancel") {
+      return;
+    }
+    event.preventDefault();
+    handleEditorAction(action);
+  });
+
+  document.addEventListener("selectionchange", function () {
+    if (!state.editing) {
+      return;
+    }
+    captureSelection();
+  });
+
+  document.addEventListener("focusin", function (event) {
+    if (!state.editing) {
+      return;
+    }
+    const editable = event.target.closest(".answer[contenteditable='true'], h2[contenteditable='true']");
+    if (editable) {
+      state.lastEditable = editable;
+    }
   });
 
   codePanel.addEventListener("click", function (event) {
