@@ -116,10 +116,27 @@ body.edit-mode pre.editor-code-active {
 
 .editor-row-controls {
   width: 88px;
+  min-width: 88px;
+  max-width: 88px;
   white-space: nowrap;
   vertical-align: middle;
   background: var(--accent-soft);
   border-right: 1px solid var(--line);
+}
+
+.editor-row-controls-header {
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
+  padding: 10px 8px;
+  background: #f1f5f9;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+}
+
+body.dark .editor-row-controls-header {
+  background: #1f2937;
 }
 
 .editor-row-btn {
@@ -217,8 +234,24 @@ body.edit-mode pre.editor-code-active {
 
 .code-edit-actions {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  justify-content: flex-end;
+}
+
+.code-edit-actions-main {
+  display: flex;
+  gap: 8px;
+}
+
+.code-edit-delete:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+body.dark .code-edit-delete:hover {
+  border-color: #f87171;
+  color: #f87171;
 }
 
 body.dark .editor-row-controls {

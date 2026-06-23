@@ -9,6 +9,7 @@
     rocketmq: "rocketmq.html",
     "docker-k8s": "docker-k8s.html",
     ai: "ai.html",
+    llm: "llm.html",
     architecture: "architecture.html",
     observability: "observability.html",
     security: "security.html"
@@ -81,8 +82,11 @@
     '<label class="code-edit-label">语言<select class="code-edit-lang"></select></label>' +
     '<textarea class="code-edit-text" spellcheck="false"></textarea>' +
     '<div class="code-edit-actions">' +
+    '<button type="button" class="tool-btn code-edit-delete" data-action="delete-code">删除代码块</button>' +
+    '<div class="code-edit-actions-main">' +
     '<button type="button" class="tool-btn" data-action="apply-code">应用</button>' +
     '<button type="button" class="tool-btn" data-action="close-code">取消</button>' +
+    "</div>" +
     "</div>" +
     "</div>";
   document.body.appendChild(codePanel);
@@ -114,6 +118,10 @@
 
   function getSectionAnswer(section) {
     return section.querySelector(":scope > .answer");
+  }
+
+  function getSectionContentRoot(section) {
+    return getSectionAnswer(section) || section;
   }
 
   function wrapSelection(tagName) {
@@ -161,7 +169,336 @@
   function protectCodeBlocks(root) {
     root.querySelectorAll("pre").forEach(function (pre) {
       pre.contentEditable = "false";
+      ensureCodeBlockMetadata(pre);
     });
+  }
+
+  function ensureCodeBlockMetadata(pre) {
+    const code = pre.querySelector("code");
+    if (!code) {
+      return;
+    }
+    if (!pre.dataset.rawCode) {
+      pre.dataset.rawCode = code.textContent.replace(/\r\n/g, "\n");
+    }
+    if (!pre.dataset.codeLang) {
+      const lang = getCodeLanguage(pre);
+      if (lang) {
+        pre.dataset.codeLang = lang;
+      }
+    }
+  }
+
+  function markCodeBlockMetadata(pre, codeText, lang) {
+    pre.dataset.rawCode = codeText.replace(/\r\n/g, "\n");
+    if (lang) {
+      pre.dataset.codeLang = lang;
+    } else {
+      delete pre.dataset.codeLang;
+    }
+  }
+
+  function looksLikeCodeFragment(text) {
+    const line = text.trim();
+    if (!line) {
+      return false;
+    }
+    if (/^(&lt;|<)pre/i.test(line) || /^(&lt;|<)code/i.test(line)) {
+      return false;
+    }
+    if (/[\u4e00-\u9fff]/.test(line) && !/["'].*[\u4e00-\u9fff].*["']/.test(line)) {
+      return false;
+    }
+    return /[;{}()]/.test(line) || /^(import|public|private|protected|class|interface|enum|return|if|for|while|new|throw|try|catch|package|def|function|const|let|var|async|await|#include|using|namespace)\b/.test(line);
+  }
+
+  function looksLikeMergedCode(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      return false;
+    }
+    const lines = normalized.split("\n");
+    if (lines.length < 2) {
+      return false;
+    }
+    if (/^(import |public |private |class |interface |def |function |package |#include|using )/m.test(normalized)) {
+      return true;
+    }
+    return /[;{}]/.test(normalized) && lines.filter(looksLikeCodeFragment).length >= 2;
+  }
+
+  function extractCodeText(codeEl) {
+    if (!codeEl) {
+      return "";
+    }
+    const parts = [];
+    codeEl.childNodes.forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        parts.push(node.textContent);
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      const tag = node.tagName;
+      if (tag === "BR") {
+        parts.push("\n");
+        return;
+      }
+      if (tag === "DIV" || tag === "P") {
+        if (parts.length && !/\n$/.test(parts[parts.length - 1])) {
+          parts.push("\n");
+        }
+        parts.push(extractCodeText(node));
+        parts.push("\n");
+        return;
+      }
+      parts.push(node.textContent);
+    });
+    return parts.join("").replace(/\r\n/g, "\n").replace(/\n+$/, "");
+  }
+
+  function looksLikeSingleLineCodeBlock(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized || normalized.indexOf("\n") !== -1) {
+      return false;
+    }
+    const parts = normalized.split(";").map(function (part) {
+      return part.trim();
+    }).filter(Boolean);
+    return parts.length >= 2 && parts.filter(looksLikeCodeFragment).length >= 2;
+  }
+
+  function looksLikeStandaloneCodeStatement(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      return false;
+    }
+    const lines = normalized.split("\n").map(function (line) {
+      return line.trim();
+    }).filter(Boolean);
+    if (lines.length >= 2) {
+      return looksLikeMergedCode(lines.join("\n"));
+    }
+    const line = lines[0] || "";
+    if (looksLikeSingleLineCodeBlock(line)) {
+      return true;
+    }
+    return looksLikeCodeFragment(line) && /[;=]/.test(line) && line.length >= 15;
+  }
+
+  function shouldPromoteInlineCodeToPre(codeEl, text) {
+    if (!codeEl) {
+      return false;
+    }
+    if (/language-[\w+-]+/.test(codeEl.className || "")) {
+      return true;
+    }
+    if (codeEl.querySelector("br, div, p")) {
+      return true;
+    }
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (normalized.indexOf("\n") !== -1) {
+      const lines = normalized.split("\n").filter(function (line) {
+        return line.trim();
+      });
+      if (lines.length >= 2) {
+        return looksLikeMergedCode(normalized) || lines.filter(looksLikeCodeFragment).length >= 2;
+      }
+    }
+    return looksLikeStandaloneCodeStatement(normalized);
+  }
+
+  function createPreFromCodeText(text, lang, root) {
+    const resolvedLang = lang || inferCodeLangFromAnswer(root) || langSelect.value || "";
+    const pre = document.createElement("pre");
+    pre.contentEditable = "false";
+    const newCode = document.createElement("code");
+    if (resolvedLang) {
+      setCodeLanguage(newCode, resolvedLang);
+    }
+    newCode.textContent = text.replace(/\r\n/g, "\n").trim();
+    pre.appendChild(newCode);
+    markCodeBlockMetadata(pre, newCode.textContent, resolvedLang);
+    return pre;
+  }
+
+  function promoteInlineCodeParagraph(p, root) {
+    const code = p.querySelector(":scope > code");
+    if (!code) {
+      return false;
+    }
+    const onlyCode = Array.from(p.childNodes).every(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return !node.textContent.trim();
+      }
+      return node === code;
+    });
+
+    const text = onlyCode ? extractCodeText(code) : p.textContent.replace(/\r\n/g, "\n").trim();
+    if (!text || !shouldPromoteInlineCodeToPre(code, text)) {
+      return false;
+    }
+
+    const lang = getCodeLanguage(code) || inferCodeLangFromAnswer(root) || "";
+    p.replaceWith(createPreFromCodeText(text, lang, root));
+    return true;
+  }
+
+  function repairPartialInlineCodeParagraphs(root) {
+    Array.from(root.querySelectorAll("p")).forEach(function (p) {
+      if (p.querySelector("pre, ul, ol, table")) {
+        return;
+      }
+      const codes = p.querySelectorAll(":scope > code");
+      if (codes.length !== 1) {
+        return;
+      }
+      if (Array.from(p.childNodes).every(function (node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return !node.textContent.trim();
+        }
+        return node === codes[0];
+      })) {
+        return;
+      }
+      const text = p.textContent.replace(/\r\n/g, "\n").trim();
+      if (!looksLikeStandaloneCodeStatement(text)) {
+        return;
+      }
+      p.replaceWith(createPreFromCodeText(text, getCodeLanguage(codes[0]) || inferCodeLangFromAnswer(root), root));
+    });
+  }
+
+  function removeEmptyParagraphs(root) {
+    Array.from(root.querySelectorAll("p")).forEach(function (p) {
+      if (!p.textContent.trim() && !p.querySelector("img, pre, ul, ol, table, br")) {
+        p.remove();
+      }
+    });
+  }
+
+  function promoteInlineCodeBlocks(root) {
+    Array.from(root.querySelectorAll("p")).forEach(function (p) {
+      promoteInlineCodeParagraph(p, root);
+    });
+  }
+
+  function inferCodeLangFromAnswer(root) {
+    const coded = root.querySelector("pre code[class*='language-'], code[class*='language-']");
+    if (!coded) {
+      return "";
+    }
+    const match = coded.className.match(/language-([\w+-]+)/);
+    return match ? match[1] : "";
+  }
+
+  function normalizePlainTextCodeParagraphs(root) {
+    const fallbackLang = inferCodeLangFromAnswer(root);
+    Array.from(root.querySelectorAll("p")).forEach(function (p) {
+      if (p.querySelector("code, pre, ul, ol, table, h3, h4")) {
+        return;
+      }
+      const text = p.textContent.replace(/\r\n/g, "\n").trim();
+      if (!looksLikeMergedCode(text)) {
+        return;
+      }
+      const pre = document.createElement("pre");
+      pre.contentEditable = "false";
+      const code = document.createElement("code");
+      code.textContent = text;
+      setCodeLanguage(code, fallbackLang);
+      pre.appendChild(code);
+      markCodeBlockMetadata(pre, text, fallbackLang);
+      p.replaceWith(pre);
+    });
+  }
+
+  function repairSplitCodeParagraphs(root) {
+    const fallbackLang = inferCodeLangFromAnswer(root);
+    const nodes = Array.from(root.children);
+    let i = 0;
+    while (i < nodes.length) {
+      const node = nodes[i];
+      if (node.tagName !== "P") {
+        i += 1;
+        continue;
+      }
+
+      const run = [];
+      let j = i;
+      while (j < nodes.length && nodes[j].tagName === "P") {
+        const text = nodes[j].textContent.trim();
+        if (!text || !looksLikeCodeFragment(text)) {
+          break;
+        }
+        run.push(nodes[j]);
+        j += 1;
+      }
+
+      if (run.length >= 2) {
+        const codeText = run.map(function (p) {
+          return p.textContent.trim();
+        }).join("\n");
+        if (looksLikeMergedCode(codeText)) {
+          const pre = document.createElement("pre");
+          pre.contentEditable = "false";
+          const code = document.createElement("code");
+          code.textContent = codeText;
+          pre.appendChild(code);
+          markCodeBlockMetadata(pre, codeText, fallbackLang);
+          root.insertBefore(pre, run[0]);
+          run.forEach(function (p) {
+            p.remove();
+          });
+          nodes.splice(i, run.length, pre);
+          i += 1;
+          continue;
+        }
+      }
+      i += 1;
+    }
+  }
+
+  function restoreCodeBlocksFromData(root) {
+    root.querySelectorAll("pre").forEach(function (pre) {
+      const rawCode = pre.dataset.rawCode;
+      if (!rawCode) {
+        return;
+      }
+      let code = pre.querySelector("code");
+      if (!code) {
+        code = document.createElement("code");
+        pre.textContent = "";
+        pre.appendChild(code);
+      }
+      code.textContent = rawCode.replace(/\r\n/g, "\n");
+      const lang = pre.dataset.codeLang || getCodeLanguage(pre);
+      setCodeLanguage(code, lang);
+      pre.contentEditable = "false";
+    });
+  }
+
+  function prepareCodeBlocksForSave(root) {
+    promoteInlineCodeBlocks(root);
+    repairPartialInlineCodeParagraphs(root);
+    repairSplitCodeParagraphs(root);
+    normalizePlainTextCodeParagraphs(root);
+    restoreCodeBlocksFromData(root);
+    protectCodeBlocks(root);
+    root.querySelectorAll("pre code").forEach(function (code) {
+      const plain = code.textContent.replace(/\r\n/g, "\n");
+      code.textContent = plain;
+      const pre = code.closest("pre");
+      const lang = (pre && (pre.dataset.codeLang || getCodeLanguage(pre))) || inferCodeLangFromAnswer(root);
+      if (lang) {
+        setCodeLanguage(code, lang);
+        if (pre) {
+          pre.dataset.codeLang = lang;
+        }
+      }
+    });
+    removeEmptyParagraphs(root);
   }
 
   function normalizeCodeBlocks(root) {
@@ -171,36 +508,7 @@
       }
     });
 
-    root.querySelectorAll("p").forEach(function (p) {
-      const code = p.querySelector(":scope > code");
-      if (!code) {
-        return;
-      }
-      const onlyInline = Array.from(p.childNodes).every(function (node) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          return !node.textContent.trim();
-        }
-        return node === code;
-      });
-      if (!onlyInline) {
-        return;
-      }
-      const text = code.textContent.replace(/\r\n/g, "\n");
-      if (text.indexOf("\n") === -1 && text.length < 120) {
-        return;
-      }
-
-      const pre = document.createElement("pre");
-      const newCode = document.createElement("code");
-      newCode.className = code.className || "";
-      if (!newCode.className && langSelect.value) {
-        newCode.className = "language-" + langSelect.value;
-      }
-      newCode.textContent = text;
-      pre.contentEditable = "false";
-      pre.appendChild(newCode);
-      p.replaceWith(pre);
-    });
+    promoteInlineCodeBlocks(root);
   }
 
   function normalizeOrphanInlines(root) {
@@ -234,6 +542,46 @@
         timestamp: Date.now()
       })
     }).catch(function () {});
+  }
+
+  function debugLogCe(location, message, data, hypothesisId) {
+    const payload = {
+      sessionId: "ce29c0",
+      location: location,
+      message: message,
+      data: data,
+      hypothesisId: hypothesisId,
+      runId: "post-fix",
+      timestamp: Date.now()
+    };
+    fetch("/api/debug-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).catch(function () {});
+    fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
+      body: JSON.stringify(payload)
+    }).catch(function () {});
+  }
+
+  function scanCodeBlocks(root, label) {
+    if (!root) {
+      return [];
+    }
+    return Array.from(root.querySelectorAll("pre, p")).map(function (el) {
+      const code = el.querySelector("code");
+      return {
+        label: label,
+        tag: el.tagName,
+        className: el.className || "",
+        codeClass: code ? code.className : "",
+        textLen: (code || el).textContent.length,
+        newlineCount: (code || el).textContent.split("\n").length - 1,
+        outerSnippet: el.outerHTML.slice(0, 200)
+      };
+    });
   }
 
   function normalizeLists(root) {
@@ -462,6 +810,7 @@
     getSections().forEach(function (section) {
       const answer = getSectionAnswer(section);
       const h2 = getSectionH2(section);
+      const contentRoot = getSectionContentRoot(section);
       if (answer) {
         answer.contentEditable = enabled ? "true" : "false";
       }
@@ -470,13 +819,10 @@
       }
       section.classList.toggle("editor-section-active", enabled);
       if (enabled) {
-        const answer = getSectionAnswer(section);
-        if (answer) {
-          normalizeOrphanInlines(answer);
-          normalizeCodeBlocks(answer);
-          normalizeLists(answer);
-          protectCodeBlocks(answer);
-        }
+        normalizeOrphanInlines(contentRoot);
+        normalizeCodeBlocks(contentRoot);
+        normalizeLists(contentRoot);
+        protectCodeBlocks(contentRoot);
         attachTableControls(section);
       } else {
         detachTableControls(section);
@@ -489,8 +835,33 @@
     }
   }
 
+  function ensureTableHeaderSpacer(table) {
+    const thead = table.querySelector("thead");
+    if (!thead) {
+      return;
+    }
+    const headerRow = thead.querySelector(":scope > tr");
+    if (!headerRow || headerRow.querySelector(".editor-row-controls-header")) {
+      return;
+    }
+    const spacer = document.createElement("th");
+    spacer.className = "editor-row-controls-header";
+    spacer.setAttribute("aria-hidden", "true");
+    spacer.innerHTML = "&nbsp;";
+    headerRow.insertBefore(spacer, headerRow.firstChild);
+  }
+
+  function removeTableHeaderSpacer(table) {
+    table.querySelectorAll(".editor-row-controls-header").forEach(function (cell) {
+      cell.remove();
+    });
+  }
+
   function attachTableControls(section) {
     const root = getSectionAnswer(section) || section;
+    root.querySelectorAll("table").forEach(function (table) {
+      ensureTableHeaderSpacer(table);
+    });
     root.querySelectorAll("table tbody tr").forEach(function (row) {
       if (row.dataset.editorBound === "1") {
         return;
@@ -518,6 +889,9 @@
       if (controls) {
         controls.remove();
       }
+    });
+    root.querySelectorAll("table").forEach(function (table) {
+      removeTableHeaderSpacer(table);
     });
   }
 
@@ -576,12 +950,15 @@
     }
   }
 
-  function getCodeLanguage(pre) {
-    const code = pre.querySelector("code");
+  function getCodeLanguage(container) {
+    if (!container) {
+      return "";
+    }
+    const code = container.tagName === "CODE" ? container : container.querySelector("code");
     if (!code) {
       return "";
     }
-    const match = code.className.match(/language-([\w+-]+)/);
+    const match = (code.className || "").match(/language-([\w+-]+)/);
     return match ? match[1] : "";
   }
 
@@ -591,12 +968,23 @@
 
   function openCodePanel(pre) {
     state.activePre = pre;
+    ensureCodeBlockMetadata(pre);
     const code = pre.querySelector("code") || pre;
     codeTextarea.value = code.textContent.replace(/\r\n/g, "\n");
     langSelect.value = getCodeLanguage(pre);
     codePanel.hidden = false;
     codeTextarea.focus();
     pre.classList.add("editor-code-active");
+
+    // #region agent log
+    debugLogCe("content-editor.js:openCodePanel", "open code panel", {
+      preTag: pre.tagName,
+      codeClass: code.className || "",
+      langDetected: getCodeLanguage(pre),
+      newlineCount: code.textContent.split("\n").length - 1,
+      outerSnippet: pre.outerHTML.slice(0, 300)
+    }, "B,D");
+    // #endregion
   }
 
   function closeCodePanel() {
@@ -605,6 +993,14 @@
       state.activePre = null;
     }
     codePanel.hidden = true;
+  }
+
+  function deleteCodePanel() {
+    if (!state.activePre) {
+      return;
+    }
+    state.activePre.remove();
+    closeCodePanel();
   }
 
   function applyCodePanel() {
@@ -622,12 +1018,24 @@
     code.textContent = codeTextarea.value.replace(/\r\n/g, "\n");
     setCodeLanguage(code, langSelect.value);
     state.activePre.contentEditable = "false";
+    markCodeBlockMetadata(state.activePre, codeTextarea.value, langSelect.value);
 
     if (window.hljs) {
       delete code.dataset.highlighted;
       code.removeAttribute("data-highlighted");
       window.hljs.highlightElement(code);
     }
+
+    // #region agent log
+    debugLogCe("content-editor.js:applyCodePanel", "after apply", {
+      preTag: state.activePre.tagName,
+      codeClass: code.className,
+      langSelect: langSelect.value,
+      newlineCount: code.textContent.split("\n").length - 1,
+      childTags: Array.from(code.children).map(function (c) { return c.tagName; }),
+      outerSnippet: state.activePre.outerHTML.slice(0, 300)
+    }, "C,E");
+    // #endregion
 
     closeCodePanel();
   }
@@ -682,6 +1090,20 @@
     }
   }
 
+  function restoreCodeHighlighting() {
+    if (!window.hljs) {
+      return;
+    }
+    document.querySelectorAll("main pre code").forEach(function (code) {
+      if (!/language-[\w+-]+/.test(code.className)) {
+        return;
+      }
+      delete code.dataset.highlighted;
+      code.removeAttribute("data-highlighted");
+      window.hljs.highlightElement(code);
+    });
+  }
+
   async function savePage() {
     if (!window.HtmlSerializer) {
       console.warn("[editor save] HtmlSerializer 未加载");
@@ -717,13 +1139,35 @@
       }, "B,C,F,G");
       // #endregion
       getSections().forEach(function (section) {
-        const answer = getSectionAnswer(section);
-        if (answer) {
-          normalizeOrphanInlines(answer);
-          normalizeCodeBlocks(answer);
-          normalizeLists(answer);
-          normalizeOrphanInlines(answer);
+        const contentRoot = getSectionContentRoot(section);
+        // #region agent log
+        const beforeBlocks = scanCodeBlocks(contentRoot, section.id);
+        if (beforeBlocks.some(function (b) { return b.newlineCount > 2; })) {
+          debugLogCe("content-editor.js:savePage:before-repair", "blocks before repair", {
+            sectionId: section.id,
+            blocks: beforeBlocks
+          }, "A,E");
         }
+        // #endregion
+        normalizeOrphanInlines(contentRoot);
+        normalizeCodeBlocks(contentRoot);
+        normalizeLists(contentRoot);
+        normalizeOrphanInlines(contentRoot);
+        prepareCodeBlocksForSave(contentRoot);
+        // #region agent log
+        const finalBlocks = scanCodeBlocks(contentRoot, section.id);
+        if (
+          section.id === "Java-mul-thread" ||
+          beforeBlocks.some(function (b) { return b.newlineCount > 2; }) ||
+          finalBlocks.some(function (b) { return b.newlineCount > 2; })
+        ) {
+          debugLogCe("content-editor.js:savePage:final", "save pipeline final state", {
+            sectionId: section.id,
+            before: beforeBlocks,
+            final: finalBlocks
+          }, "A,E");
+        }
+        // #endregion
       });
 
       // #region agent log
@@ -742,13 +1186,30 @@
       }
 
       // #region agent log
-      const _dbgSection = window.HtmlSerializer.serializeSection(_dbgTarget);
-      debugLog("content-editor.js:savePage:after-serialize", "Serialized section", {
-        hasGraalVM: _dbgSection.indexOf("GraalVM") !== -1,
-        hasEmWarn: _dbgSection.indexOf("em-warn") !== -1,
-        hasMark: _dbgSection.indexOf("<mark>") !== -1,
-        sectionSnippet: _dbgSection.slice(-500)
-      }, "A,D,E,F,G");
+      getSections().forEach(function (section) {
+        const serialized = window.HtmlSerializer.serializeSection(section);
+        if (serialized.indexOf("CompletableFuture") !== -1 || serialized.indexOf("supplyAsync") !== -1) {
+          debugLogCe("content-editor.js:savePage:after-serialize", "serialized section with code", {
+            sectionId: section.id,
+            hasPre: serialized.indexOf("<pre>") !== -1,
+            hasLanguageJava: serialized.indexOf("language-java") !== -1,
+            pCodeCount: (serialized.match(/<p>[^<]*<code/g) || []).length,
+            snippet: serialized.slice(serialized.indexOf("CompletableFuture") - 80, serialized.indexOf("CompletableFuture") + 400)
+          }, "B,C");
+        }
+      });
+      // #endregion
+
+      // #region agent log
+      if (_dbgTarget) {
+        const _dbgSection = window.HtmlSerializer.serializeSection(_dbgTarget);
+        debugLog("content-editor.js:savePage:after-serialize", "Serialized section", {
+          hasGraalVM: _dbgSection.indexOf("GraalVM") !== -1,
+          hasEmWarn: _dbgSection.indexOf("em-warn") !== -1,
+          hasMark: _dbgSection.indexOf("<mark>") !== -1,
+          sectionSnippet: _dbgSection.slice(-500)
+        }, "A,D,E,F,G");
+      }
       // #endregion
 
       if (!sectionsHtml.trim()) {
@@ -781,6 +1242,7 @@
       window.location.reload();
     } catch (error) {
       console.error("[editor save]", error);
+      restoreCodeHighlighting();
       setStatus(formatSaveError(error), true);
       saveExitBtn.disabled = false;
     }
@@ -899,6 +1361,10 @@
     }
     if (button.dataset.action === "apply-code") {
       applyCodePanel();
+      return;
+    }
+    if (button.dataset.action === "delete-code") {
+      deleteCodePanel();
       return;
     }
     if (button.dataset.action === "close-code") {

@@ -120,6 +120,7 @@
         delayqueue: "java",
         "dense-vs-sparse": "ai",
         "dependency-management": "python",
+        "python3-major-versions": "python",
         deployment: "docker-k8s",
         deserialization: "security",
         "direct-memory-risk": "java",
@@ -213,6 +214,7 @@
         "index-speed": "mysql",
         "indirect-prompt-injection": "security",
         "infinite-loop": "ai",
+        "inference-acceleration": "llm",
         "innodb-engine": "mysql",
         "io-multiplexing": "java",
         "io-patterns": "java",
@@ -422,6 +424,7 @@
         "server-storage-layer": "mysql",
         service: "docker-k8s",
         "service-discovery": "architecture",
+        "sft-finetuning": "llm",
         "sft-rlhf-dpo": "ai",
         "sharding-pagination": "mysql",
         "sharding-when": "mysql",
@@ -516,7 +519,7 @@
         "zset-structure": "redis"
       };
 
-      const categoryOrder = ["python", "java", "spring", "mysql", "redis", "rocketmq", "docker-k8s", "ai", "architecture", "observability", "security"];
+      const categoryOrder = ["python", "java", "spring", "mysql", "redis", "rocketmq", "docker-k8s", "ai", "llm", "architecture", "observability", "security"];
 
             const categoryPages = {
         "python": "python.html",
@@ -527,6 +530,7 @@
         "rocketmq": "rocketmq.html",
         "docker-k8s": "docker-k8s.html",
         "ai": "ai.html",
+        "llm": "llm.html",
         "architecture": "architecture.html",
         "observability": "observability.html",
         "security": "security.html"
@@ -541,6 +545,7 @@ const categoryLabels = {
         rocketmq: "RocketMQ",
         "docker-k8s": "Docker / K8S",
         ai: "AI Agent / RAG",
+        llm: "大模型 / 推理与微调",
         architecture: "网关 / 架构",
         observability: "可观测性",
         security: "安全 / 鉴权"
@@ -548,6 +553,7 @@ const categoryLabels = {
 
       // 学习状态 v2：按「分类:题目id」存储，避免跨专题串数据。
       // 新增题目请使用全新 section id，并在 categoryBySection 注册，勿改历史 id。
+      const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
       const LEARNED_STORAGE_KEY = "study-learned-v2";
       const LEGACY_LEARNED_STORAGE_KEY = "study-learned-questions";
       const CROSS_PAGE_SECTION_IDS = ["capacity-planning"];
@@ -741,6 +747,254 @@ const categoryLabels = {
         }
       }
 
+      function getCurrentPageFile() {
+        const fromPath = window.location.pathname.split("/").filter(Boolean).pop() || "";
+        if (Object.values(categoryPages).includes(fromPath)) {
+          return fromPath;
+        }
+        if (currentCategory && categoryPages[currentCategory]) {
+          return categoryPages[currentCategory];
+        }
+        return fromPath;
+      }
+
+      async function savePageSections() {
+        if (!window.HtmlSerializer) {
+          throw new Error("序列化模块未加载");
+        }
+        const pageFile = getCurrentPageFile();
+        if (!pageFile || !Object.values(categoryPages).includes(pageFile)) {
+          throw new Error("无法识别当前页面文件，请通过 http://localhost:3000/ 访问");
+        }
+        const sectionsHtml = window.HtmlSerializer.serializeMainSections();
+        if (!sectionsHtml.trim()) {
+          throw new Error("没有可保存的题目内容");
+        }
+        const response = await fetch("/api/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file: pageFile,
+            sections: sectionsHtml
+          })
+        });
+        const rawBody = await response.text();
+        let payload = {};
+        try {
+          payload = JSON.parse(rawBody);
+        } catch (error) {
+          /* ignore malformed response */
+        }
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || "保存失败（HTTP " + response.status + "）");
+        }
+      }
+
+      function removeQuestionFromState(question) {
+        const key = questionStorageKey(question);
+        delete state.learned[key];
+        saveLearnedState();
+        const index = state.questions.indexOf(question);
+        if (index !== -1) {
+          state.questions.splice(index, 1);
+        }
+      }
+
+      async function deleteQuestion(question) {
+        const title = stripNumber(question.originalTitle);
+        if (!confirm("确定要删除题目「" + title + "」吗？")) {
+          return;
+        }
+
+        const section = question.container;
+        const parent = section.parentNode;
+        const nextSibling = section.nextSibling;
+        section.remove();
+
+        try {
+          await savePageSections();
+          removeQuestionFromState(question);
+          renumberQuestions();
+          renderToc();
+          renderCategoryStats();
+          applyFilter();
+        } catch (error) {
+          if (nextSibling) {
+            parent.insertBefore(section, nextSibling);
+          } else {
+            parent.appendChild(section);
+          }
+          const message = error && error.message ? error.message : "删除失败";
+          alert(
+            message +
+            "\n\n请确认已运行 npm run dev，并通过 http://localhost:3000/ 打开页面。"
+          );
+        }
+      }
+
+      const addQuestionDialogState = {
+        anchorQuestion: null,
+        panel: null,
+        sectionIdInput: null,
+        titleInput: null,
+        errorEl: null,
+        confirmBtn: null
+      };
+
+      function initAddQuestionDialog() {
+        if (addQuestionDialogState.panel) {
+          return;
+        }
+
+        const panel = document.createElement("div");
+        panel.className = "add-question-panel";
+        panel.hidden = true;
+        panel.innerHTML =
+          '<div class="add-question-dialog" role="dialog" aria-label="新增题目">' +
+          '<div class="add-question-header"><strong>新增题目</strong></div>' +
+          '<label class="add-question-label">sectionId<input class="add-question-input" type="text" autocomplete="off" placeholder="cpython-gc"></label>' +
+          '<label class="add-question-label">题目<input class="add-question-input" type="text" autocomplete="off" placeholder="CPython GC 机制"></label>' +
+          '<p class="add-question-error" aria-live="polite"></p>' +
+          '<div class="add-question-actions">' +
+          '<button type="button" class="tool-btn" data-action="cancel">取消</button>' +
+          '<button type="button" class="tool-btn add-question-confirm" data-action="confirm">确认添加</button>' +
+          "</div>" +
+          "</div>";
+        document.body.appendChild(panel);
+
+        addQuestionDialogState.panel = panel;
+        addQuestionDialogState.sectionIdInput = panel.querySelector(".add-question-input");
+        addQuestionDialogState.titleInput = panel.querySelectorAll(".add-question-input")[1];
+        addQuestionDialogState.errorEl = panel.querySelector(".add-question-error");
+        addQuestionDialogState.confirmBtn = panel.querySelector('[data-action="confirm"]');
+
+        panel.addEventListener("click", function (event) {
+          if (event.target === panel) {
+            closeAddQuestionDialog();
+          }
+        });
+
+        panel.querySelector('[data-action="cancel"]').addEventListener("click", closeAddQuestionDialog);
+
+        panel.querySelector('[data-action="confirm"]').addEventListener("click", function () {
+          submitAddQuestion();
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && addQuestionDialogState.panel && !addQuestionDialogState.panel.hidden) {
+            closeAddQuestionDialog();
+          }
+        });
+      }
+
+      function closeAddQuestionDialog() {
+        if (!addQuestionDialogState.panel) {
+          return;
+        }
+        addQuestionDialogState.panel.hidden = true;
+        addQuestionDialogState.anchorQuestion = null;
+        addQuestionDialogState.errorEl.textContent = "";
+      }
+
+      function openAddQuestionDialog(anchorQuestion) {
+        initAddQuestionDialog();
+        addQuestionDialogState.anchorQuestion = anchorQuestion;
+        addQuestionDialogState.sectionIdInput.value = "";
+        addQuestionDialogState.titleInput.value = "";
+        addQuestionDialogState.errorEl.textContent = "";
+        addQuestionDialogState.panel.hidden = false;
+        addQuestionDialogState.sectionIdInput.focus();
+      }
+
+      function isSectionIdTaken(sectionId) {
+        return Array.from(document.querySelectorAll("main > section")).some(function (section) {
+          return section.id === sectionId;
+        });
+      }
+
+      function validateAddQuestionInputs(sectionId, title) {
+        if (!sectionId) {
+          return "sectionId 不能为空";
+        }
+        if (!/^[a-zA-Z][\w-]*$/.test(sectionId)) {
+          return "sectionId 格式不合法，需以字母开头，仅含字母、数字、下划线、连字符";
+        }
+        if (isSectionIdTaken(sectionId)) {
+          return "sectionId「" + sectionId + "」在当前页已存在";
+        }
+        if (!title) {
+          return "题目不能为空";
+        }
+        return "";
+      }
+
+      async function addQuestionAfter(anchorQuestion, sectionId, title) {
+        const section = document.createElement("section");
+        section.id = sectionId;
+        section.innerHTML = "<h2>" + escapeHtml(title) + "</h2><p>待补充内容</p>";
+        anchorQuestion.container.insertAdjacentElement("afterend", section);
+
+        const newQuestion = enhanceQuestion(section);
+        if (!newQuestion) {
+          section.remove();
+          throw new Error("新题目创建失败");
+        }
+
+        const anchorIndex = state.questions.indexOf(anchorQuestion);
+        const insertIndex = anchorIndex === -1 ? state.questions.length : anchorIndex + 1;
+        state.questions.splice(insertIndex, 0, newQuestion);
+        categoryBySection[sectionId] = currentCategory;
+
+        try {
+          await savePageSections();
+          renumberQuestions();
+          renderToc();
+          renderCategoryStats();
+          applyFilter();
+          closeAddQuestionDialog();
+          requestAnimationFrame(function () {
+            newQuestion.container.scrollIntoView({ behavior: "smooth", block: "start" });
+            newQuestion.container.classList.add("search-hit");
+            window.setTimeout(function () {
+              newQuestion.container.classList.remove("search-hit");
+            }, 1400);
+          });
+        } catch (error) {
+          section.remove();
+          state.questions.splice(insertIndex, 1);
+          delete categoryBySection[sectionId];
+          throw error;
+        }
+      }
+
+      async function submitAddQuestion() {
+        const anchorQuestion = addQuestionDialogState.anchorQuestion;
+        if (!anchorQuestion) {
+          return;
+        }
+
+        const sectionId = addQuestionDialogState.sectionIdInput.value.trim();
+        const title = addQuestionDialogState.titleInput.value.trim();
+        const error = validateAddQuestionInputs(sectionId, title);
+        if (error) {
+          addQuestionDialogState.errorEl.textContent = error;
+          return;
+        }
+
+        addQuestionDialogState.errorEl.textContent = "";
+        addQuestionDialogState.confirmBtn.disabled = true;
+
+        try {
+          await addQuestionAfter(anchorQuestion, sectionId, title);
+        } catch (err) {
+          const message = err && err.message ? err.message : "新增失败";
+          addQuestionDialogState.errorEl.textContent =
+            message + "。请确认已运行 npm run dev，并通过 http://localhost:3000/ 打开页面。";
+        } finally {
+          addQuestionDialogState.confirmBtn.disabled = false;
+        }
+      }
+
       function createLearnedButton(question) {
         const button = document.createElement("button");
         button.type = "button";
@@ -758,6 +1012,51 @@ const categoryLabels = {
         });
         question.learnedButton = button;
         return button;
+      }
+
+      function createDeleteButton(question) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "delete-btn";
+        button.textContent = "\u00d7";
+        button.title = "删除题目";
+        button.setAttribute("aria-label", "删除题目");
+        button.addEventListener("click", function (event) {
+          event.stopPropagation();
+          if (button.disabled) {
+            return;
+          }
+          button.disabled = true;
+          deleteQuestion(question).finally(function () {
+            button.disabled = false;
+          });
+        });
+        return button;
+      }
+
+      function createAddButton(question) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "add-btn";
+        button.textContent = "+";
+        button.title = "在此题下方新增题目";
+        button.setAttribute("aria-label", "新增题目");
+        button.addEventListener("click", function (event) {
+          event.stopPropagation();
+          openAddQuestionDialog(question);
+        });
+        return button;
+      }
+
+      function createQuestionActions(question) {
+        const actions = document.createElement("div");
+        actions.className = "question-actions";
+        actions.appendChild(createLearnedButton(question));
+        if (LOCAL_HOSTS.has(window.location.hostname)) {
+          actions.appendChild(createDeleteButton(question));
+          actions.appendChild(createAddButton(question));
+        }
+        return actions;
       }
 
       function enhanceQuestion(section) {
@@ -792,7 +1091,7 @@ const categoryLabels = {
           parentSection: section,
           text: normalize(section.textContent)
         };
-        heading.appendChild(createLearnedButton(question));
+        heading.appendChild(createQuestionActions(question));
         section.addEventListener("click", function () {
           rememberQuestion(question);
         });

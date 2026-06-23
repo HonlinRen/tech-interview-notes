@@ -38,6 +38,7 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
@@ -165,7 +166,7 @@ asyncio.run(task())</code></pre>
 <section id="async-await">
         <h2>async / await 原理与适用场景</h2>
         <p><code>async / await</code> 是 Python 协程语法糖，基于单线程事件循环，在 IO 等待时切换任务。</p>
-        <pre><code>事件循环 + 协程 + 非阻塞 IO + 主动让出执行权</code></pre>
+        <pre><code class="language-python">事件循环 + 协程 + 非阻塞 IO + 主动让出执行权</code></pre>
         <p>执行到 <code>await some_io()</code> 时，若 IO 未完成，当前协程挂起，事件循环去执行其他任务。</p>
         <pre><code class="language-python">import asyncio
 
@@ -179,7 +180,7 @@ async def main():
 
 asyncio.run(main())</code></pre>
         <h3>执行流程</h3>
-        <pre><code>async def 定义协程函数
+        <pre><code class="language-python">async def 定义协程函数
 -&gt; 调用后得到协程对象
 -&gt; create_task / await 交给事件循环
 -&gt; await 遇到未完成 IO 时挂起当前协程
@@ -222,7 +223,7 @@ b = []
 a.append(b)
 b.append(a)</code></pre>
         <h3>分代回收</h3>
-        <pre><code>第 0 代 Young Generation：新创建对象
+        <pre><code class="language-python">第 0 代 Young Generation：新创建对象
 第 1 代 Middle Generation：经历过一次 GC 的对象
 第 2 代 Old Generation：长期存活的对象</code></pre>
         <p>GC 通过扫描容器对象引用关系，找出无法到达的对象并回收循环引用。</p>
@@ -336,7 +337,7 @@ for x in nums():
         <pre><code class="language-python">with open(&quot;demo.txt&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
     f.write(&quot;hello&quot;)</code></pre>
         <h3>执行流程</h3>
-        <pre><code>进入 with
+        <pre><code class="language-python">进入 with
 -&gt; 调用 __enter__
 -&gt; 执行业务代码
 -&gt; 正常或异常退出
@@ -432,58 +433,6 @@ for x in nums():
           面试中可以总结为：<code>__del__</code> 是对象销毁前自动调用的析构方法，
           但由于执行时机不稳定，生产环境中不应依赖它管理关键资源。
           文件、连接、锁等资源更适合通过 <code>with</code> 或 <code>close()</code> 主动释放。
-        </p>
-      </section>
-
-<section id="wsgi-asgi">
-        <h2>WSGI 和 ASGI 区别</h2>
-        <p>
-          WSGI 全称是 <code>Web Server Gateway Interface</code>，
-          ASGI 全称是 <code>Asynchronous Server Gateway Interface</code>。
-          它们都是 Python Web 应用和 Web 服务器之间的接口规范。
-        </p>
-        <h3>一句话区别</h3>
-        <p>
-          WSGI 是同步接口，主要用于传统 HTTP 请求；
-          ASGI 是异步接口，支持 <code>async / await</code>，
-          更适合 WebSocket、SSE、长连接和高并发 IO 场景。
-        </p>
-        <h3>常见组合</h3>
-        <ul>
-          <li>Flask / Django 传统应用：通常运行在 WSGI Server 上，例如 <code>Gunicorn</code>、<code>uWSGI</code></li>
-          <li>FastAPI / Starlette：通常运行在 ASGI Server 上，例如 <code>Uvicorn</code>、<code>Hypercorn</code></li>
-          <li>Django 新版本也支持 ASGI，可用于异步接口和 WebSocket 场景</li>
-        </ul>
-        <h3>核心区别</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>对比项</th>
-              <th>WSGI</th>
-              <th>ASGI</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>全称</td><td>Web Server Gateway Interface</td><td>Asynchronous Server Gateway Interface</td></tr>
-            <tr><td>编程模型</td><td>同步</td><td>异步，也兼容同步</td></tr>
-            <tr><td>典型框架</td><td>Flask、Django 传统模式</td><td>FastAPI、Starlette、Django Channels</td></tr>
-            <tr><td>典型服务器</td><td>Gunicorn、uWSGI</td><td>Uvicorn、Hypercorn、Daphne</td></tr>
-            <tr><td>支持协议</td><td>主要是 HTTP</td><td>HTTP、WebSocket、SSE、长连接</td></tr>
-            <tr><td>适合场景</td><td>传统 Web 应用、后台管理、普通接口</td><td>高并发 IO、实时通信、AI 流式输出</td></tr>
-          </tbody>
-        </table>
-        <h3>简单理解</h3>
-        <pre><code>浏览器请求
-        -&gt; Nginx / Web Server
-        -&gt; WSGI / ASGI Server
-        -&gt; Python Web 框架
-        -&gt; 业务代码</code></pre>
-        <h3>面试总结</h3>
-        <p>
-          WSGI 是 Python 传统同步 Web 服务接口规范，适合普通 HTTP 请求；
-          ASGI 是面向异步场景的接口规范，支持 <code>async / await</code>，
-          可以处理 WebSocket、SSE、长连接等场景。
-          FastAPI 通常基于 ASGI 运行，Flask 传统模式通常基于 WSGI 运行。
         </p>
       </section>
 
@@ -721,23 +670,57 @@ print(a)  # [1, 2, 3]</code></pre>
 
 <section id="mro">
         <h2>Python 中 MRO 是什么？</h2>
-        <p>MRO（Method Resolution Order）是方法解析顺序，决定多继承时 Python 按什么顺序查找父类方法。</p>
+        <p>MRO（Method Resolution Order，<strong>方法解析顺序</strong>）规定多继承时，Python 查找属性/方法的<strong>先后顺序</strong>。</p>
+        <h3>为什么需要 MRO？</h3>
+        <p>多继承常出现「菱形继承」：两个父类继承同一祖先。没有统一顺序，同一方法可能被重复调用或漏调。</p>
+        <pre><code>      A
+     /   \
+    B     C
+     \   /
+      D</code></pre>
+        <p>Python 3 用 <strong>C3 线性化</strong> 把继承树排成一条线，规则可记三句：</p>
         <ul>
-          <li>Python 3 使用 C3 线性化算法，保证顺序一致且符合局部优先原则</li>
-          <li>可通过 <code>Class.__mro__</code> 或 <code>Class.mro()</code> 查看</li>
-          <li><code>super()</code> 按 MRO 查找下一个父类方法</li>
+          <li>子类优先于父类</li>
+          <li>多个父类时，保持声明顺序（如 <code>class D(B, C)</code> 则 B 在 C 前）</li>
+          <li>全局唯一、可预测，不会因调用路径不同而变</li>
         </ul>
+        <h3>查看 MRO</h3>
         <pre><code class="language-python">class A: pass
 class B(A): pass
 class C(A): pass
 class D(B, C): pass
 
-print(D.mro())  # D -&gt; B -&gt; C -&gt; A -&gt; object</code></pre>
+print(D.mro())
+# [&lt;class 'D'&gt;, &lt;class 'B'&gt;, &lt;class 'C'&gt;, &lt;class 'A'&gt;, &lt;class 'object'&gt;]</code></pre>
+        <p>调用 <code>d.method()</code> 时，按 D → B → C → A → object 依次查找，<strong>找到即停</strong>。</p>
+        <h3>与 super() 的关系</h3>
+        <p><code>super()</code> 不是固定找「直接父类」，而是沿 MRO 找<strong>下一个</strong>类，适合多父类协作调用。</p>
+        <pre><code class="language-python">class A:
+    def hello(self):
+        print(&quot;A&quot;)
+
+class B(A):
+    def hello(self):
+        print(&quot;B&quot;)
+        super().hello()
+
+class C(A):
+    def hello(self):
+        print(&quot;C&quot;)
+        super().hello()
+
+class D(B, C): pass
+
+D().hello()
+# 输出：B -&gt; C -&gt; A（各一次，A 不会被调两次）</code></pre>
+        <p>口诀：多继承看 MRO，查方法按顺序；<code>super()</code> 跟着 MRO 走，菱形继承不重复。</p>
       </section>
 
 <section id="new-vs-init">
         <h2>Python __new__ 和 __init__ 有什么区别？</h2>
-        <p><code>__new__</code> 负责创建实例并返回对象；<code>__init__</code> 负责初始化已创建实例。创建时先 <code>__new__</code> 再 <code>__init__</code>。</p>
+        <p><code>__new__</code> 负责创建实例并返回对象；</p>
+        <p><code>__init__</code> 负责初始化已创建实例。</p>
+        <p>创建时先 <code>__new__</code> 再 <code>__init__</code>。</p>
         <ul>
           <li><code>__new__</code> 是静态方法，必须返回实例；<code>__init__</code> 不能返回值</li>
           <li><code>__new__</code> 可用于不可变类型子类化、单例、元类控制</li>
@@ -894,6 +877,79 @@ def profile(user = Depends(get_current_user)):
 .venv\Scripts\activate
 pip install -r requirements.txt</code></pre>
         <p>生产环境建议使用可复现安装方式，避免临时升级导致版本漂移。</p>
+      </section>
+
+<section id="python3-major-versions">
+        <h2>Python 3 有哪些大版本？各版本新特性是什么？</h2>
+        <p>Python 3 自 2008 年发布以来持续演进。面试常考 <span class="em-warn">3.5 ~ 3.12</span> 的代表性特性；3.0~3.4 已 EOL，了解「彻底告别 Python 2」即可。</p>
+        <h3>版本概览</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>版本</th>
+              <th>发布时间</th>
+              <th>代表性新特性</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>3.0</td><td>2008</td><td>默认 Unicode 字符串、<code>print()</code> 函数、除法真除</td></tr>
+            <tr><td>3.5</td><td>2015</td><td><code>async/await</code>、类型注解 <code>typing</code>、矩阵乘法 <code>@</code></td></tr>
+            <tr><td>3.6</td><td>2016</td><td>f-string、异步生成器、字典保序（实现层面）</td></tr>
+            <tr><td>3.7</td><td>2018</td><td><code>dataclass</code>、<code>breakpoint()</code>、<code>time.time_ns()</code></td></tr>
+            <tr><td>3.8</td><td>2019</td><td>海象运算符 <code>:=</code>、仅位置参数 <code>/</code></td></tr>
+            <tr><td>3.9</td><td>2020</td><td>字典合并 <code>|</code>、内置泛型 <code>list[int]</code></td></tr>
+            <tr><td>3.10</td><td>2021</td><td>结构模式匹配 <code>match/case</code>、联合类型 <code>X | Y</code></td></tr>
+            <tr><td>3.11</td><td>2022</td><td>CPython 提速 ~25%、更清晰的报错栈、<code>ExceptionGroup</code></td></tr>
+            <tr><td>3.12</td><td>2023</td><td>更灵活的 f-string、<code>type</code> 语句、改进 <code>asyncio</code></td></tr>
+            <tr><td>3.13</td><td>2024</td><td>可选无 GIL 模式（PEP 703）、实验性 JIT、改进 REPL</td></tr>
+          </tbody>
+        </table>
+        <h3>Python 3.5：异步编程标准化</h3>
+        <pre><code class="language-python">async def fetch():
+    await asyncio.sleep(1)
+    return &quot;ok&quot;</code></pre>
+        <p><code>async/await</code> 成为原生语法，奠定 asyncio 生态基础（FastAPI、aiohttp 等）。</p>
+        <h3>Python 3.6：f-string</h3>
+        <pre><code class="language-python">name = &quot;Ren&quot;
+print(f&quot;Hello, {name}&quot;)</code></pre>
+        <p>f-string 简洁高效，是日常字符串格式化的首选；3.7 起字典插入顺序正式保证。</p>
+        <h3>Python 3.7：dataclass</h3>
+        <pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass
+class User:
+    name: str
+    age: int</code></pre>
+        <p>减少样板代码，类似 Pydantic 出现前的轻量数据类方案。</p>
+        <h3>Python 3.8：海象运算符</h3>
+        <pre><code class="language-python">if (n := len(data)) &gt; 10:
+    print(f&quot;too long: {n}&quot;)</code></pre>
+        <p>在表达式中赋值并复用，减少重复计算。</p>
+        <h3>Python 3.9：字典合并与类型注解简化</h3>
+        <pre><code class="language-python">merged = d1 | d2          # 字典合并
+def f(items: list[str]) -&gt; dict[str, int]: ...</code></pre>
+        <p>不再必须从 <code>typing</code> 导入 <code>List</code>、<code>Dict</code>。</p>
+        <h3>Python 3.10：结构模式匹配</h3>
+        <pre><code class="language-python">match command:
+    case [&quot;get&quot;, url]:
+        fetch(url)
+    case [&quot;post&quot;, url, body]:
+        submit(url, body)
+    case _:
+        raise ValueError(&quot;unknown&quot;)</code></pre>
+        <p>类似 switch，但支持解构、守卫条件，适合解析命令/AST/JSON 结构。</p>
+        <h3>Python 3.11：性能与报错</h3>
+        <ul>
+          <li>CPython 解释器专项优化，整体提速约 10%~60%（视场景而定）。</li>
+          <li>异常栈精确指向出错表达式，排障体验明显提升。</li>
+          <li><code>ExceptionGroup</code> / <code>except*</code> 支持并发任务多异常聚合。</li>
+        </ul>
+        <h3>Python 3.12 / 3.13</h3>
+        <ul>
+          <li><strong>3.12</strong>：f-string 内可嵌套引号与复杂表达式；<code>type Alias = ...</code> 类型别名语法。</li>
+          <li><strong>3.13</strong>：实验性<strong>无 GIL</strong>构建（多线程真并行）；REPL 支持多行编辑与颜色高亮。</li>
+        </ul>
+        <p>生产选型建议：新项目优先 <strong>3.11+</strong>（性能与生态兼顾）；AI/RAG 栈常见 3.10~3.12。升级前检查依赖 wheel 支持与废弃 API。</p>
       </section>
 </main>
   </div>

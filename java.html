@@ -38,6 +38,7 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
@@ -49,7 +50,7 @@
 
 <section id="jvm-memory">
         <h2>JVM 运行时内存结构</h2>
-        <pre><code>线程共享：
+        <pre><code class="language-java">线程共享：
 - 堆
 - 方法区 / 元空间
 
@@ -90,7 +91,7 @@ Minor GC 后存活 -&gt; Survivor
 <section id="volatile">
         <h2>volatile 作用</h2>
         <p><code>volatile</code> 是 Java 中的轻量级同步机制，主要解决变量在多线程之间的可见性和指令重排序问题。它适合状态标记、配置开关、单例双重检查等场景，但不能替代锁。</p>
-        <pre><code>保证可见性
+        <pre><code class="language-java">保证可见性
 禁止指令重排序
 不保证复合操作的原子性</code></pre>
         <h3>保证可见性</h3>
@@ -134,6 +135,46 @@ count++;</code></pre>
         </table>
       </section>
 
+<section id="Java-mul-thread">
+        <h2>Java 多线程有哪些实现方式?</h2>
+        <p><code>Thread</code> 表示线程本身。最直接的方式是创建一个 <code>Thread</code> 对象，然后调用 <code>start()</code> 启动线程。</p>
+        <pre><code class="language-java">public class ThreadDemo {
+    public static void main(String[] args) {
+        Thread thread = new Thread(() -&gt; {
+            System.out.println(&quot;执行任务：&quot; + Thread.currentThread().getName());
+        });
+
+        thread.start();
+    }
+}</code></pre>
+        <p><code>Runnable</code> 表示一个没有返回值的任务。</p>
+        <pre><code class="language-java">public class RunnableDemo {
+    public static void main(String[] args) {
+        Runnable task = () -&gt; {
+            System.out.println(&quot;执行 Runnable 任务：&quot; + Thread.currentThread().getName());
+        };
+
+        Thread thread = new Thread(task);
+        thread.start();
+    }
+}</code></pre>
+        <p><code>Callable</code> 和 <code>Runnable</code> 类似，也是定义任务，但它可以返回结果</p>
+        <p><code>CompletableFuture</code> 是 Java 8 引入的异步编程工具。它不仅能异步执行任务，还能进行链式调用、任务组合、结果转换</p>
+        <pre><code class="language-java">import java.util.concurrent.CompletableFuture;
+
+public class CompletableFutureDemo {
+    public static void main(String[] args) {
+        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; {
+            System.out.println(&quot;异步执行任务：&quot; + Thread.currentThread().getName());
+            return 100;
+        });
+
+        Integer result = future.join();
+        System.out.println(&quot;执行结果：&quot; + result);
+    }
+}</code></pre>
+      </section>
+
 <section id="locks">
         <h2>synchronized 和 ReentrantLock 区别</h2>
         <p><code>synchronized</code> 和 <code>ReentrantLock</code> 都能实现互斥访问，并且都是可重入锁。区别在于：<code>synchronized</code> 是 JVM 关键字，写法简单、自动释放；<code>ReentrantLock</code> 是 JUC 工具类，功能更灵活，但必须手动释放。</p>
@@ -172,8 +213,7 @@ public void method() {
 private final ReentrantLock lock = new ReentrantLock();
 
 private final Condition notEmpty = lock.newCondition(); // 队列非空
-private final Condition notFull = lock.newCondition();  // 队列未满
-</code></pre>
+private final Condition notFull = lock.newCondition();  // 队列未满</code></pre>
         <p>一般优先使用 <code>synchronized</code>。需要尝试加锁、可中断锁、公平锁、多条件队列或复杂同步控制时，再使用 <code>ReentrantLock</code>。</p>
         <h3>选择建议</h3>
         <ul>
@@ -334,7 +374,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满
 <section id="threadlocal">
         <h2>ThreadLocal 原理和风险？</h2>
         <p><code>ThreadLocal</code> 的作用是让每个线程拥有一份独立变量副本，避免多个线程共享同一个变量。常见场景包括用户上下文、链路追踪traceId、数据库连接等。</p>
-        <pre><code>Thread
+        <pre><code class="language-java">Thread
 -&gt; ThreadLocalMap
 -&gt; Entry(ThreadLocal 弱引用, value 强引用)</code></pre>
         <p>它并不是把数据存在 <code>ThreadLocal</code> 对象里，而是存在当前线程的 <code>ThreadLocalMap</code> 中，<code>ThreadLocal</code> 只是访问这个 Map 的 key。</p>
@@ -461,8 +501,6 @@ AppClassLoader
         new HelloJNI().sayHello();
     }
 }</code></pre>
-        <p>
-</p>
       </section>
 
 <section id="virtual-threads">
@@ -656,16 +694,6 @@ Java Thread -&gt; OS Thread
         <p>所以 AOT 是重要补充，不是对 JIT 的简单替代。实际选型要看启动时间、内存预算、框架兼容性和服务生命周期。</p>
       </section>
 
-<section id="oracle-vs-openjdk">
-        <h2>Oracle JDK 和 OpenJDK 有什么区别？</h2>
-        <p>OpenJDK 是 Java 平台的开源实现，Oracle JDK 基于 OpenJDK 构建并带有 Oracle 的发行、支持和许可策略。现代版本中二者核心代码差异已经很小。</p>
-        <ul>
-          <li>选择时主要看许可证、长期支持、补丁更新、公司合规要求和运行环境。</li>
-          <li>常见生产发行版还包括 Temurin、Zulu、Corretto、Microsoft Build of OpenJDK 等。</li>
-          <li>服务端项目更应关注 JDK 大版本、GC、容器适配、时区证书和安全补丁。</li>
-        </ul>
-      </section>
-
 <section id="java-vs-cpp">
         <h2>Java 和 C++ 有什么区别？</h2>
         <p>Java 和 C++ 都支持面向对象，但运行模型和内存管理差异很大。Java 运行在 JVM 上，自动 GC；C++ 编译成本地代码，开发者直接管理对象生命周期。</p>
@@ -676,16 +704,6 @@ Java Thread -&gt; OS Thread
         </ul>
       </section>
 
-<section id="java-comments">
-        <h2>Java 中注释有哪几种？</h2>
-        <p>Java 注释分为单行注释、多行注释和文档注释。注释不会参与运行逻辑，文档注释可以被 javadoc 工具提取成 API 文档。</p>
-        <ul>
-          <li><code>//</code> 用于单行说明。</li>
-          <li><code>/* ... */</code> 用于多行说明。</li>
-          <li><code>/** ... */</code> 用于类、方法、字段的文档说明，常配合 <code>@param</code>、<code>@return</code>、<code>@throws</code>。</li>
-        </ul>
-      </section>
-
 <section id="identifier-vs-keyword">
         <h2>Java 标识符和关键字有什么区别？</h2>
         <p>标识符是开发者给类、方法、变量、包起的名字；关键字是 Java 语言预留的语法单词，不能作为普通标识符使用。</p>
@@ -693,26 +711,6 @@ Java Thread -&gt; OS Thread
           <li>标识符可以包含字母、数字、下划线、美元符号，但不能以数字开头。</li>
           <li><code>class</code>、<code>public</code>、<code>static</code>、<code>void</code>、<code>if</code>、<code>return</code> 等都是关键字。</li>
           <li>命名规范通常要求类名大驼峰，方法和变量小驼峰，常量全大写加下划线。</li>
-        </ul>
-      </section>
-
-<section id="iplusplus">
-        <h2>Java 中 ++i 和 i++ 有什么区别？</h2>
-        <p><code>++i</code> 是先自增再取值，<code>i++</code> 是先取值再自增。单独作为语句时二者最终结果相同，放在表达式中结果不同。</p>
-        <ul>
-          <li><code>int a = ++i;</code> 中，i 先加 1，再赋值给 a。</li>
-          <li><code>int a = i++;</code> 中，先把旧值赋给 a，再让 i 加 1。</li>
-          <li>在复杂表达式里混用自增会降低可读性，业务代码中应避免依赖这种副作用顺序。</li>
-        </ul>
-      </section>
-
-<section id="primitive-types">
-        <h2>Java 中基本数据类型有哪些？</h2>
-        <p>Java 有 8 种基本数据类型：byte、short、int、long、float、double、char、boolean。它们不是对象，直接保存具体值。</p>
-        <ul>
-          <li>整数类型：byte、short、int、long，默认整数字面量是 int。</li>
-          <li>浮点类型：float、double，默认小数字面量是 double。</li>
-          <li>char 表示 UTF-16 代码单元，boolean 只有 true 和 false。</li>
         </ul>
       </section>
 
@@ -745,26 +743,6 @@ Integer d = 128;
 System.out.println(a == b); // true，命中缓存
 System.out.println(c == d); // false，通常未命中缓存</code></pre>
         <p>面试里要强调：缓存是实现优化，不是业务语义。包装类型数值比较优先使用 <code>equals()</code>，但调用前要处理 null。</p>
-      </section>
-
-<section id="float-precision">
-        <h2>为什么浮点数运算可能丢失精度？</h2>
-        <p>浮点数使用二进制表示，很多十进制小数无法被精确表示，例如 0.1、0.2。运算过程中会出现舍入误差。</p>
-        <ul>
-          <li><code>double</code> 和 <code>float</code> 适合科学计算、统计估算，不适合金额精确计算。</li>
-          <li>误差来自二进制浮点表示和有限位数，不是 Java 独有问题。</li>
-          <li>金额、计费、结算应使用 <code>BigDecimal</code> 并明确舍入规则。</li>
-        </ul>
-      </section>
-
-<section id="bigdecimal">
-        <h2>BigDecimal 为什么适合金额计算？</h2>
-        <p><code>BigDecimal</code> 使用十进制高精度表示，适合金额和精确小数计算。它能避免二进制浮点无法精确表示十进制小数的问题。</p>
-        <ul>
-          <li>创建时推荐 <code>new BigDecimal(&quot;0.1&quot;)</code> 或 <code>BigDecimal.valueOf(0.1)</code>。</li>
-          <li>除法可能出现无限循环小数，需要指定精度和 <code>RoundingMode</code>。</li>
-          <li>比较数值大小通常使用 <code>compareTo()</code>，因为 <code>equals()</code> 会同时比较 scale。</li>
-        </ul>
       </section>
 
 <section id="generics-erasure">

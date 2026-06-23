@@ -17,6 +17,127 @@
     return "        ".slice(0, level * 2) || "";
   }
 
+  function looksLikeCodeFragment(text) {
+    const line = text.trim();
+    if (!line) {
+      return false;
+    }
+    if (/[\u4e00-\u9fff]/.test(line) && !/["'].*[\u4e00-\u9fff].*["']/.test(line)) {
+      return false;
+    }
+    return /[;{}()]/.test(line) || /^(import|public|private|protected|class|interface|enum|return|if|for|while|new|throw|try|catch|package|def|function|const|let|var|async|await|#include|using|namespace)\b/.test(line);
+  }
+
+  function looksLikeMergedCode(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      return false;
+    }
+    const lines = normalized.split("\n");
+    if (lines.length < 2) {
+      return false;
+    }
+    if (/^(import |public |private |class |interface |def |function |package |#include|using )/m.test(normalized)) {
+      return true;
+    }
+    return /[;{}]/.test(normalized) && lines.filter(looksLikeCodeFragment).length >= 2;
+  }
+
+  function extractCodeText(codeEl) {
+    if (!codeEl) {
+      return "";
+    }
+    const parts = [];
+    codeEl.childNodes.forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        parts.push(node.textContent);
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      const tag = node.tagName;
+      if (tag === "BR") {
+        parts.push("\n");
+        return;
+      }
+      if (tag === "DIV" || tag === "P") {
+        if (parts.length && !/\n$/.test(parts[parts.length - 1])) {
+          parts.push("\n");
+        }
+        parts.push(extractCodeText(node));
+        parts.push("\n");
+        return;
+      }
+      parts.push(node.textContent);
+    });
+    return parts.join("").replace(/\r\n/g, "\n").replace(/\n+$/, "");
+  }
+
+  function looksLikeSingleLineCodeBlock(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized || normalized.indexOf("\n") !== -1) {
+      return false;
+    }
+    const parts = normalized.split(";").map(function (part) {
+      return part.trim();
+    }).filter(Boolean);
+    return parts.length >= 2 && parts.filter(looksLikeCodeFragment).length >= 2;
+  }
+
+  function looksLikeStandaloneCodeStatement(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      return false;
+    }
+    const lines = normalized.split("\n").map(function (line) {
+      return line.trim();
+    }).filter(Boolean);
+    if (lines.length >= 2) {
+      return looksLikeMergedCode(lines.join("\n"));
+    }
+    const line = lines[0] || "";
+    if (looksLikeSingleLineCodeBlock(line)) {
+      return true;
+    }
+    return looksLikeCodeFragment(line) && /[;=]/.test(line) && line.length >= 15;
+  }
+
+  function shouldSerializeInlineCodeAsPre(codeEl, text) {
+    if (!codeEl) {
+      return false;
+    }
+    if (/language-[\w+-]+/.test(codeEl.className || "")) {
+      return true;
+    }
+    if (codeEl.querySelector("br, div, p")) {
+      return true;
+    }
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (normalized.indexOf("\n") !== -1) {
+      const lines = normalized.split("\n").filter(function (line) {
+        return line.trim();
+      });
+      if (lines.length >= 2) {
+        return looksLikeMergedCode(normalized) || lines.filter(looksLikeCodeFragment).length >= 2;
+      }
+    }
+    return looksLikeStandaloneCodeStatement(normalized);
+  }
+
+  function inferCodeLangFromSection(node) {
+    const section = node && node.closest ? node.closest("section") : null;
+    if (!section) {
+      return "";
+    }
+    const coded = section.querySelector("pre code[class*='language-'], code[class*='language-']");
+    if (!coded) {
+      return "";
+    }
+    const match = coded.className.match(/language-([\w+-]+)/);
+    return match ? match[1] : "";
+  }
+
   const EM_SPAN_CLASSES = new Set(["em-warn", "em-danger", "em-key", "em-ok", "em-muted", "em-accent"]);
 
   function serializeInline(node) {
@@ -91,13 +212,14 @@
         }
         return node === code;
       });
-      if (onlyCode) {
-        const text = code.textContent.replace(/\r\n/g, "\n");
-        if (text.indexOf("\n") !== -1 || text.length >= 120) {
-          const langMatch = code.className.match(/language-([\w+-]+)/);
-          const langClass = langMatch ? ' class="language-' + langMatch[1] + '"' : "";
-          return baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text) + "</code></pre>";
-        }
+      const text = onlyCode
+        ? extractCodeText(code)
+        : p.textContent.replace(/\r\n/g, "\n").trim();
+      if (text && shouldSerializeInlineCodeAsPre(code, text)) {
+        const langMatch = code.className.match(/language-([\w+-]+)/);
+        const inferredLang = langMatch ? langMatch[1] : inferCodeLangFromSection(p);
+        const langClass = inferredLang ? ' class="language-' + inferredLang + '"' : "";
+        return baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text.trim()) + "</code></pre>";
       }
     }
 
@@ -113,13 +235,60 @@
   function serializePre(pre, baseIndent) {
     const code = pre.querySelector("code");
     if (!code) {
-      return baseIndent + "<pre>" + escapeHtml(pre.textContent) + "</pre>";
+      const out = baseIndent + "<pre>" + escapeHtml(pre.textContent) + "</pre>";
+      // #region agent log
+      if (pre.textContent.indexOf("CompletableFuture") !== -1 && typeof fetch === "function") {
+        fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
+          body: JSON.stringify({
+            sessionId: "ce29c0",
+            location: "html-serializer.js:serializePre",
+            message: "serialize pre without code child",
+            data: { preTag: pre.tagName, outSnippet: out.slice(0, 200) },
+            hypothesisId: "B",
+            runId: "pre-fix",
+            timestamp: Date.now()
+          })
+        }).catch(function () {});
+      }
+      // #endregion
+      return out;
     }
 
     const langMatch = code.className.match(/language-([\w+-]+)/);
-    const langClass = langMatch ? ' class="language-' + langMatch[1] + '"' : "";
-    const text = code.textContent.replace(/\r\n/g, "\n");
-    return baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text) + "</code></pre>";
+    const dataLang = pre.dataset && pre.dataset.codeLang;
+    const langClass = langMatch
+      ? ' class="language-' + langMatch[1] + '"'
+      : dataLang
+        ? ' class="language-' + escapeHtml(dataLang) + '"'
+        : "";
+    const text = extractCodeText(code).replace(/\r\n/g, "\n");
+    const out = baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text) + "</code></pre>";
+    // #region agent log
+    if (text.indexOf("CompletableFuture") !== -1 && typeof fetch === "function") {
+      fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
+        body: JSON.stringify({
+          sessionId: "ce29c0",
+          location: "html-serializer.js:serializePre",
+          message: "serialize pre with code",
+          data: {
+            codeClass: code.className,
+            langMatch: langMatch ? langMatch[1] : null,
+            newlineCount: text.split("\n").length - 1,
+            hasPreInOut: out.indexOf("<pre>") !== -1,
+            outSnippet: out.slice(0, 250)
+          },
+          hypothesisId: "B,C",
+          runId: "pre-fix",
+          timestamp: Date.now()
+        })
+      }).catch(function () {});
+    }
+    // #endregion
+    return out;
   }
 
   function serializeTableCell(cell, tag) {
@@ -148,7 +317,7 @@
       Array.from(thead.querySelectorAll(":scope > tr")).forEach(function (tr) {
         const cells = Array.from(tr.children)
           .filter(function (el) {
-            return el.tagName === "TH";
+            return el.tagName === "TH" && !el.classList.contains("editor-row-controls-header");
           })
           .map(function (th) {
             return serializeTableCell(th, "th");
@@ -181,9 +350,13 @@
         if (tr.closest("thead")) {
           return;
         }
-        const cells = Array.from(tr.children).map(function (td) {
-          return serializeTableCell(td, td.tagName.toLowerCase());
-        });
+        const cells = Array.from(tr.children)
+          .filter(function (el) {
+            return (el.tagName === "TD" || el.tagName === "TH") && !el.classList.contains("editor-row-controls");
+          })
+          .map(function (td) {
+            return serializeTableCell(td, td.tagName.toLowerCase());
+          });
         lines.push(baseIndent + "    <tr>" + cells.join("") + "</tr>");
       });
       lines.push(baseIndent + "  </tbody>");
@@ -247,6 +420,26 @@
         return serializePre(el.firstElementChild, baseIndent);
       }
       if (!hasBlockChild(el)) {
+        // #region agent log
+        if (el.textContent.indexOf("CompletableFuture") !== -1 && typeof fetch === "function") {
+          fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
+            body: JSON.stringify({
+              sessionId: "ce29c0",
+              location: "html-serializer.js:serializeBlock:div-inline",
+              message: "DIV with code serialized as inline p",
+              data: {
+                childTags: Array.from(el.children).map(function (c) { return c.tagName + ":" + c.className; }),
+                textSnippet: el.textContent.slice(0, 200)
+              },
+              hypothesisId: "B",
+              runId: "pre-fix",
+              timestamp: Date.now()
+            })
+          }).catch(function () {});
+        }
+        // #endregion
         return serializeInlineBlock(el, baseIndent);
       }
       const divResult = Array.from(el.children)
@@ -333,6 +526,9 @@
   }
 
   function serializeSection(section) {
+    if (!section) {
+      return "";
+    }
     const id = section.id;
     if (!id || id === "summary") {
       return "";
