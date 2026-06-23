@@ -213,17 +213,128 @@
 
 <section id="MCP-Registry">
         <h2>MCP Server 怎么注册和鉴权？</h2>
-        <p>待补充内容</p>
+        <p>MCP Server 不由中心注册表统一登记，而是由 <strong>Client 在本地配置中声明</strong>，启动时按配置拉起或连接 Server，完成握手后纳入可用工具池。</p>
+        <h3>注册方式</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>部署形态</th>
+              <th>配置要点</th>
+              <th>典型场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>本地 stdio</td><td><code>command</code> + <code>args</code> + <code>env</code></td><td>Cursor / Claude Desktop 拉起子进程</td></tr>
+            <tr><td>远程 HTTP</td><td><code>url</code> + 鉴权头 / OAuth</td><td>团队共享、SaaS 类 MCP 服务</td></tr>
+          </tbody>
+        </table>
+        <pre><code>// Cursor: .cursor/mcp.json 示例
+{
+  &quot;mcpServers&quot;: {
+    &quot;filesystem&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;@modelcontextprotocol/server-filesystem&quot;, &quot;/data&quot;],
+      &quot;env&quot;: { &quot;API_KEY&quot;: &quot;xxx&quot; }
+    },
+    &quot;remote-api&quot;: {
+      &quot;url&quot;: &quot;https://mcp.example.com/mcp&quot;,
+      &quot;headers&quot;: { &quot;Authorization&quot;: &quot;Bearer &lt;token&gt;&quot; }
+    }
+  }
+}</code></pre>
+        <h3>鉴权机制</h3>
+        <ul>
+          <li><strong>本地 stdio</strong>：依赖 OS 进程隔离，通常不单独鉴权；敏感凭据放 <code>env</code>，由 Server 进程读取。</li>
+          <li><strong>API Key / Bearer Token</strong>：远程 Server 在 HTTP Header 或环境变量中校验。</li>
+          <li><strong>OAuth 2.0</strong>：远程 MCP 按规范走授权码 + PKCE，Client 拿 access token 后带在请求头访问。</li>
+          <li><strong>权限治理</strong>：Client 侧控制启用哪些 Server；Server 侧按 scope / 白名单限制可调工具与资源。</li>
+        </ul>
+        <p>连接建立后 Client 发 <code>initialize</code>，双方交换 capabilities，再拉取 <code>tools/list</code> 完成「注册」。</p>
       </section>
 
 <section id="Model-Context-Protocol">
         <h2>MCP Client 和 Server 通信方式是什么？</h2>
-        <p>待补充内容</p>
+        <p>底层统一采用 <strong>JSON-RPC 2.0</strong> 消息格式，通过不同 <strong>Transport</strong> 承载；同一连接上可发 request、response、notification 三类消息。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Transport</th>
+              <th>方式</th>
+              <th>特点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>stdio</td><td>Client 启动子进程，stdin/stdout 传 JSON-RPC 行</td><td>本地、低延迟、最常见</td></tr>
+            <tr><td>Streamable HTTP</td><td>HTTP POST 发请求，可选 SSE 流式收响应</td><td>远程部署、可多 Client 共享</td></tr>
+            <tr><td>SSE（旧）</td><td>独立 SSE 端点推送事件</td><td>逐步被 Streamable HTTP 取代</td></tr>
+          </tbody>
+        </table>
+        <h3>典型交互流程</h3>
+        <ol>
+          <li><code>initialize</code> → Server 返回协议版本与 capabilities。</li>
+          <li>Client 发 <code>initialized</code> 通知，会话就绪。</li>
+          <li>Client 按需调用 <code>tools/list</code>、<code>resources/list</code>、<code>prompts/list</code> 发现能力。</li>
+          <li>模型决策后 Client 发 <code>tools/call</code>，Server 执行并返回结构化结果。</li>
+        </ol>
+        <pre><code>// tools/call 请求示例
+{
+  &quot;jsonrpc&quot;: &quot;2.0&quot;,
+  &quot;id&quot;: 2,
+  &quot;method&quot;: &quot;tools/call&quot;,
+  &quot;params&quot;: {
+    &quot;name&quot;: &quot;search_docs&quot;,
+    &quot;arguments&quot;: { &quot;query&quot;: &quot;MCP 鉴权&quot;, &quot;top_k&quot;: 5 }
+  }
+}</code></pre>
+        <p>MCP 管「Client ↔ Server」通道；模型侧的 Tool Calling 管「LLM 选哪个工具、填什么参」，Client 负责把模型输出映射为 <code>tools/call</code>。</p>
       </section>
 
 <section id="MCP-schema">
         <h2>MCP工具 schema 怎么定义？</h2>
-        <p>待补充内容</p>
+        <p>MCP 工具在 Server 中声明 <code>name</code>、<code>description</code>、<code>inputSchema</code> 三要素；<code>inputSchema</code> 为标准 <strong>JSON Schema</strong>，描述参数类型、必填项与约束，经 <code>tools/list</code> 暴露给 Client，再转成模型可用的 Tool 定义。</p>
+        <pre><code>// Server 侧工具定义（逻辑结构）
+{
+  &quot;name&quot;: &quot;search_docs&quot;,
+  &quot;description&quot;: &quot;搜索企业知识库文档&quot;,
+  &quot;inputSchema&quot;: {
+    &quot;type&quot;: &quot;object&quot;,
+    &quot;properties&quot;: {
+      &quot;query&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;description&quot;: &quot;搜索关键词&quot;
+      },
+      &quot;top_k&quot;: {
+        &quot;type&quot;: &quot;integer&quot;,
+        &quot;minimum&quot;: 1,
+        &quot;maximum&quot;: 20,
+        &quot;default&quot;: 5,
+        &quot;description&quot;: &quot;返回条数&quot;
+      },
+      &quot;category&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;enum&quot;: [&quot;tech&quot;, &quot;hr&quot;, &quot;finance&quot;],
+        &quot;description&quot;: &quot;文档分类&quot;
+      }
+    },
+    &quot;required&quot;: [&quot;query&quot;]
+  }
+}</code></pre>
+        <h3>与 Function Calling 的对应关系</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>MCP 字段</th>
+              <th>模型 Tool 字段</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>name</code></td><td><code>name</code></td><td>工具唯一标识</td></tr>
+            <tr><td><code>description</code></td><td><code>description</code></td><td>供模型理解用途</td></tr>
+            <tr><td><code>inputSchema</code></td><td><code>parameters</code></td><td>均为 JSON Schema，语义一致</td></tr>
+          </tbody>
+        </table>
+        <p>写好 schema 的关键：<code>description</code> 写清业务语义；<code>required</code> 标必填；用 <code>enum</code> / <code>minimum</code> 约束取值；Server 执行前再做一次 schema 校验，防止模型幻觉参数。</p>
       </section>
 
 <section id="reduce-hallucination">
@@ -244,6 +355,83 @@
           <li>关键业务答案规则校验或 HITL 审核。</li>
           <li>LLM-as-Judge 或 RAGAS 持续监控。</li>
         </ul>
+      </section>
+
+<section id="langchain-structure">
+        <h2>LangChain 常见结构有哪些？</h2>
+        <p>LangChain 按职责分层，核心是把 <strong>Model、Prompt、数据、编排</strong> 拆成可复用组件，再用 Chain / Agent 串联。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>结构</th>
+              <th>典型类 / API</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Model</td><td><code>ChatOpenAI</code>、<code>OpenAIEmbeddings</code></td><td>封装 LLM 调用与向量化</td></tr>
+            <tr><td>Prompt</td><td><code>ChatPromptTemplate</code>、<code>FewShotPromptTemplate</code></td><td>模板化拼装 System / Human 消息</td></tr>
+            <tr><td>Output Parser</td><td><code>StrOutputParser</code>、<code>JsonOutputParser</code></td><td>把模型输出解析为字符串或结构化对象</td></tr>
+            <tr><td>Document Loader</td><td><code>PyPDFLoader</code>、<code>WebBaseLoader</code></td><td>加载原始文档</td></tr>
+            <tr><td>Text Splitter</td><td><code>RecursiveCharacterTextSplitter</code></td><td>切分 Chunk，控制检索粒度</td></tr>
+            <tr><td>VectorStore</td><td><code>Chroma</code>、<code>FAISS</code>、<code>PGVector</code></td><td>存储与检索向量</td></tr>
+            <tr><td>Retriever</td><td><code>as_retriever()</code>、<code>MultiQueryRetriever</code></td><td>按 query 召回相关文档</td></tr>
+            <tr><td>Chain（LCEL）</td><td><code>prompt | llm | parser</code></td><td>用管道符组合 Runnable，线性编排</td></tr>
+            <tr><td>Tool</td><td><code>@tool</code> 装饰函数</td><td>把业务能力暴露为可调用工具</td></tr>
+            <tr><td>Agent</td><td><code>create_react_agent</code>、<code>AgentExecutor</code></td><td>模型自主选工具、多步推理</td></tr>
+            <tr><td>Memory</td><td><code>ChatMessageHistory</code>、<code>RunnableWithMessageHistory</code></td><td>维护多轮对话上下文</td></tr>
+          </tbody>
+        </table>
+        <p>现代 LangChain 推荐 <strong>LCEL（LangChain Expression Language）</strong>：各组件实现 <code>Runnable</code> 接口，支持 <code>invoke</code> / <code>stream</code> / <code>batch</code> 统一调用。</p>
+      </section>
+
+<section id="langchain-build-flow">
+        <h2>LangChain 标准构建流程是什么？</h2>
+        <p>从 0 到 1 搭一个 LangChain 应用，通常按「模型 → 数据 → 提示词 → 链 → 调用」五步走；RAG 和 Agent 在此基础上加 Retriever 或 Tool。</p>
+        <h3>基础流程（5 步）</h3>
+        <ol>
+          <li><strong>选 Model</strong>：配置 LLM 和（如需 RAG）Embedding 模型。</li>
+          <li><strong>准备数据</strong>：Loader 加载 → Splitter 切分 → Embedding → 写入 VectorStore。</li>
+          <li><strong>定义 Prompt</strong>：写清角色、上下文占位符、输出格式要求。</li>
+          <li><strong>组装 Chain</strong>：用 LCEL 管道串联各组件。</li>
+          <li><strong>调用与观测</strong>：<code>invoke()</code> / <code>stream()</code>，挂 Callback 记录 Token 与延迟。</li>
+        </ol>
+        <h3>简单问答 Chain</h3>
+        <pre><code class="language-python">from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+llm = ChatOpenAI(model=&quot;gpt-4o&quot;)
+prompt = ChatPromptTemplate.from_messages([
+    (&quot;system&quot;, &quot;你是企业知识库助手，简洁回答。&quot;),
+    (&quot;human&quot;, &quot;{question}&quot;),
+])
+chain = prompt | llm | StrOutputParser()
+
+answer = chain.invoke({&quot;question&quot;: &quot;年假有多少天？&quot;})</code></pre>
+        <h3>RAG Chain 扩展</h3>
+        <pre><code class="language-python">from langchain_core.runnables import RunnablePassthrough
+
+def format_docs(docs):
+    return &quot;\n\n&quot;.join(d.page_content for d in docs)
+
+rag_prompt = ChatPromptTemplate.from_messages([
+    (&quot;system&quot;, &quot;仅根据以下资料回答，无依据则说不知道。\n\n{context}&quot;),
+    (&quot;human&quot;, &quot;{question}&quot;),
+])
+rag_chain = (
+    {&quot;context&quot;: retriever | format_docs, &quot;question&quot;: RunnablePassthrough()}
+    | rag_prompt
+    | llm
+    | StrOutputParser()
+)</code></pre>
+        <h3>Agent 扩展</h3>
+        <ol>
+          <li>用 <code>@tool</code> 定义搜索、查库等业务函数。</li>
+          <li><code>create_react_agent(llm, tools, prompt)</code> 创建 Agent。</li>
+          <li><code>AgentExecutor(agent, tools)</code> 执行多轮 think-act 循环。</li>
+        </ol>
+        <p>流程固定、无分支时用 Chain；需要自主选工具、多步推理时升级为 Agent；有循环、人工审批、状态持久化时再考虑 LangGraph。</p>
       </section>
 
 <section id="langchain-vs-langgraph">
@@ -281,8 +469,59 @@
     return {&quot;retrieved_docs&quot;: docs}</code></pre>
       </section>
 
+<section id="langgraph-edge">
+        <h2>LangGraph 中 Edge 怎么设计？</h2>
+        <p><span class="em-warn">Edge 决定 Node 之间的流转方向</span>，分固定边和条件边两类。</p>
+        <h3>固定边（add_edge）</h3>
+        <p>无条件跳转，适合线性流水线。</p>
+        <pre><code class="language-python">builder.add_edge(&quot;retrieve&quot;, &quot;rerank&quot;)
+builder.add_edge(&quot;rerank&quot;, &quot;generate&quot;)
+builder.add_edge(&quot;generate&quot;, END)</code></pre>
+        <h3>条件边（add_conditional_edges）</h3>
+        <p>路由函数读取 State，返回<strong>下一个 Node 名称</strong>，实现分支、循环、重试。</p>
+        <pre><code class="language-python">def route_after_generate(state):
+    if state.get(&quot;need_tool&quot;):
+        return &quot;call_tool&quot;
+    if state.get(&quot;retry_count&quot;, 0) &gt; 3:
+        return END
+    return &quot;human_review&quot;
+
+builder.add_conditional_edges(
+    &quot;generate&quot;,
+    route_after_generate,
+    {
+        &quot;call_tool&quot;: &quot;call_tool&quot;,
+        &quot;human_review&quot;: &quot;human_review&quot;,
+        END: END,
+    },
+)</code></pre>
+        <h3>常见 Edge 模式</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>Edge 设计</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>线性 RAG</td><td>rewrite → retrieve → rerank → generate → END</td></tr>
+            <tr><td>Tool Calling 循环</td><td>agent → tools → agent（条件边检测是否继续调工具）</td></tr>
+            <tr><td>重试 / 降级</td><td>generate → 失败则 retry_node，超限则 fallback → END</td></tr>
+            <tr><td>人工审核</td><td><code>interrupt_before</code> + 条件边路由到 human_review</td></tr>
+            <tr><td>Agentic RAG</td><td>retrieve → grade → 质量不足则 rewrite 再检索（形成环）</td></tr>
+          </tbody>
+        </table>
+        <h3>设计原则</h3>
+        <ul>
+          <li>路由函数<strong>只读 State、无副作用</strong>，分支逻辑集中、可单测。</li>
+          <li>返回值必须在映射表中存在，避免运行时找不到 Node。</li>
+          <li>循环边务必设<strong>退出条件</strong>（步数上限、置信度阈值），防止死循环。</li>
+          <li>END 是内置终止节点，任何可结束的路径都应能到达 END。</li>
+        </ul>
+      </section>
+
 <section id="langgraph-state">
-        <h2>LangGraph 中 State 一般存储哪些字段？</h2>
+        <h2>LangGraph 中 State 存储哪些字段？</h2>
         <p><span class="em-warn">State 是跨节点共享的状态对象</span>，存储执行过程中需读写的数据</p>
         <table>
           <thead>
@@ -301,6 +540,41 @@
           </tbody>
         </table>
         <p>State 不宜膨胀：大对象、原始全文、敏感数据只存引用 ID 或摘要。</p>
+      </section>
+
+<section id="langgraph-builder">
+        <h2>LangGraph 中 Builder 怎么设计？</h2>
+        <p><span class="em-warn">Builder 负责把 Node、Edge、State 组装成可执行的图</span>，典型流程是：定义 State → 注册 Node → 连 Edge → <code>compile()</code>。</p>
+        <h3>标准构建步骤</h3>
+        <ol>
+          <li><strong>定义 State</strong>：规定图运行有哪些字段</li>
+          <li><strong>创建图</strong>：绑定状态结构 schema</li>
+          <li><strong>注册 Node</strong>：每个 Node 只做一件事，把业务步骤注册到图</li>
+          <li><strong>连接 Edge</strong>：固定边 、条件边 ，定义节点执行顺序和分支条件</li>
+          <li><strong>编译运行</strong>：编译成可执行Graph</li>
+        </ol>
+        <pre><code class="language-python">from langgraph.graph import StateGraph, END
+# 创建一个图构建器 builder
+builder = StateGraph(AgentState)
+# 注册 Node 节点
+builder.add_node(&quot;rewrite&quot;, rewrite_node)
+builder.add_node(&quot;retrieve&quot;, retrieve_node)
+builder.add_node(&quot;generate&quot;, generate_node)
+# 设置入口节点
+builder.set_entry_point(&quot;rewrite&quot;)
+# 连接 Edge 边，定义节点之间的执行顺序
+builder.add_edge(&quot;rewrite&quot;, &quot;retrieve&quot;)
+builder.add_edge(&quot;retrieve&quot;, &quot;generate&quot;)
+builder.add_edge(&quot;generate&quot;, END)
+# 编译图，生成真正可以执行的 graph
+graph = builder.compile(checkpointer=memory)</code></pre>
+        <h3>设计要点</h3>
+        <ul>
+          <li>Builder 只做<strong>编排</strong>，业务逻辑放在 Node 函数里，便于单测。</li>
+          <li>复杂路由用 conditional edge 抽成独立 <code>route_fn</code>，Builder 保持可读。</li>
+          <li>子图（Subgraph）可封装 RAG、Tool 等模块，主 Builder 只负责拼装。</li>
+          <li>编译后再注入运行时依赖（retriever、llm），Node 通过闭包或依赖注入获取。</li>
+        </ul>
       </section>
 
 <section id="embedding-selection">
@@ -1420,8 +1694,10 @@ except ValidationError:
       </section>
 </main>
   </div>
+  <script src="assets/highlight.min.js"></script>
   <script src="assets/study-legacy-map.js"></script>
   <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
   <script src="assets/html-serializer.js"></script>
   <script src="assets/content-editor.js"></script>
 </body>

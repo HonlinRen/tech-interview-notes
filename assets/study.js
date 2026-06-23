@@ -240,8 +240,12 @@
         "k8s-intro": "docker-k8s",
         "k8s-service": "architecture",
         "l4-vs-l7": "architecture",
+        "langchain-structure": "ai",
+        "langchain-build-flow": "ai",
         "langchain-vs-langgraph": "ai",
         "langgraph-node": "ai",
+        "langgraph-builder": "ai",
+        "langgraph-edge": "ai",
         "langgraph-state": "ai",
         leaderboard: "redis",
         "left-prefix": "mysql",
@@ -1124,10 +1128,24 @@ const categoryLabels = {
         });
       }
 
+      function getTocLinksContainer(group) {
+        let container = group.querySelector(".toc-links");
+        if (!container) {
+          container = document.createElement("div");
+          container.className = "toc-links";
+          group.appendChild(container);
+        }
+        Array.from(group.querySelectorAll(":scope > a")).forEach(function (link) {
+          container.appendChild(link);
+        });
+        return container;
+      }
+
       function renderToc() {
         document.querySelectorAll(".toc-group").forEach(function (group) {
           const category = group.dataset.filter;
-          Array.from(group.querySelectorAll("a")).forEach(function (link) {
+          const linksContainer = getTocLinksContainer(group);
+          Array.from(linksContainer.querySelectorAll("a")).forEach(function (link) {
             link.remove();
           });
           state.questions
@@ -1140,7 +1158,7 @@ const categoryLabels = {
               link.textContent = question.titleElement.textContent;
               link.classList.toggle("learned", isQuestionLearned(question));
               question.tocLink = link;
-              group.appendChild(link);
+              linksContainer.appendChild(link);
             });
         });
       }
