@@ -48,26 +48,27 @@
 
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
-
 <section id="docker-intro">
-        <h2>495. Docker 是什么？解决了什么问题？</h2>
+        <h2>Docker 是什么？解决了什么问题？</h2>
         <p>Docker 是一种容器化技术，可以把应用程序、运行环境、依赖库一起打包成镜像，然后在不同机器上以容器方式运行。</p>
         <p>它主要解决环境不一致、部署复杂、服务隔离和快速扩缩容等问题。</p>
-        <div class="answer"><strong>面试回答：</strong>Docker 让应用和运行环境一起交付，避免「我本地可以运行，线上不行」的问题。</div>
+        <p><strong>面试回答：</strong>Docker 让应用和运行环境一起交付，避免「我本地可以运行，线上不行」的问题。</p>
       </section>
+
 <section id="image-vs-container">
-        <h2>496. 镜像 Image 和容器 Container 有什么区别？</h2>
-        <pre><code>镜像：静态模板，类似安装包。
+        <h2>镜像 Image 和容器 Container 有什么区别？</h2>
+        <pre><code class="language-bash">镜像：静态模板，类似安装包。
 容器：镜像运行后的实例，类似正在运行的进程。</code></pre>
         <p>镜像是静态的，容器是运行中的实例。一个镜像可以启动多个容器。</p>
       </section>
+
 <section id="dockerfile">
-        <h2>497. Dockerfile 是什么？常见指令有哪些？</h2>
-        <pre><code>FROM openjdk:17
+        <h2>Dockerfile 是什么？常见指令有哪些？</h2>
+        <pre><code class="language-bash">FROM openjdk:17
 WORKDIR /app
 COPY target/demo.jar app.jar
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]</code></pre>
+CMD [&quot;java&quot;, &quot;-jar&quot;, &quot;app.jar&quot;]</code></pre>
         <ul>
           <li><code>FROM</code>：指定基础镜像</li>
           <li><code>WORKDIR</code>：工作目录</li>
@@ -76,43 +77,45 @@ CMD ["java", "-jar", "app.jar"]</code></pre>
           <li><code>CMD</code>：启动命令</li>
         </ul>
       </section>
+
 <section id="copy-vs-add">
-        <h2>498. COPY 和 ADD 有什么区别？</h2>
+        <h2>COPY 和 ADD 有什么区别？</h2>
         <p><code>COPY</code> 单纯复制文件。<code>ADD</code> 还支持自动解压 tar 和 URL 下载。日常推荐优先使用 <code>COPY</code>，语义更清晰。</p>
       </section>
-<section id="cmd-vs-entrypoint">
-        <h2>499. CMD 和 ENTRYPOINT 有什么区别？</h2>
-        <p><code>CMD</code> 是默认启动命令，可被 <code>docker run</code> 参数覆盖。<code>ENTRYPOINT</code> 是固定入口，适合启动方式固定的镜像。</p>
-      </section>
+
 <section id="container-networking">
-        <h2>500. Docker 容器之间如何通信？</h2>
+        <h2>Docker 容器之间如何通信？</h2>
         <ul>
           <li>宿主机端口映射：<code>docker run -p 8080:8080</code></li>
           <li>Docker Network 自定义网络</li>
           <li>Compose 中通过 service name 访问，如 <code>redis:6379</code></li>
         </ul>
       </section>
+
 <section id="data-persistence">
-        <h2>501. Docker 数据持久化怎么做？</h2>
+        <h2>Docker 数据持久化怎么做？</h2>
         <p>使用 Volume 或 bind mount 挂载宿主机目录，例如：</p>
-        <pre><code>docker run -v /host/data:/container/data mysql</code></pre>
+        <pre><code class="language-bash">docker run -v /host/data:/container/data mysql</code></pre>
         <p>有状态服务（MySQL、Redis）必须持久化，不能只依赖容器内文件系统。</p>
       </section>
+
 <section id="docker-compose">
-        <h2>502. Docker Compose 是什么？</h2>
+        <h2>Docker Compose 是什么？</h2>
         <p>用于编排多个容器的工具，通过 <code>docker-compose.yml</code> 定义服务、网络、端口、依赖，一键启动整套环境，适合本地开发和测试。</p>
       </section>
+
 <section id="logs-debug">
-        <h2>503. Docker 容器如何查看日志和排查问题？</h2>
-        <pre><code>docker ps
+        <h2>Docker 容器如何查看日志和排查问题？</h2>
+        <pre><code class="language-bash">docker ps
 docker logs container_id
 docker exec -it container_id /bin/bash
 docker inspect container_id
 docker stats</code></pre>
         <p>先看容器是否运行，再看日志，必要时进入容器检查环境变量、网络和进程。</p>
       </section>
+
 <section id="image-optimization">
-        <h2>504. Docker 镜像怎么优化？</h2>
+        <h2>Docker 镜像怎么优化？</h2>
         <ul>
           <li>使用更小基础镜像（alpine、distroless）</li>
           <li>多阶段构建，只保留运行产物</li>
@@ -120,23 +123,60 @@ docker stats</code></pre>
           <li>合并 RUN 层、清理缓存</li>
         </ul>
       </section>
+
 <section id="k8s-intro">
-        <h2>505. Kubernetes 是什么？解决了什么问题？</h2>
-        <p>K8s 是容器编排平台，管理大规模容器的部署、扩缩容、服务发现、故障自愈、滚动发布和配置管理。</p>
+        <h2>Kubernetes 是什么？解决了什么问题？</h2>
+        <p>K8s 是容器编排平台，管理<strong>大规模容器的部署、扩缩容、服务发现、故障自愈、滚动发布</strong>和配置管理。</p>
         <p>Docker 解决单机容器运行，K8s 解决多机器、多服务的编排治理。</p>
       </section>
+
 <section id="pod">
-        <h2>506. Pod 是什么？</h2>
+        <h2>Pod 是什么？</h2>
         <p>Pod 是 K8s 最小调度单位，通常一个 Pod 运行一个业务容器。Pod 内容器共享网络和存储卷。</p>
       </section>
+
 <section id="pod-vs-container">
-        <h2>507. Pod 和 Container 有什么区别？</h2>
+        <h2>Pod 和 Container 有什么区别？</h2>
         <p>Container 是运行应用的进程隔离环境；Pod 是 K8s 对容器的封装和调度单位，K8s 调度 Pod 而非直接调度 Container。</p>
+        <p>Pod 是 K8S 最小调度单位，<span class="em-warn">一个 Pod 里可以有一个或多个容器，共享网络和存储</span></p>
       </section>
+
+<section id="K8S-Node-Pod">
+        <h2>K8S层级关系是什么？</h2>
+        <p>服务器提供资源</p>
+        <ul>
+          <li>Node 是 K8S 管理的服务器</li>
+          <li>Pod 是 K8S 调度的最小单位</li>
+          <li>Container 是真正运行应用的地方</li>
+        </ul>
+        <pre><code class="language-java">K8S Cluster 集群
+├── Master / Control Plane 控制面
+│   ├── API Server
+│   ├── Scheduler
+│   ├── Controller Manager
+│   └── etcd
+│
+└── Worker Nodes 工作节点
+    ├── Node-1：物理机 / 云服务器 / 虚拟机
+    │   ├── Pod-A
+    │   │   └── Container-1
+    │   ├── Pod-B
+    │   │   └── Container-2
+    │   └── Pod-C
+    │       ├── Container-3
+    │       └── Sidecar-Container
+    │
+    └── Node-2：物理机 / 云服务器 / 虚拟机
+        ├── Pod-D
+        │   └── Container-4
+        └── Pod-E
+            └── Container-5</code></pre>
+      </section>
+
 <section id="deployment">
-        <h2>508. Deployment 是什么？</h2>
+        <h2>Deployment 是什么？</h2>
         <p>Deployment 管理无状态应用的 Pod 副本数、滚动更新和回滚，是微服务最常用的部署对象。</p>
-        <pre><code>spec:
+        <pre><code class="language-bash">spec:
   replicas: 3
   template:
     spec:
@@ -144,45 +184,63 @@ docker stats</code></pre>
         - name: demo-app
           image: demo-app:1.0</code></pre>
       </section>
+
 <section id="service">
-        <h2>509. Service 是什么？为什么需要 Service？</h2>
+        <h2>Service 是什么？为什么需要 Service？</h2>
         <p>Pod IP 不稳定，Service 为一组 Pod 提供稳定访问入口和负载均衡，通过 selector 关联 Pod，集群内 DNS 访问。</p>
       </section>
+
 <section id="configmap-vs-secret">
-        <h2>510. ConfigMap 和 Secret 有什么区别？</h2>
+        <h2>ConfigMap 和 Secret 有什么区别？</h2>
         <p>ConfigMap 存放普通配置；Secret 存放密码、Token、证书等敏感信息。两者都支持环境变量或 Volume 挂载注入容器。</p>
       </section>
+
 <section id="rolling-update-rollback">
-        <h2>511. K8s 如何做滚动发布和回滚？</h2>
-        <pre><code>kubectl rollout status deployment/demo-app
+        <h2>K8s 如何做滚动发布和回滚？</h2>
+        <pre><code class="language-bash">kubectl rollout status deployment/demo-app
 kubectl rollout undo deployment/demo-app</code></pre>
         <p>Deployment 逐步创建新 Pod、下线旧 Pod，异常时可快速回滚到上一版本。</p>
       </section>
+
 <section id="hpa-vs-vpa">
-        <h2>512. K8s 的 HPA 和 VPA 有什么区别？</h2>
+        <h2>K8s 的 HPA 和 VPA 有什么区别？</h2>
         <table>
-          <thead><tr><th>类型</th><th>方向</th><th>场景</th></tr></thead>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>方向</th>
+              <th>场景</th>
+            </tr>
+          </thead>
           <tbody>
             <tr><td>HPA</td><td>水平：增减 Pod 数量</td><td>流量波动、无状态服务</td></tr>
             <tr><td>VPA</td><td>垂直：调整单 Pod 资源</td><td>资源申请不合理</td></tr>
           </tbody>
         </table>
       </section>
-<section id="request-vs-limit">
-        <h2>513. request 和 limit 有什么区别？</h2>
-        <p><code>request</code> 是调度保证资源，<code>limit</code> 是容器可用上限。CPU 超限被限流，内存超限可能 OOMKilled。</p>
-      </section>
+
 <section id="pod-failure-troubleshooting">
-        <h2>514. Pod 一直启动失败，你会怎么排查？</h2>
-        <pre><code>kubectl get pods
+        <h2>Pod 一直启动失败，你会怎么排查？</h2>
+        <pre><code class="language-bash">kubectl get pods
 kubectl describe pod pod-name
 kubectl logs pod-name
 kubectl logs pod-name --previous</code></pre>
         <p>常见原因：ImagePullBackOff、CrashLoopBackOff、配置缺失、健康检查失败、资源不足、应用自身异常。</p>
-      </section>    </main>
+      </section>
+
+<section id="Slurm">
+        <h2>Slurm和K8S区别是什么？</h2>
+        <p>Slurm 是 HPC （HPC = High Performance Computing，高性能计算）和 AI 训练场景常用的资源调度系统，主要负责把<span class="em-warn">批处理任务调度到 CPU/GPU 节点</span>上运行。</p>
+        <p>它和 K8S 都有资源调度能力，但 Slurm 更偏离线计算和训练任务，K8S 更偏容器编排、微服务和在线服务。</p>
+        <p>比如大模型训练、科研计算更常用 Slurm；RAG API、Agent 服务、推理服务更常部署在 K8S 上。</p>
+        <p>Slurm：调度计算任务，跑完结束K8S：编排在线服务，长期运行</p>
+      </section>
+</main>
   </div>
+  <script src="assets/highlight.min.js"></script>
   <script src="assets/study-legacy-map.js"></script>
   <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
   <script src="assets/html-serializer.js"></script>
   <script src="assets/content-editor.js"></script>
 </body>

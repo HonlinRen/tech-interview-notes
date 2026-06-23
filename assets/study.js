@@ -222,6 +222,7 @@
         "is-vs-equals": "python",
         isempty: "java",
         isolation: "mysql",
+        "isolation-lock-relation": "mysql",
         "iterator-generator": "python",
         "iterator-remove": "java",
         "java-bytecode": "java",

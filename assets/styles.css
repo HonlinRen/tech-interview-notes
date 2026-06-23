@@ -41,6 +41,7 @@
       align-self: start;
       display: flex;
       flex-direction: column;
+      height: calc(100vh - 48px);
       max-height: calc(100vh - 48px);
       overflow: hidden;
       background: var(--paper);
@@ -58,19 +59,17 @@
     aside > .toc-group {
       flex: 1 1 auto;
       min-height: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      margin-bottom: -18px;
-    }
-
-    .toc-group .toc-links {
-      flex: 1 1 auto;
-      min-height: 0;
+      overflow-x: hidden;
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable;
+      margin-bottom: -18px;
       padding-bottom: 18px;
+    }
+
+    .toc-group .toc-links {
+      padding-bottom: 0;
     }
 
     aside h2 {
@@ -163,7 +162,6 @@
       font-weight: 700;
       list-style-position: outside;
       padding: 6px 0;
-      flex-shrink: 0;
     }
 
     .toc-group.active summary {
@@ -743,6 +741,7 @@
 
       aside {
         position: static;
+        height: auto;
         max-height: none;
         overflow: visible;
       }
@@ -751,11 +750,6 @@
         flex: none;
         overflow: visible;
         margin-bottom: 0;
-      }
-
-      .toc-group .toc-links {
-        flex: none;
-        overflow: visible;
         padding-bottom: 0;
       }
 

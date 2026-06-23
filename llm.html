@@ -72,16 +72,16 @@
         </table>
         <h3>KV Cache</h3>
         <p>生成每个新 Token 时，历史 Token 的 Key/Value 可复用。KV Cache 将这部分存下来，避免 Prefill 之后每步重复计算 Attention。</p>
-        <pre><code>Prefill：处理完整 prompt，建立 KV Cache
+        <pre><code class="language-python">Prefill：处理完整 prompt，建立 KV Cache
 Decode：每步只算新 token，读取已有 KV Cache</code></pre>
         <p>长上下文下 KV Cache 显存占用大，PagedAttention（vLLM）将其分页管理，减少碎片并提高并发。</p>
         <h3>Continuous Batching</h3>
         <p>传统静态 batch 需等最长序列结束才释放；Continuous Batching 在推理过程中动态插入/移除请求，显著提升吞吐。</p>
-        <pre><code>静态 batch：A、B、C 同时开始，等最慢的结束
+        <pre><code class="language-python">静态 batch：A、B、C 同时开始，等最慢的结束
 Continuous Batching：A 先结束立刻释放，新请求 D 补位</code></pre>
         <h3>量化推理</h3>
         <p>将 FP16/FP32 权重压缩为 INT8/INT4，降低显存占用与内存带宽压力，常见方案 GPTQ、AWQ、GGUF。</p>
-        <pre><code>FP16 7B 模型 ≈ 14GB 显存
+        <pre><code class="language-python">FP16 7B 模型 ≈ 14GB 显存
 INT4 量化后 ≈ 4GB，延迟通常可接受</code></pre>
         <h3>Speculative Decoding</h3>
         <p>用小模型（Draft Model）快速生成多个候选 Token，大模型并行验证，接受则一次前进多步，减少大模型调用次数。</p>
@@ -94,11 +94,17 @@ INT4 量化后 ≈ 4GB，延迟通常可接受</code></pre>
         <p>面试要点：推理加速 ≠ 换更大模型；从 <span class="em-warn">Attention、KV Cache、Batch 调度、量化、并行</span> 五个维度回答即可。</p>
       </section>
 
+<section id="vLLM-mean">
+        <h2>vLLM是什么？</h2>
+        <p>vLLM 是一个大模型推理服务框架，主要目标是<span class="em-warn">提高推理吞吐和显存利用率</span>。它比较核心的点是 PagedAttention，可以更高效地管理 KV Cache，提升高并发请求下的显存利用率。</p>
+        <p></p>
+      </section>
+
 <section id="sft-finetuning">
         <h2>模型微调 SFT 是什么？</h2>
         <p>SFT（Supervised Fine-Tuning，<strong>监督微调</strong>）是在预训练大模型基础上，用<strong>标注好的输入-输出样本</strong>继续训练，让模型学会遵循指令、输出特定格式或领域风格。</p>
         <h3>在大模型训练链路中的位置</h3>
-        <pre><code>预训练（Pre-training）
+        <pre><code class="language-json">预训练（Pre-training）
   ↓ 海量无标注文本，学语言与知识
 SFT（Supervised Fine-Tuning）
   ↓ 指令-回答对，学对话与任务格式
@@ -108,9 +114,9 @@ RLHF / DPO（可选）
         <h3>训练数据格式</h3>
         <p>典型为 instruction-output 对，也可含 system prompt 和多轮对话。</p>
         <pre><code class="language-json">{
-  "instruction": "将以下句子翻译成英文",
-  "input": "今天天气很好",
-  "output": "The weather is nice today."
+  &quot;instruction&quot;: &quot;将以下句子翻译成英文&quot;,
+  &quot;input&quot;: &quot;今天天气很好&quot;,
+  &quot;output&quot;: &quot;The weather is nice today.&quot;
 }</code></pre>
         <p>多轮对话则按 ChatML / ShareGPT 等模板组织，训练时只对 assistant 回复部分计算 loss。</p>
         <h3>SFT 能做什么</h3>

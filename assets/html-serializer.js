@@ -183,6 +183,27 @@
   }
 
   function serializeParagraph(p, baseIndent) {
+    const pres = Array.from(p.children).filter(function (el) {
+      return el.tagName === "PRE";
+    });
+    if (pres.length > 0) {
+      const parts = [];
+      Array.from(p.childNodes).forEach(function (node) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "PRE") {
+          parts.push(serializePre(node, baseIndent));
+          return;
+        }
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          parts.push(serializeInline(node));
+          return;
+        }
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+          parts.push(baseIndent + "<p>" + escapeHtml(node.textContent.trim()) + "</p>");
+        }
+      });
+      return parts.filter(Boolean).join("\n");
+    }
+
     const lists = Array.from(p.children).filter(function (el) {
       return el.tagName === "UL" || el.tagName === "OL";
     });

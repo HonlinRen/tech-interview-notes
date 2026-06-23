@@ -141,7 +141,7 @@ asyncio.run(task())</code></pre>
         <h2>multiprocessing 怎么绕过 GIL？</h2>
         <p><code>multiprocessing</code> 通过 <strong>多进程</strong> 绕过 GIL。</p>
         <p>GIL 是 CPython 解释器进程级别的锁。每个子进程有自己的解释器和 GIL，因此可以并行执行。</p>
-        <pre><code>线程 1、线程 2、线程 3
+        <pre><code class="language-python">线程 1、线程 2、线程 3
 共享同一个进程的 GIL
 
 进程 1 有自己的 GIL
@@ -369,7 +369,7 @@ for x in nums():
           <li>Java中 对象仍然存在于 List、Map、Queue 等集合中，没有被及时移除。</li>
         </ul>
         <h3>排查思路</h3>
-        <pre><code>观察进程 RSS / Python heap / 对象数量是否持续增长
+        <pre><code class="language-python">观察进程 RSS / Python heap / 对象数量是否持续增长
       -&gt; 用 tracemalloc 对比内存快照
       -&gt; 用 gc 查看不可达对象和引用关系
       -&gt; 检查全局变量、缓存、闭包、回调、后台任务
@@ -389,7 +389,7 @@ for x in nums():
           Python 会尝试自动调用该方法。它通常用于对象销毁前的收尾逻辑。
         </p>
         <h3>基本示例</h3>
-        <pre><code>class User:
+        <pre><code class="language-python">class User:
           def __init__(self, name):
               self.name = name
               print(f&quot;{self.name} 创建了&quot;)
@@ -418,7 +418,7 @@ for x in nums():
           HTTP 连接等资源，更推荐使用 <code>with</code> 上下文管理器或显式
           <code>close()</code> 方法。
         </p>
-        <pre><code># 推荐：使用 with 自动释放资源
+        <pre><code class="language-python"># 推荐：使用 with 自动释放资源
       with open(&quot;data.txt&quot;, &quot;r&quot;) as f:
           data = f.read()
       
@@ -438,14 +438,10 @@ for x in nums():
 
 <section id="closure">
         <h2>Python 闭包是什么？</h2>
-        <p>
-          闭包是指：内部函数引用了外部函数中的变量，并且这个内部函数被返回到外部继续使用。
-          即使外部函数已经执行结束，被引用的外部变量仍然会被保留下来。
-        </p>
-        <h3>闭包的本质</h3>
-        <pre><code>闭包 = 函数 + 被函数捕获的外部变量</code></pre>
+        <p>闭包的本质</p>
+        <pre><code class="language-python">闭包 = 函数 + 被函数捕获的外部变量</code></pre>
         <h3>保存状态示例</h3>
-        <pre><code>def counter():
+        <pre><code class="language-python">def counter():
           count = 0
       
           def add():
@@ -468,8 +464,8 @@ for x in nums():
         </p>
         <h3>常见使用场景</h3>
         <ul>
-          <li>装饰器：在不修改原函数代码的情况下增强功能</li>
-          <li>回调函数：延迟执行时仍然保留上下文变量</li>
+          <li><strong><span class="em-warn">装饰器</span></strong>：在不修改原函数代码的情况下增强功能</li>
+          <li><span class="em-warn"></span><span class="em-warn"><span class="em-warn"></span><span class="em-warn"><span class="em-warn">回调函数</span>：</span></span>延迟执行时仍然保留上下文变量</li>
           <li>封装状态：避免使用全局变量</li>
           <li>函数工厂：根据不同参数生成不同行为的函数</li>
         </ul>
@@ -482,8 +478,8 @@ for x in nums():
         </p>
         <h3>面试总结</h3>
         <p>
-          Python 闭包是指内部函数引用外部函数的变量，并且内部函数被返回后仍然可以访问这些变量。
-          它的核心是函数能够记住创建它时的上下文，常用于装饰器、回调函数、状态封装和延迟执行等场景。
+          Python 闭包是指内部函数引用外部函数的变量，并且<span class="em-warn">内部函数被返回后仍然可以访问这些变量</span>。
+          它的核心是函数能够记住创建它时的上下文，常用于<span class="em-warn">装饰器、回调函数</span>、状态封装和延迟执行等场景。
         </p>
       </section>
 
@@ -673,7 +669,7 @@ print(a)  # [1, 2, 3]</code></pre>
         <p>MRO（Method Resolution Order，<strong>方法解析顺序</strong>）规定多继承时，Python 查找属性/方法的<strong>先后顺序</strong>。</p>
         <h3>为什么需要 MRO？</h3>
         <p>多继承常出现「菱形继承」：两个父类继承同一祖先。没有统一顺序，同一方法可能被重复调用或漏调。</p>
-        <pre><code>      A
+        <pre><code class="language-python">      A
      /   \
     B     C
      \   /

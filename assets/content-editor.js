@@ -203,6 +203,9 @@
     if (!line) {
       return false;
     }
+    if (/^\s*#/.test(line)) {
+      return true;
+    }
     if (/^(&lt;|<)pre/i.test(line) || /^(&lt;|<)code/i.test(line)) {
       return false;
     }
@@ -400,7 +403,7 @@
         return;
       }
       const text = p.textContent.replace(/\r\n/g, "\n").trim();
-      if (!looksLikeMergedCode(text)) {
+      if (!looksLikeMergedCode(text) && !looksLikeMultilineCodeText(text)) {
         return;
       }
       const pre = document.createElement("pre");
@@ -440,7 +443,7 @@
         const codeText = run.map(function (p) {
           return p.textContent.trim();
         }).join("\n");
-        if (looksLikeMergedCode(codeText)) {
+        if (looksLikeMergedCode(codeText) || looksLikeMultilineCodeText(codeText)) {
           const pre = document.createElement("pre");
           pre.contentEditable = "false";
           const code = document.createElement("code");
@@ -458,6 +461,92 @@
       }
       i += 1;
     }
+  }
+
+  function inferDefaultCodeLang() {
+    const category = document.body && document.body.dataset.category;
+    const map = {
+      python: "python",
+      ai: "python",
+      java: "java",
+      spring: "java",
+      mysql: "sql",
+      redis: "bash",
+      rocketmq: "java",
+      "docker-k8s": "bash",
+      llm: "python",
+      architecture: "bash",
+      observability: "bash",
+      security: "java"
+    };
+    return map[category] || "";
+  }
+
+  function hoistPreBlocks(root) {
+    Array.from(root.querySelectorAll("pre")).forEach(function (pre) {
+      let parent = pre.parentElement;
+      while (parent && parent !== root) {
+        const grand = parent.parentElement;
+        if (!grand) {
+          break;
+        }
+        if (parent.tagName === "P" || parent.tagName === "LI") {
+          grand.insertBefore(pre, parent.nextSibling);
+          if (
+            parent.tagName === "P" &&
+            !parent.textContent.trim() &&
+            !parent.querySelector("img, ul, ol, table, pre, code")
+          ) {
+            parent.remove();
+          }
+          parent = pre.parentElement;
+          continue;
+        }
+        if (
+          parent.tagName === "DIV" &&
+          grand === root &&
+          parent.children.length === 1 &&
+          parent.firstElementChild === pre
+        ) {
+          parent.replaceWith(pre);
+          break;
+        }
+        break;
+      }
+      pre.contentEditable = "false";
+    });
+  }
+
+  function looksLikeMultilineCodeText(text) {
+    const normalized = text.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      return false;
+    }
+    const lines = normalized.split("\n").filter(function (line) {
+      return line.trim();
+    });
+    if (lines.length < 2) {
+      return false;
+    }
+    if (/^(import |from |def |class |async def |@|#|\/\/|\/\*|\{|\}|try:|except |if __name__)/m.test(normalized)) {
+      return true;
+    }
+    return looksLikeMergedCode(normalized);
+  }
+
+  function findBlockInsertAnchor(editable, range) {
+    let node = range.commonAncestorContainer;
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentElement;
+    }
+    if (!(node instanceof Element) || !editable.contains(node)) {
+      return null;
+    }
+    const block = node.closest("p, h3, h4, pre, table, ul, ol");
+    if (block && editable.contains(block) && block.parentElement === editable) {
+      return block;
+    }
+    return null;
   }
 
   function restoreCodeBlocksFromData(root) {
@@ -480,17 +569,22 @@
   }
 
   function prepareCodeBlocksForSave(root) {
+    hoistPreBlocks(root);
     promoteInlineCodeBlocks(root);
     repairPartialInlineCodeParagraphs(root);
     repairSplitCodeParagraphs(root);
     normalizePlainTextCodeParagraphs(root);
     restoreCodeBlocksFromData(root);
+    hoistPreBlocks(root);
     protectCodeBlocks(root);
     root.querySelectorAll("pre code").forEach(function (code) {
       const plain = code.textContent.replace(/\r\n/g, "\n");
       code.textContent = plain;
       const pre = code.closest("pre");
-      const lang = (pre && (pre.dataset.codeLang || getCodeLanguage(pre))) || inferCodeLangFromAnswer(root);
+      const lang =
+        (pre && (pre.dataset.codeLang || getCodeLanguage(pre))) ||
+        inferCodeLangFromAnswer(root) ||
+        inferDefaultCodeLang();
       if (lang) {
         setCodeLanguage(code, lang);
         if (pre) {
@@ -782,21 +876,37 @@
     }
 
     const range = selection.getRangeAt(0);
-    range.deleteContents();
+    const defaultLang = inferDefaultCodeLang();
+    if (defaultLang) {
+      langSelect.value = defaultLang;
+    }
 
     const pre = document.createElement("pre");
     pre.contentEditable = "false";
+    pre.dataset.editorCodeBlock = "1";
     const code = document.createElement("code");
+    if (defaultLang) {
+      setCodeLanguage(code, defaultLang);
+      pre.dataset.codeLang = defaultLang;
+    }
     code.textContent = "";
     pre.appendChild(code);
 
     const paragraph = document.createElement("p");
     paragraph.appendChild(document.createElement("br"));
 
-    const fragment = document.createDocumentFragment();
-    fragment.appendChild(pre);
-    fragment.appendChild(paragraph);
-    range.insertNode(fragment);
+    const anchor = findBlockInsertAnchor(editable, range);
+    if (anchor) {
+      anchor.insertAdjacentElement("afterend", pre);
+      pre.insertAdjacentElement("afterend", paragraph);
+    } else {
+      range.deleteContents();
+      const fragment = document.createDocumentFragment();
+      fragment.appendChild(pre);
+      fragment.appendChild(paragraph);
+      range.insertNode(fragment);
+      hoistPreBlocks(editable);
+    }
 
     openCodePanel(pre);
     setStatus("");
@@ -1016,9 +1126,16 @@
     }
 
     code.textContent = codeTextarea.value.replace(/\r\n/g, "\n");
-    setCodeLanguage(code, langSelect.value);
+    const lang = langSelect.value || inferDefaultCodeLang() || inferCodeLangFromAnswer(state.activePre.closest(".answer") || state.activePre.closest("section"));
+    setCodeLanguage(code, lang);
     state.activePre.contentEditable = "false";
-    markCodeBlockMetadata(state.activePre, codeTextarea.value, langSelect.value);
+    state.activePre.dataset.editorCodeBlock = "1";
+    markCodeBlockMetadata(state.activePre, codeTextarea.value, lang);
+
+    const contentRoot = getSectionContentRoot(state.activePre.closest("section"));
+    if (contentRoot) {
+      hoistPreBlocks(contentRoot);
+    }
 
     if (window.hljs) {
       delete code.dataset.highlighted;

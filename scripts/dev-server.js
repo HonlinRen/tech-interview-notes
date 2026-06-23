@@ -16,7 +16,8 @@ const ALLOWED_FILES = new Set([
   "ai.html",
   "architecture.html",
   "observability.html",
-  "security.html"
+  "security.html",
+  "llm.html"
 ]);
 
 const CATEGORY_TO_FILE = {
@@ -30,7 +31,8 @@ const CATEGORY_TO_FILE = {
   ai: "ai.html",
   architecture: "architecture.html",
   observability: "observability.html",
-  security: "security.html"
+  security: "security.html",
+  llm: "llm.html"
 };
 
 const app = express();

@@ -52,7 +52,7 @@
         <h2>RAG 是什么？</h2>
         <p>RAG（Retrieval-Augmented Generation，检索增强生成）先从外部知识库<strong>检索</strong>相关资料，再将检索结果与用户问题一起交给 LLM 生成答案。</p>
         <h3>核心流程</h3>
-        <pre><code>用户问题 -&gt; 检索 -&gt; 组装上下文 -&gt; LLM 生成 -&gt; 引用溯源</code></pre>
+        <pre><code class="language-python">用户问题 -&gt; 检索 -&gt; 组装上下文 -&gt; LLM 生成 -&gt; 引用溯源</code></pre>
         <h3>解决什么问题</h3>
         <ul>
           <li>降低幻觉：答案基于检索资料，而非纯参数记忆。</li>
@@ -131,7 +131,7 @@
 <section id="vector-retrieval">
         <h2>向量检索的基本原理是什么？</h2>
         <p>Embedding 模型将文本映射到高维向量空间，语义相近的文本向量距离更近。</p>
-        <pre><code>文档 -&gt; Embedding -&gt; 向量库
+        <pre><code class="language-python">文档 -&gt; Embedding -&gt; 向量库
 查询 -&gt; Embedding -&gt; ANN 搜索 -&gt; TopK 相似片段</code></pre>
         <h3>优势与局限</h3>
         <ul>
@@ -175,7 +175,7 @@
 <section id="rerank">
         <h2>Rerank 是什么？</h2>
         <p>Rerank（重排）对初步召回的 TopN 候选用更精确模型重新打分排序。</p>
-        <pre><code>Bi-Encoder 召回 Top100 -&gt; Cross-Encoder Rerank -&gt; Top5 进 Prompt</code></pre>
+        <pre><code class="language-python">Bi-Encoder 召回 Top100 -&gt; Cross-Encoder Rerank -&gt; Top5 进 Prompt</code></pre>
         <table>
           <thead>
             <tr>
@@ -190,6 +190,36 @@
           </tbody>
         </table>
         <p>只对 TopN（50–100）重排，平衡精度与延迟。</p>
+      </section>
+
+<section id="what-is-mcp">
+        <h2>MCP是什么？</h2>
+        <p>MCP 全称是 <strong>Model Context Protocol，模型上下文协议</strong>。</p>
+        <p>MCP 是 AI Agent 连接外部工具、数据库、文件系统、业务系统的一套标准协议。</p>
+        <pre><code class="language-python">AI 应用 / Agent
+  └── MCP Client
+          ↓
+      MCP Server
+          ├── Tool：执行动作
+          ├── Resource：读取资源
+          └── Prompt：提供提示词模板</code></pre>
+        <p>注册一个新的 MCP 服务，通常要给调用方提供：</p>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>连接信息</td><td>服务地址、启动命令、传输方式、环境变量</td></tr>
+            <tr><td>能力清单</td><td>tools、resources、prompts</td></tr>
+            <tr><td>参数规范</td><td>每个 tool 的入参 schema、出参格式</td></tr>
+            <tr><td>权限信息</td><td>鉴权方式、工具权限、读写范围</td></tr>
+            <tr><td>运行约束</td><td>超时、限流、最大结果数、错误码</td></tr>
+            <tr><td>示例文档</td><td>配置示例、调用示例、典型返回结果</td></tr>
+          </tbody>
+        </table>
       </section>
 
 <section id="tool-calling-mcp">
@@ -214,6 +244,7 @@
 <section id="MCP-Registry">
         <h2>MCP Server 怎么注册和鉴权？</h2>
         <p>MCP Server 不由中心注册表统一登记，而是由 <strong>Client 在本地配置中声明</strong>，启动时按配置拉起或连接 Server，完成握手后纳入可用工具池。</p>
+        <p><strong>stdio = standard input / standard output，标准输入输出。</strong></p>
         <h3>注册方式</h3>
         <table>
           <thead>
@@ -224,11 +255,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>本地 stdio</td><td><code>command</code> + <code>args</code> + <code>env</code></td><td>Cursor / Claude Desktop 拉起子进程</td></tr>
-            <tr><td>远程 HTTP</td><td><code>url</code> + 鉴权头 / OAuth</td><td>团队共享、SaaS 类 MCP 服务</td></tr>
+            <tr><td>本地 stdio</td><td><code>command</code> + <code>args</code> + <code>env</code></td><td>本机工作 Cursor / Claude Code拉起子进程</td></tr>
+            <tr><td>远程 HTTP</td><td><code>url</code> + 鉴权头 / OAuth</td><td>团队共享、企业级工具服务</td></tr>
           </tbody>
         </table>
-        <pre><code>// Cursor: .cursor/mcp.json 示例
+        <pre><code class="language-json">// Cursor: .cursor/mcp.json 示例
 {
   &quot;mcpServers&quot;: {
     &quot;filesystem&quot;: {
@@ -246,7 +277,7 @@
         <ul>
           <li><strong>本地 stdio</strong>：依赖 OS 进程隔离，通常不单独鉴权；敏感凭据放 <code>env</code>，由 Server 进程读取。</li>
           <li><strong>API Key / Bearer Token</strong>：远程 Server 在 HTTP Header 或环境变量中校验。</li>
-          <li><strong>OAuth 2.0</strong>：远程 MCP 按规范走授权码 + PKCE，Client 拿 access token 后带在请求头访问。</li>
+          <li><strong>OAuth 2.0</strong>：远程 MCP 按规范走临时 授权码 + PKCE，Client 拿 access token 后带在请求头访问。</li>
           <li><strong>权限治理</strong>：Client 侧控制启用哪些 Server；Server 侧按 scope / 白名单限制可调工具与资源。</li>
         </ul>
         <p>连接建立后 Client 发 <code>initialize</code>，双方交换 capabilities，再拉取 <code>tools/list</code> 完成「注册」。</p>
@@ -254,45 +285,43 @@
 
 <section id="Model-Context-Protocol">
         <h2>MCP Client 和 Server 通信方式是什么？</h2>
-        <p>底层统一采用 <strong>JSON-RPC 2.0</strong> 消息格式，通过不同 <strong>Transport</strong> 承载；同一连接上可发 request、response、notification 三类消息。</p>
+        <p>统一用 <strong>JSON-RPC 2.0</strong> 传消息（说什么），经不同 <strong>Transport</strong> 送达（怎么传）。</p>
+        <p>消息分三类：带 <code>id</code> 的 Request/Response（要回复）和无 <code>id</code> 的 Notification（不回复）。</p>
         <table>
           <thead>
             <tr>
               <th>Transport</th>
               <th>方式</th>
-              <th>特点</th>
+              <th>场景</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>stdio</td><td>Client 启动子进程，stdin/stdout 传 JSON-RPC 行</td><td>本地、低延迟、最常见</td></tr>
-            <tr><td>Streamable HTTP</td><td>HTTP POST 发请求，可选 SSE 流式收响应</td><td>远程部署、可多 Client 共享</td></tr>
-            <tr><td>SSE（旧）</td><td>独立 SSE 端点推送事件</td><td>逐步被 Streamable HTTP 取代</td></tr>
+            <tr><td><strong>stdio</strong></td><td>Client 启动子进程，<code>stdin</code>/<code>stdout</code> 一行一条 JSON</td><td>本地，Cursor / Claude Desktop 最常见</td></tr>
+            <tr><td><strong>Streamable HTTP</strong></td><td>向单一 MCP 端点发 HTTP POST，响应为 JSON 或 SSE 流</td><td>远程共享，支持 Bearer / OAuth 鉴权</td></tr>
           </tbody>
         </table>
-        <h3>典型交互流程</h3>
-        <ol>
-          <li><code>initialize</code> → Server 返回协议版本与 capabilities。</li>
-          <li>Client 发 <code>initialized</code> 通知，会话就绪。</li>
-          <li>Client 按需调用 <code>tools/list</code>、<code>resources/list</code>、<code>prompts/list</code> 发现能力。</li>
-          <li>模型决策后 Client 发 <code>tools/call</code>，Server 执行并返回结构化结果。</li>
-        </ol>
-        <pre><code>// tools/call 请求示例
-{
-  &quot;jsonrpc&quot;: &quot;2.0&quot;,
-  &quot;id&quot;: 2,
-  &quot;method&quot;: &quot;tools/call&quot;,
-  &quot;params&quot;: {
-    &quot;name&quot;: &quot;search_docs&quot;,
-    &quot;arguments&quot;: { &quot;query&quot;: &quot;MCP 鉴权&quot;, &quot;top_k&quot;: 5 }
-  }
+        <h3>典型流程</h3>
+        <pre><code class="language-json">initialize → initialized → tools/list（发现工具）
+→ 模型 Tool Calling 决策 → tools/call（执行）→ 结果回传模型</code></pre>
+        <pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: 2,
+    &quot;method&quot;: &quot;tools/call&quot;,
+    &quot;params&quot;: {
+        &quot;name&quot;: &quot;search_docs&quot;,
+        &quot;arguments&quot;: {
+            &quot;query&quot;: &quot;MCP 鉴权&quot;,
+            &quot;top_k&quot;: 5
+        }
+    }
 }</code></pre>
-        <p>MCP 管「Client ↔ Server」通道；模型侧的 Tool Calling 管「LLM 选哪个工具、填什么参」，Client 负责把模型输出映射为 <code>tools/call</code>。</p>
+        <p>消息层使用 JSON-RPC 2.0；传输层可以走本地 stdio，也可以走远程 Streamable HTTP</p>
       </section>
 
 <section id="MCP-schema">
         <h2>MCP工具 schema 怎么定义？</h2>
         <p>MCP 工具在 Server 中声明 <code>name</code>、<code>description</code>、<code>inputSchema</code> 三要素；<code>inputSchema</code> 为标准 <strong>JSON Schema</strong>，描述参数类型、必填项与约束，经 <code>tools/list</code> 暴露给 Client，再转成模型可用的 Tool 定义。</p>
-        <pre><code>// Server 侧工具定义（逻辑结构）
+        <pre><code class="language-python">// Server 侧工具定义（逻辑结构）
 {
   &quot;name&quot;: &quot;search_docs&quot;,
   &quot;description&quot;: &quot;搜索企业知识库文档&quot;,
@@ -464,7 +493,7 @@ rag_chain = (
           <li>只返回 State 增量更新，不覆盖整个状态。</li>
           <li>条件分支、循环通过 conditional edge 表达。</li>
         </ul>
-        <pre><code>def retrieve_node(state):
+        <pre><code class="language-python">def retrieve_node(state):
     docs = retriever.search(state[&quot;rewritten_query&quot;])
     return {&quot;retrieved_docs&quot;: docs}</code></pre>
       </section>
@@ -589,9 +618,9 @@ graph = builder.compile(checkpointer=memory)</code></pre>
           </thead>
           <tbody>
             <tr><td>语言</td><td>中文场景选 bge-m3、text-embedding-v3 等</td></tr>
-            <tr><td>维度</td><td>768/1024/1536，与向量库兼容</td></tr>
-            <tr><td>任务</td><td>检索 vs 分类 vs 聚类</td></tr>
-            <tr><td>成本</td><td>自托管 vs API 调用</td></tr>
+            <tr><td>维度</td><td>向量维度越高，通常表达能力更强，但成本也更高。</td></tr>
+            <tr><td>最大长度</td><td>不同模型支持的文本长度不同</td></tr>
+            <tr><td>检索效果</td><td>召回率 正确答案排序靠前等</td></tr>
           </tbody>
         </table>
         <p>用 MTEB/C-MTEB 榜单 + 自有评测集 recall@K 做最终决策；切换模型需全量重建索引。</p>
@@ -681,7 +710,7 @@ graph = builder.compile(checkpointer=memory)</code></pre>
 <section id="multi-hop-rag">
         <h2>Multi-hop RAG 是什么？</h2>
         <p>Multi-hop RAG 处理需<strong>多步检索</strong>才能回答的问题：先检索 A，再从 A 中提取线索检索 B，最终综合生成。</p>
-        <pre><code>Q: 发明 Transformer 的公司 CEO 是谁？
+        <pre><code class="language-python">Q: 发明 Transformer 的公司 CEO 是谁？
 Hop1: 检索 -&gt; Transformer 由 Google 提出
 Hop2: 检索 -&gt; Google CEO 是 Sundar Pichai
 Generate: 综合回答</code></pre>
@@ -720,7 +749,7 @@ Generate: 综合回答</code></pre>
           <li><strong>表格 RAG</strong>：行/列切片 + metadata 标记表名。</li>
           <li><strong>混合路由</strong>：Classifier 判断走向量检索还是 SQL。</li>
         </ul>
-        <pre><code>用户问题 -&gt; 意图分类
+        <pre><code class="language-python">用户问题 -&gt; 意图分类
   ├─ 结构化 -&gt; Text-to-SQL -&gt; 执行 -&gt; 格式化
   └─ 非结构化 -&gt; 向量 RAG</code></pre>
         <p>结构化数据优先精确查询，向量检索仅作补充。</p>
@@ -792,7 +821,7 @@ Generate: 综合回答</code></pre>
           <li>生成时要求标注 <code>[1][2]</code> 引用编号，映射到来源列表。</li>
           <li>前端展示可点击跳转原文。</li>
         </ul>
-        <pre><code>上下文格式:
+        <pre><code class="language-python">上下文格式:
 [1] 来源: 员工手册 v3.2 第5页
 内容: 年假天数为...
 
@@ -865,7 +894,7 @@ Generate: 综合回答</code></pre>
           <li>请求日志记录 <code>prompt_version</code>，便于回溯。</li>
           <li>灰度发布：10% 流量走新版本，对比评测指标。</li>
         </ul>
-        <pre><code>prompts/
+        <pre><code class="language-python">prompts/
   system_v1.2.txt
   rag_generate_v2.0.txt</code></pre>
       </section>
@@ -927,7 +956,7 @@ Generate: 综合回答</code></pre>
 <section id="function-calling-schema">
         <h2>Function Calling 和 JSON Schema 有什么关系？</h2>
         <p>Function Calling 用 <strong>JSON Schema</strong> 描述工具的 name、description、parameters，模型据此生成结构化调用参数。</p>
-        <pre><code>{
+        <pre><code class="language-python">{
   &quot;name&quot;: &quot;search_docs&quot;,
   &quot;description&quot;: &quot;搜索企业知识库&quot;,
   &quot;parameters&quot;: {
@@ -951,7 +980,7 @@ Generate: 综合回答</code></pre>
           <li>跳过：告知模型工具不可用，请基于已有信息回答。</li>
           <li>人工兜底：HITL 介入或返回友好错误。</li>
         </ol>
-        <pre><code>try: result = call_tool(params)
+        <pre><code class="language-python">try: result = call_tool(params)
 except Timeout: result = {&quot;error&quot;: &quot;timeout&quot;, &quot;fallback&quot;: cached_data}
 except Exception: result = {&quot;error&quot;: &quot;unavailable&quot;}</code></pre>
       </section>
@@ -1015,7 +1044,7 @@ except Exception: result = {&quot;error&quot;: &quot;unavailable&quot;}</code></
           <li><code>thread_id</code> 标识会话，支持中断恢复。</li>
           <li>HITL 暂停：持久化后等待人工输入再继续。</li>
         </ul>
-        <pre><code>graph.compile(checkpointer=PostgresSaver(conn))
+        <pre><code class="language-python">graph.compile(checkpointer=PostgresSaver(conn))
 config = {&quot;configurable&quot;: {&quot;thread_id&quot;: &quot;session-123&quot;}}
 graph.invoke(input, config)  # 可 resume</code></pre>
       </section>
@@ -1042,7 +1071,7 @@ graph.invoke(input, config)  # 可 resume</code></pre>
           <li>按 SLA：超时自动切备用模型。</li>
         </ul>
         <h3>降级链</h3>
-        <pre><code>GPT-4o -&gt; GPT-4o-mini -&gt; 本地 Qwen -&gt; 缓存/static 回复</code></pre>
+        <pre><code class="language-python">GPT-4o -&gt; GPT-4o-mini -&gt; 本地 Qwen -&gt; 缓存/static 回复</code></pre>
         <p>模型网关统一路由、熔断、A/B 测试；降级时告知用户或静默切换视场景而定。</p>
       </section>
 
@@ -1092,7 +1121,7 @@ graph.invoke(input, config)  # 可 resume</code></pre>
 <section id="attention">
         <h2>Attention 和 Self-Attention 是什么？</h2>
         <p>Attention 计算 Query 对 Key 的权重，加权求和 Value，让模型关注相关信息。</p>
-        <pre><code>Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) · V</code></pre>
+        <pre><code class="language-python">Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) · V</code></pre>
         <h3>Self-Attention</h3>
         <p>Q、K、V 来自同一序列，每个 token 关注序列中所有 token（含自身），捕捉长距离依赖。</p>
         <p>Multi-Head 将 Attention 分多个头并行，学习不同子空间关系。</p>
@@ -1243,7 +1272,7 @@ graph.invoke(input, config)  # 可 resume</code></pre>
           <li>Prompt 明确字段、类型、示例。</li>
           <li>输出包裹在 <code>```json</code> 代码块中便于解析。</li>
         </ul>
-        <pre><code>请严格输出 JSON，不要其他文字:
+        <pre><code class="language-python">请严格输出 JSON，不要其他文字:
 {&quot;answer&quot;: &quot;...&quot;, &quot;confidence&quot;: 0.0-1.0, &quot;sources&quot;: [&quot;doc_id&quot;]}</code></pre>
         <p>解析失败时重试 + JSON repair；关键字段做 schema 校验。</p>
       </section>
@@ -1380,7 +1409,7 @@ graph.invoke(input, config)  # 可 resume</code></pre>
             <tr><td>Cross-Encoder</td><td>query+doc 拼接编码</td><td>慢，需在线计算</td><td>高</td></tr>
           </tbody>
         </table>
-        <pre><code>Bi-Encoder 召回 Top100 -&gt; Cross-Encoder Rerank -&gt; Top5</code></pre>
+        <pre><code class="language-python">Bi-Encoder 召回 Top100 -&gt; Cross-Encoder Rerank -&gt; Top5</code></pre>
       </section>
 
 <section id="lost-in-middle">
@@ -1434,7 +1463,7 @@ graph.invoke(input, config)  # 可 resume</code></pre>
 <section id="react">
         <h2>ReAct 是什么？</h2>
         <p>ReAct（Reasoning + Acting）交替<strong>思考</strong>和<strong>行动</strong>：Thought -&gt; Action -&gt; Observation 循环。</p>
-        <pre><code>Thought: 需要查员工手册中的年假规定
+        <pre><code class="language-python">Thought: 需要查员工手册中的年假规定
 Action: search_docs(&quot;年假天数&quot;)
 Observation: [1] 年假为15天...
 Thought: 已有足够信息
@@ -1446,7 +1475,7 @@ Answer: 年假为15天</code></pre>
 <section id="plan-and-execute">
         <h2>Plan-and-Execute 是什么？</h2>
         <p>先由 Planner 生成完整计划，再由 Executor 逐步执行，必要时 Replan。</p>
-        <pre><code>Plan: 1. 查销售数据 2. 生成图表 3. 写分析报告
+        <pre><code class="language-python">Plan: 1. 查销售数据 2. 生成图表 3. 写分析报告
 Execute Step1 -&gt; Execute Step2 -&gt; ...
 Replan (if step failed)</code></pre>
         <p>适合步骤清晰的长任务；比 ReAct 计划性更强，但灵活性稍低。</p>
@@ -1471,7 +1500,7 @@ Replan (if step failed)</code></pre>
           <li>校验失败：将错误反馈给模型重试（最多 N 次）。</li>
           <li>业务规则：范围检查、权限检查、SQL 注入防护。</li>
         </ol>
-        <pre><code>class SearchParams(BaseModel):
+        <pre><code class="language-python">class SearchParams(BaseModel):
     query: str = Field(min_length=1, max_length=200)
     top_k: int = Field(default=5, ge=1, le=20)</code></pre>
       </section>
@@ -1610,7 +1639,7 @@ Replan (if step failed)</code></pre>
           <li>Token 预算：超阈值触发压缩。</li>
           <li>重要信息提取：存 long-term memory，不丢关键事实。</li>
         </ul>
-        <pre><code>if total_tokens &gt; 8000:
+        <pre><code class="language-python">if total_tokens &gt; 8000:
     summary = summarize(old_messages)
     messages = [summary] + recent_messages</code></pre>
       </section>
@@ -1645,7 +1674,7 @@ Replan (if step failed)</code></pre>
           <li>失败：JSON repair -&gt; 重试 -&gt; 降级纯文本。</li>
           <li>API 层 <code>response_format</code> 约束（OpenAI Structured Outputs）。</li>
         </ol>
-        <pre><code>try:
+        <pre><code class="language-python">try:
     data = AnswerModel.model_validate_json(llm_output)
 except ValidationError:
     data = retry_with_fix_prompt(llm_output, error)</code></pre>
@@ -1664,7 +1693,7 @@ except ValidationError:
 
 <section id="feedback-loop">
         <h2>如何设计 AI 应用的反馈闭环？</h2>
-        <pre><code>用户提问 -&gt; 生成回答 -&gt; 用户反馈(👍/👎/纠错)
+        <pre><code class="language-python">用户提问 -&gt; 生成回答 -&gt; 用户反馈(👍/👎/纠错)
     -&gt; Bad Case 入库 -&gt; 人工标注 -&gt; 评测集更新
     -&gt; Prompt/RAG 优化 -&gt; A/B 验证 -&gt; 全量发布</code></pre>
         <p>闭环关键：反馈数据结构化存储，定期分析 Top 失败模式，优先修复高频 bad case。</p>

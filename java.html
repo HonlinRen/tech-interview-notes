@@ -76,13 +76,13 @@
         <p>JVM 堆通常分为年轻代和老年代。</p>
         <h3>年轻代</h3>
         <p>新对象大多数先进入年轻代。年轻代又分为：</p>
-        <pre><code>Eden 区
+        <pre><code class="language-java">Eden 区
 Survivor From 区
 Survivor To 区</code></pre>
         <p>对象一般先分配到 Eden 区。当年轻代空间不足时，会触发 Minor GC。存活下来的对象会进入 Survivor 区，多次存活后晋升到老年代。</p>
         <h3>老年代</h3>
         <p>老年代存放生命周期较长的对象，例如长期存在的缓存对象、Spring 单例 Bean、大集合、多次 GC 后仍存活的对象。</p>
-        <pre><code>新对象 -&gt; Eden
+        <pre><code class="language-java">新对象 -&gt; Eden
 Minor GC 后存活 -&gt; Survivor
 多次存活 -&gt; 老年代
 老年代不足 -&gt; Major GC / Full GC</code></pre>
@@ -226,7 +226,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满</code></
 
 <section id="proxy">
         <h2>Java 动态代理是什么？</h2>
-        <p>代理模式是在不直接访问目标对象的情况下，通过代理对象间接访问目标对象，并在调用前后增强额外逻辑。Java 动态代理是在运行时生成代理对象，常见用途包括 AOP、日志、权限校验、事务管理、RPC、MyBatis Mapper 代理。</p>
+        <p>代理模式是在<span class="em-warn">不直接访问目标对</span>象的情况下，通过代理对象间接访问目标对象，并在<span class="em-warn">调用前后增强额外逻辑</span>。Java 动态代理是在运行时生成代理对象，常见用途包括<mark> AOP、日志、权限校验、事务管理</mark>、RPC、MyBatis Mapper 代理。</p>
         <table>
           <thead>
             <tr>
@@ -272,7 +272,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满</code></
 <section id="hashmap-principle">
         <h2>HashMap 原理是什么？</h2>
         <p><code>HashMap</code> 是基于数组、链表和红黑树实现的 key-value 容器。核心思路是先通过 key 的 <code>hashCode()</code> 计算哈希值，再定位到数组桶位；如果多个 key 落到同一个桶，就通过链表或红黑树解决哈希冲突。</p>
-        <pre><code>put 流程：
+        <pre><code class="language-java">put 流程：
 计算 key 的 hash
 -&gt; 定位数组下标
 -&gt; 桶为空：直接放入
@@ -356,7 +356,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满</code></
 <section id="thread-pool-flow">
         <h2>Java 线程池执行流程是什么？</h2>
         <p>线程池提交任务后，不是直接无限创建线程，而是按照核心线程、任务队列、最大线程、拒绝策略的顺序控制资源。</p>
-        <pre><code>提交任务
+        <pre><code class="language-java">提交任务
 -&gt; 核心线程未满：创建核心线程执行
 -&gt; 核心线程已满：进入任务队列
 -&gt; 队列已满：创建非核心线程
@@ -396,7 +396,7 @@ private final Condition notFull = lock.newCondition();  // 队列未满</code></
 <section id="class-loading">
         <h2>Java 类加载过程是什么？</h2>
         <p>类加载是 JVM 把 <code>.class</code> 字节码变成运行时 <code>Class</code> 对象的过程。完整过程通常分为加载、验证、准备、解析、初始化，其中验证、准备、解析合称连接。</p>
-        <pre><code>加载：读取 class 字节码
+        <pre><code class="language-java">加载：读取 class 字节码
 验证：校验字节码安全性
 准备：为静态变量分配内存并设置默认值
 解析：符号引用转直接引用
@@ -506,7 +506,7 @@ AppClassLoader
 <section id="virtual-threads">
         <h2>Java 虚拟线程是什么？</h2>
         <p>虚拟线程是 JDK 21 正式引入的轻量级线程，属于 Project Loom 的核心能力。它仍然是 <code>java.lang.Thread</code>，但不再一一绑定操作系统线程，而是由 JDK 调度到少量平台线程上执行。</p>
-        <pre><code>传统平台线程：
+        <pre><code class="language-java">传统平台线程：
 Java Thread -&gt; OS Thread
 
 虚拟线程：
@@ -586,7 +586,7 @@ Java Thread -&gt; OS Thread
             <tr><td>排查重点</td><td>对象分配速率、年轻代大小、短命对象</td><td>内存泄漏、大对象、缓存无界、老年代增长、类加载异常</td></tr>
           </tbody>
         </table>
-        <pre><code>新对象大量分配
+        <pre><code class="language-java">新对象大量分配
 -&gt; Eden 不足
 -&gt; Minor GC
 -&gt; 存活对象进入 Survivor 或晋升老年代
@@ -1277,7 +1277,7 @@ Object user = clazz.getDeclaredConstructor().newInstance();</code></pre>
 <section id="reactor-model">
         <h2>Reactor 模型是什么？</h2>
         <p>Reactor 模型是一种事件驱动网络模型，由事件多路复用器监听 IO 事件，再分发给对应 Handler 处理。</p>
-        <pre><code>Selector 监听 IO 事件
+        <pre><code class="language-java">Selector 监听 IO 事件
 -&gt; 事件就绪
 -&gt; 分发给 Handler
 -&gt; Handler 处理读写、编解码或业务任务</code></pre>
