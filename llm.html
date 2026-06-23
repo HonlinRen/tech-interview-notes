@@ -163,6 +163,111 @@ RLHF / DPO（可选）
         </table>
         <p>企业落地多数直接用 API 基座模型 + Prompt/RAG；仅在需要<strong>固化风格或专有任务</strong>时才做 SFT。</p>
       </section>
+
+<section id="llm-finetuning">
+        <h2>大模型微调是什么？</h2>
+        <p>大模型微调（Fine-tuning）是在<strong>预训练基座模型</strong>上，用特定任务或领域的数据继续训练，使模型适应下游场景——而非从零训练。</p>
+        <p>预训练让模型「懂语言、有知识」；微调让模型「会做事、符合业务要求」。</p>
+        <h3>在大模型训练链路中的位置</h3>
+        <pre><code>预训练（Pre-training）     海量无标注文本，学语言与通用知识
+    ↓
+微调（Fine-tuning）        用标注数据适配任务 / 领域 / 风格
+    ├── 全参微调（Full Fine-tuning）
+    ├── 参数高效微调（PEFT）：LoRA、QLoRA、Adapter
+    └── 监督微调 SFT 是最常见的微调形式
+    ↓
+对齐（可选）               RLHF / DPO，对齐人类偏好与安全性</code></pre>
+        <h3>常见微调方式</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>方式</th>
+              <th>原理</th>
+              <th>适用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Full Fine-tuning</td><td>更新全部参数</td><td>数据多、算力足，追求效果上限</td></tr>
+            <tr><td>LoRA</td><td>冻结原权重，只训低秩适配器（约 0.1%~1% 参数）</td><td>单卡微调 7B~70B，多任务切换</td></tr>
+            <tr><td>QLoRA</td><td>4-bit 量化 + LoRA</td><td>显存受限场景</td></tr>
+            <tr><td>SFT</td><td>instruction-output 监督学习</td><td>教指令遵循、输出格式、领域话术</td></tr>
+          </tbody>
+        </table>
+        <h3>微调 vs 其他方案</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>方案</th>
+              <th>解决什么</th>
+              <th>成本</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Prompt Engineering</td><td>通过提示词引导行为</td><td>最低，即时生效</td></tr>
+            <tr><td>RAG</td><td>注入实时 / 私有知识</td><td>中，无需改模型权重</td></tr>
+            <tr><td>微调</td><td>固化风格、格式、任务习惯</td><td>高，需 GPU 与标注数据</td></tr>
+          </tbody>
+        </table>
+        <h3>什么时候该微调？</h3>
+        <ul>
+          <li>需要<strong>稳定输出格式</strong>（JSON Schema、企业话术、代码规范）。</li>
+          <li>领域术语密集，Prompt 难以稳定覆盖（医疗、法律、内部系统）。</li>
+          <li>同一任务高频调用，微调后推理成本可能低于超长 Prompt。</li>
+        </ul>
+        <h3>什么时候不该微调？</h3>
+        <ul>
+          <li>知识频繁更新 → 用 RAG，而非反复重训。</li>
+          <li>数据量极少（几十条）→ 效果有限，优先 Prompt / Few-shot。</li>
+          <li>安全与价值观对齐 → 需 RLHF/DPO，单靠 SFT 不够。</li>
+        </ul>
+        <p><strong>面试回答：</strong>微调是在预训练模型上用标注数据做二次训练；企业多数场景 API + RAG/Prompt 即可，仅在需固化风格或专有任务时才微调。</p>
+      </section>
+
+<section id="llm-rlhf">
+        <h2>大模型 RLHF 是什么？</h2>
+        <p>RLHF（Reinforcement Learning from Human Feedback，<strong>基于人类反馈的强化学习</strong>）是让大模型输出更符合人类偏好（有用、诚实、无害）的对齐技术，ChatGPT 等对话模型都经过此阶段。</p>
+        <p>SFT 教会模型「怎么回答」；RLHF 教会模型「哪种回答更好」。</p>
+        <h3>为什么需要 RLHF？</h3>
+        <p>SFT 只用单一标准答案训练，难以覆盖「多种回答都合理但优劣不同」的场景，也无法有效抑制有害、幻觉、啰嗦等输出。RLHF 引入<strong>人类偏好排序</strong>，让模型学习「更好 vs 更差」。</p>
+        <h3>经典三阶段流程</h3>
+        <pre><code>阶段 1：SFT（监督微调）
+  用 instruction-output 数据，得到会对话的基础模型
+
+阶段 2：训练奖励模型（Reward Model, RM）
+  人工对同一问题的多个回答排序（A &gt; B &gt; C）
+  RM 学习预测人类偏好分数
+
+阶段 3：强化学习优化（通常 PPO）
+  用 RM 给模型输出打分作为奖励信号
+  通过 PPO 更新策略模型，使高分回答概率增大
+  同时用 KL 散度约束，防止偏离 SFT 模型太远（模型崩溃）</code></pre>
+        <h3>各阶段职责</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>输入</th>
+              <th>输出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>SFT</td><td>标注问答对</td><td>能遵循指令的基础模型</td></tr>
+            <tr><td>奖励模型</td><td>人类偏好排序数据</td><td>给任意回答打偏好分的 RM</td></tr>
+            <tr><td>PPO 强化学习</td><td>RM 奖励 + KL 惩罚</td><td>对齐人类价值观的最终模型</td></tr>
+          </tbody>
+        </table>
+        <h3>RLHF 的难点</h3>
+        <ul>
+          <li><strong>标注成本高</strong>：偏好排序需大量人工参与。</li>
+          <li><strong>训练不稳定</strong>：PPO 超参敏感，易出现奖励黑客（reward hacking）。</li>
+          <li><strong>工程复杂</strong>：需同时维护 SFT 模型、RM、策略模型，显存与调度成本高。</li>
+        </ul>
+        <h3>RLHF 的替代：DPO</h3>
+        <p>DPO（Direct Preference Optimization）跳过显式奖励模型和 PPO，直接用偏好对（chosen vs rejected）优化策略，<strong>更简单、更稳定</strong>，效果接近 RLHF，近年被广泛采用。</p>
+        <pre><code>RLHF：SFT → 训 RM → PPO 强化学习（三模型、复杂）
+DPO：  SFT → 直接偏好优化（两阶段、轻量化）</code></pre>
+        <p><strong>面试回答：</strong>RLHF 用人类偏好训练奖励模型，再以强化学习（PPO）让模型输出更符合人类期望；目的是安全对齐，与 SFT 的任务适配互补。企业应用通常直接用已对齐的 API 模型，无需自训 RLHF。</p>
+      </section>
 </main>
   </div>
   <script src="assets/highlight.min.js"></script>

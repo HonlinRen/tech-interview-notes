@@ -94,7 +94,7 @@
 <section id="isolation-lock-relation">
         <h2>数据库隔离级别与锁机制关系是什么？</h2>
         <p>一句话：<strong>隔离级别定义并发下「能看见什么、避免什么异常」；MVCC 和锁是 InnoDB 实现隔离的两种手段</strong>——普通读靠 MVCC 快照，需要互斥时用锁。</p>
-        <pre><code>MySQL 数据库
+        <pre><code class="language-sql">MySQL 数据库
 └── InnoDB 存储引擎
     ├── 支持事务 ACID
     ├── 支持行级锁
@@ -102,7 +102,9 @@
     └── 支持事务隔离级别
         └── 默认隔离级别：Repeatable Read 可重复读
             ├── 普通 SELECT：主要通过 MVCC 快照读实现一致性读
-            └── SELECT ... FOR UPDATE：当前读，加锁，通常加行锁 / 间隙锁 / 临键锁</code></pre>
+            └── SELECT ... FOR UPDATE：当前读，加锁，通常加行锁 / 间隙锁 / 临键锁
+        └── Serializable
+            └── 主要通过加锁实现，读写串行化</code></pre>
         <p>MySQL 是数据库，InnoDB 是 MySQL 默认存储引擎；InnoDB 通过 MVCC、锁机制等实现事务隔离；Repeatable Read 是 InnoDB 默认事务隔离级别；<code>SELECT ... FOR UPDATE</code> 是在事务中主动加锁的一种 SQL 用法。</p>
         <table>
           <thead>
