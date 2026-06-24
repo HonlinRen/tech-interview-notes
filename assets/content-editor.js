@@ -54,6 +54,7 @@
     '<button type="button" class="tool-btn editor-format-btn" data-action="bold"><strong>B</strong></button>' +
     '<button type="button" class="tool-btn editor-format-btn" data-action="highlight">高亮</button>' +
     '<button type="button" class="tool-btn editor-format-btn em-orange-preview" data-action="orange">橙色</button>' +
+    '<button type="button" class="tool-btn editor-format-btn em-red-preview" data-action="red">红色</button>' +
     '<button type="button" class="tool-btn editor-format-btn" data-action="bullet">标题点</button>' +
     "</div>" +
     '<div class="editor-sidebar-tools-row">' +
@@ -1404,6 +1405,11 @@
     }
     if (action === "orange") {
       wrapSelectionWithClass("span", "em-warn");
+      captureSelection();
+      return;
+    }
+    if (action === "red") {
+      wrapSelectionWithClass("span", "em-danger");
       captureSelection();
       return;
     }

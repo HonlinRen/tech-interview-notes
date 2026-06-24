@@ -74,6 +74,11 @@ body.edit-mode .editor-sidebar-controls .editor-sidebar-btn[data-action="edit-pr
   font-weight: 600;
 }
 
+.editor-format-btn.em-red-preview {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 .editor-format-btn strong,
 .editor-format-btn del {
   font-weight: 700;

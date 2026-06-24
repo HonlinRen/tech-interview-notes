@@ -172,6 +172,59 @@
         <p>多轮对话需结合 <code>history</code> 或摘要后再改写，否则检索命中率低。</p>
       </section>
 
+<section id="rag-hyde">
+        <h2>RAG HyDE 是什么？</h2>
+        <p>HyDE（Hypothetical Document Embeddings，<strong>假设性文档嵌入</strong>）是一种 RAG 检索增强策略：不直接用用户问题去向量检索，而是先让 LLM 根据问题<strong>生成一篇「假想的答案文档」</strong>，再对这篇假设文档做 Embedding 去检索真实文档。</p>
+        <pre><code class="language-python">普通 RAG：  用户问题 → Embedding → 向量库 TopK
+HyDE RAG：  用户问题 → LLM 生成假设文档 → Embedding → 向量库 TopK → 生成最终答案</code></pre>
+        <h3>为什么需要 HyDE？</h3>
+        <p>向量检索的核心是「Query 与 Document 在 Embedding 空间足够接近」。但用户问题往往是<strong>短句、口语化</strong>，而知识库 Chunk 是<strong>长段落、陈述式</strong>，两者在向量空间中分布不对称，导致直接检索命中率低。</p>
+        <p>HyDE 的思路：让 LLM 先把问题「翻译」成一段看起来像知识库文档的文字，再用这段文字去检索，缩小 Query-Doc 的语义鸿沟。</p>
+        <h3>流程示例</h3>
+        <pre><code class="language-python">用户问题：「Redis 持久化 RDB 和 AOF 怎么选？」
+
+LLM 生成假设文档（不要求事实正确，只求风格接近知识库）：
+  「Redis 提供 RDB 和 AOF 两种持久化机制。RDB 通过快照方式...
+   AOF 记录每条写命令... 选择时需考虑数据安全与恢复速度...」
+
+对假设文档 Embedding → 检索真实 Chunk → 将真实资料交给 LLM 生成最终答案</code></pre>
+        <h3>与普通检索对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>直接 Query 检索</th>
+              <th>HyDE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Embedding 对象</td><td>用户原始问题</td><td>LLM 生成的假设文档</td></tr>
+            <tr><td>语义匹配</td><td>短问句 vs 长文档，易失配</td><td>文档 vs 文档，更接近</td></tr>
+            <tr><td>额外成本</td><td>无</td><td>多一次 LLM 调用 + 延迟</td></tr>
+            <tr><td>风险</td><td>检索词不精准</td><td>假设文档可能幻觉，带偏检索方向</td></tr>
+          </tbody>
+        </table>
+        <h3>适用场景</h3>
+        <ul>
+          <li>问题抽象、复杂，与文档表述风格差异大（如「怎么选型」「优缺点对比」）。</li>
+          <li>零样本 / 少样本场景，没有足够 Query 改写规则或训练数据。</li>
+          <li>知识库以长段落技术文档为主，Chunk 风格统一。</li>
+        </ul>
+        <h3>不适用场景</h3>
+        <ul>
+          <li>精确匹配类查询（订单号、SKU、错误码）→ 直接用 BM25 或原 Query 更准。</li>
+          <li>对延迟敏感的高 QPS 接口 → 多一次 LLM 调用成本不可忽视。</li>
+          <li>领域知识 LLM 不熟悉 → 假设文档质量差，反而降低召回。</li>
+        </ul>
+        <h3>落地建议</h3>
+        <ul>
+          <li>假设文档<strong>不需要事实正确</strong>，Prompt 中强调「风格像知识库段落即可」。</li>
+          <li>可与 Hybrid Search 组合：HyDE 向量召回 + BM25 关键词召回，再 Rerank 融合。</li>
+          <li>对假设文档做缓存（相同/相似问题复用），降低重复 LLM 开销。</li>
+        </ul>
+        <p><strong>面试回答：</strong>HyDE 用 LLM 生成假想答案文档再做向量检索，解决 Query 与 Document 语义不对称问题；适合抽象问答，不适合精确查找，需权衡延迟与幻觉风险。</p>
+      </section>
+
 <section id="rerank">
         <h2>Rerank 是什么？</h2>
         <p>Rerank（重排）对初步召回的 TopN 候选用更精确模型重新打分排序。</p>
@@ -665,7 +718,7 @@ graph = builder.compile(checkpointer=memory)</code></pre>
       </section>
 
 <section id="hybrid-search">
-        <h2>Hybrid Search 是什么？为什么要结合向量检索和 BM25？</h2>
+        <h2>Hybrid Search 混合检索是什么？为什么要结合向量检索和 BM25？</h2>
         <p>Hybrid Search 融合<strong>稠密检索</strong>（语义）和<strong>稀疏检索</strong>（关键词），互补各自弱点。</p>
         <table>
           <thead>
@@ -680,31 +733,60 @@ graph = builder.compile(checkpointer=memory)</code></pre>
             <tr><td>BM25（Sparse）</td><td>精确关键词、专有名词</td><td>语义理解弱</td></tr>
           </tbody>
         </table>
-        <h3>融合方式</h3>
+        <h3></h3>
         <ul>
-          <li>RRF（Reciprocal Rank Fusion）：按排名融合，无需分数归一化。</li>
-          <li>加权融合：α·dense_score + (1-α)·sparse_score。</li>
         </ul>
       </section>
 
 <section id="graph-rag">
         <h2>GraphRAG 是什么？和普通 RAG 有什么区别？</h2>
-        <p>GraphRAG 在向量检索基础上构建<strong>知识图谱</strong>，利用实体关系做社区摘要和多跳推理。</p>
+        <p>GraphRAG 是微软提出的一种 RAG 增强方案：先从文档中抽取<strong>实体与关系</strong>构建知识图谱，再对图谱做<strong>社区聚类与摘要</strong>，检索时利用图结构做局部或全局推理，弥补普通 RAG「只见片段、不见全局关联」的短板。</p>
+        <pre><code class="language-python">普通 RAG：文档 → Chunk → 向量库 → 相似度检索 → 生成
+GraphRAG：文档 → 实体/关系抽取 → 知识图谱 → 社区摘要
+         → 局部检索（实体邻域）或全局检索（社区摘要）→ 生成</code></pre>
+        <h3>GraphRAG 核心流程</h3>
+        <ol>
+          <li><strong>索引阶段（离线，成本高）</strong>：LLM 从 Chunk 中抽取实体、关系，构建知识图谱；用 Leiden 等算法做社区发现；对每个社区生成层级摘要（Community Summary）。</li>
+          <li><strong>查询阶段（在线）</strong>：
+                                                                                                                                    <ul>
+            <li><strong>Local Search</strong>：从问题相关实体出发，沿图扩展邻域，检索关联 Chunk + 关系上下文，适合「某实体细节」类问题。</li>
+            <li><strong>Global Search</strong>：遍历社区摘要做 map-reduce 式汇总，适合「整个知识库主题概览、趋势总结」类问题。</li>
+          </ul>
+          </li>
+        </ol>
+        <h3>与普通 RAG 对比</h3>
         <table>
           <thead>
             <tr>
-              <th>对比</th>
+              <th>对比项</th>
               <th>普通 RAG</th>
               <th>GraphRAG</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>索引</td><td>Chunk 向量</td><td>实体 + 关系 + 社区摘要</td></tr>
-            <tr><td>擅长</td><td>单文档问答</td><td>全局总结、跨文档关联</td></tr>
-            <tr><td>成本</td><td>低</td><td>建图与社区摘要成本高</td></tr>
+            <tr><td>索引单元</td><td>文本 Chunk + 向量</td><td>实体、关系、社区摘要 + 向量</td></tr>
+            <tr><td>检索逻辑</td><td>语义相似度 TopK</td><td>图遍历 + 社区摘要 + 向量辅助</td></tr>
+            <tr><td>擅长问题</td><td>单点事实、FAQ、文档内精确问答</td><td><span class="em-warn">跨文档关联、多跳推理、全局总结</span></td></tr>
+            <tr><td>弱项</td><td>跨文档关系、全局概览类问题</td><td>建图成本高、简单问答 ROI 低</td></tr>
+            <tr><td>索引成本</td><td>低（切分 + Embedding）</td><td>高（多次 LLM 抽实体、社区摘要）</td></tr>
+            <tr><td>查询延迟</td><td>低</td><td>Global Search 通常更高（多轮 map-reduce）</td></tr>
           </tbody>
         </table>
-        <p>适合「整个知识库的主题概览」类问题；简单 FAQ 仍用普通 RAG 更经济。</p>
+        <h3>举例：什么问题适合 GraphRAG？</h3>
+        <pre><code class="language-python">普通 RAG 更擅长：
+  Q: 「项目 Alpha 的部署流程是什么？」→ 检索到相关 Chunk 即可
+
+GraphRAG 更擅长：
+  Q: 「公司近三年各产品线之间的依赖关系如何？」→ 需跨文档关联实体
+  Q: 「整个知识库中关于安全合规的主要风险有哪些？」→ 需 Global 社区摘要</code></pre>
+        <h3>落地注意</h3>
+        <ul>
+          <li>GraphRAG 不是替代普通 RAG，而是<strong>互补</strong>；多数生产系统仍以向量 RAG 为主，GraphRAG 处理复杂关联与全局分析子场景。</li>
+          <li>实体抽取质量决定图谱上限，噪声关系会污染检索；需做实体消歧与图谱清洗。</li>
+          <li>社区摘要需随文档增量更新，否则图谱与原文脱节。</li>
+          <li>可与 Hybrid Search、Multi-hop RAG 组合：GraphRAG 提供结构线索，向量检索补充细节。</li>
+        </ul>
+        <p><strong>面试回答：</strong>普通 RAG 是「找相似片段」；<span class="em-warn">GraphRAG 是「建知识图谱 + 社区摘要」</span>，用图结构做跨文档关联和全局总结。简单 FAQ 用普通 RAG，跨文档关系与主题概览用 GraphRAG。</p>
       </section>
 
 <section id="multi-hop-rag">
@@ -714,7 +796,7 @@ graph = builder.compile(checkpointer=memory)</code></pre>
 Hop1: 检索 -&gt; Transformer 由 Google 提出
 Hop2: 检索 -&gt; Google CEO 是 Sundar Pichai
 Generate: 综合回答</code></pre>
-        <p>实现方式：迭代检索、子问题分解、Agent 驱动多轮 retrieve。每跳增加延迟，需设 max_hops 上限。</p>
+        <p>实现方式：迭代检索、子问题分解、Agent 驱动多轮 retrieve。每跳增加延迟，<span class="em-danger"><span class="em-danger">需设 max_hops 上限</span></span>。</p>
       </section>
 
 <section id="agentic-rag">
@@ -725,7 +807,7 @@ Generate: 综合回答</code></pre>
           <li>普通 RAG：固定 query -&gt; retrieve -&gt; generate。</li>
           <li>Agentic RAG：Agent 可多次检索、调用工具、改写策略、自我反思。</li>
         </ul>
-        <p>灵活但成本高、难调试；适合复杂开放域问题，简单 FAQ 用固定链路更稳。</p>
+        <p><span class="em-danger">灵活但成本高、难调试</span>；<mark>适合复杂开放域问题，简单 FAQ 用固定链路更稳</mark>。</p>
       </section>
 
 <section id="self-rag">
@@ -781,7 +863,7 @@ Generate: 综合回答</code></pre>
             </tr>
           </thead>
           <tbody>
-            <tr><td>PDF 复杂版面</td><td>Unstructured、MinerU、LayoutLM 做版面分析</td></tr>
+            <tr><td>PDF 复杂版面</td><td>Unstructured、MinerU、<span class="em-warn">LayoutLM </span>做版面分析</td></tr>
             <tr><td>表格</td><td>转 Markdown/HTML 或按行切片，保留表头 metadata</td></tr>
             <tr><td>图片</td><td>OCR + 多模态 Embedding 或 VLM 描述后入库</td></tr>
           </tbody>
@@ -806,7 +888,6 @@ Generate: 综合回答</code></pre>
         <h3>策略</h3>
         <ul>
           <li>metadata 存 <code>version</code>、<code>effective_date</code>、<code>is_latest</code>。</li>
-          <li>检索时优先 <code>is_latest=true</code>，或按日期降序。</li>
           <li>同 doc_id 多版本共存，旧版本软删除而非物理删除。</li>
           <li>生成时 Prompt 要求「以最新版本为准」。</li>
         </ul>
@@ -834,9 +915,8 @@ Generate: 综合回答</code></pre>
         <p>Faithfulness（忠实度）衡量生成答案是否<strong>被检索上下文支持</strong>，而非模型臆造。</p>
         <h3>评估方法</h3>
         <ul>
-          <li><strong>LLM-as-Judge</strong>：让 Judge 模型逐句判断是否有依据。</li>
-          <li><strong>RAGAS faithfulness</strong>：自动分解 claim 并验证。</li>
-          <li><strong>NLI 模型</strong>：entailment 判断答案是否被 context 蕴含。</li>
+          <li><strong>LLM-as-Judge</strong>：用一个大模型充当裁判，去评价另一个大模型的回答质量。</li>
+          <li><strong>RAGAS faithfulness</strong>：一个专门评估 RAG / LLM 应用的开源框架。它提供多种指标和测试数据生成能力</li>
         </ul>
         <p>忠实度低说明检索不准或 Prompt 约束不足；需分别排查 retrieve 和 generate 环节。</p>
       </section>
@@ -850,27 +930,62 @@ Generate: 综合回答</code></pre>
           <li>忠实度验证（是否 grounded）。</li>
           <li>A/B 测试自动对比两个 Prompt 版本。</li>
         </ul>
+        <p>你可以给 <strong>LLM-as-Judge</strong>模型这样的输入：</p>
+        <pre><code class="language-python">你可以给 Judge 模型这样的输入：
+
+用户问题：
+{question}
+
+检索到的上下文：
+{contexts}
+
+模型回答：
+{answer}
+
+请判断模型回答中的事实是否都能被上下文支持。
+如果有 unsupported claim，请指出。
+最后给出 0~1 分。</code></pre>
         <h3>注意点</h3>
         <p>Judge 模型应有足够能力；Position bias（倾向第一个答案）需交换顺序消除；关键场景仍需人工抽检。</p>
       </section>
 
 <section id="ragas">
         <h2>RAGAS 可以评估哪些指标？</h2>
+        <p>RAGAS（Retrieval Augmented Generation Assessment）是 RAG 系统的<strong>开源自动化评测框架</strong>，用 LLM 作为评判器，从检索质量和生成质量两个维度打分，无需大量人工标注即可做回归对比。</p>
+        <pre><code class="language-python">用户问题 → 检索 Context → 生成 Answer
+              ↓                    ↓
+        检索类指标            生成类指标
+   Context Precision/Recall   Faithfulness / Answer Relevancy</code></pre>
+        <h3>核心指标</h3>
         <table>
           <thead>
             <tr>
               <th>指标</th>
+              <th>维度</th>
               <th>含义</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Context Precision</td><td>检索结果中相关 Chunk 占比</td></tr>
-            <tr><td>Context Recall</td><td> ground truth 所需信息是否被检索到</td></tr>
-            <tr><td>Faithfulness</td><td>答案是否被 context 支持</td></tr>
-            <tr><td>Answer Relevancy</td><td>答案与问题的相关程度</td></tr>
+            <tr><td>Context Precision</td><td>检索</td><td>召回的 Chunk 中，真正与问题相关的占比（排序质量）</td></tr>
+            <tr><td>Context Recall</td><td>检索</td><td>回答问题所需的信息，是否被检索上下文覆盖（需 ground truth）</td></tr>
+            <tr><td>Faithfulness</td><td>生成</td><td>答案中的陈述是否都能被检索上下文支撑，衡量幻觉程度</td></tr>
+            <tr><td>Answer Relevancy</td><td>生成</td><td>答案与问题的相关程度，是否答非所问</td></tr>
+            <tr><td>Answer Correctness</td><td>生成</td><td>答案与标准答案的语义一致性（需 ground truth）</td></tr>
           </tbody>
         </table>
-        <p>RAGAS 无需人工标注 ground truth 即可部分自动化评估，适合 CI 回归和 Prompt 迭代。</p>
+        <h3>Faithfulness 怎么算？</h3>
+        <ol>
+          <li>从 Answer 中抽取若干 statement（陈述句）。</li>
+          <li>逐条判断该 statement 能否被 retrieved context 支撑。</li>
+          <li>可支撑的比例即为 Faithfulness 分数。</li>
+        </ol>
+        <h3>使用场景</h3>
+        <ul>
+          <li><strong>无标注</strong>：Faithfulness + Answer Relevancy + Context Precision 可直接跑，适合 Prompt / Rerank 迭代。</li>
+          <li><strong>有标注</strong>：加上 Context Recall、Answer Correctness，全面评估检索与生成。</li>
+          <li><strong>CI 回归</strong>：每次改 Chunk、Embedding、Prompt 后跑评测集，对比分数变化。</li>
+        </ul>
+        <p><strong>面试回答：</strong>RAGAS 核心看四件事——检索准不准（Precision/Recall）、答案有没有胡编（Faithfulness）、答没答到点（Relevancy）。</p>
       </section>
 
 <section id="eval-dataset">
@@ -976,7 +1091,7 @@ Generate: 综合回答</code></pre>
         <h3>降级策略</h3>
         <ol>
           <li>重试：指数退避，最多 3 次。</li>
-          <li>备用工具：主 API 失败切缓存或降级 API。</li>
+          <li>降级：备用工具主 API 失败切缓存或降级 API。</li>
           <li>跳过：告知模型工具不可用，请基于已有信息回答。</li>
           <li>人工兜底：HITL 介入或返回友好错误。</li>
         </ol>
@@ -998,10 +1113,18 @@ except Exception: result = {&quot;error&quot;: &quot;unavailable&quot;}</code></
           <tbody>
             <tr><td>短期记忆</td><td>对话 messages、滑动窗口</td><td>当前会话上下文</td></tr>
             <tr><td>工作记忆</td><td>State 字段、Scratchpad</td><td>当前任务中间结果</td></tr>
-            <tr><td>长期记忆</td><td>向量库、Profile DB</td><td>跨会话用户偏好、历史摘要</td></tr>
+            <tr><td>长期记忆</td><td>向量库、MySQL</td><td>跨会话用户偏好、历史摘要</td></tr>
           </tbody>
         </table>
         <p>短期记忆超窗口时做摘要压缩；长期记忆通过 RAG 检索注入，避免全量塞入 Prompt。</p>
+        <p></p>
+        <pre><code class="language-python">长期记忆存储
+├── 向量库 Vector DB
+│   └── 存非结构化记忆：历史摘要、聊天片段、项目经历、知识片段
+│
+└── 关系数据库Mysql
+    └── 存结构化画像：偏好、标签、配置、明确事实</code></pre>
+        <p></p>
       </section>
 
 <section id="infinite-loop">

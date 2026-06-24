@@ -201,6 +201,7 @@
         "hpa-vs-vpa": "docker-k8s",
         "http-vs-rpc": "architecture",
         "hybrid-search": "ai",
+        "rag-hyde": "ai",
         "hyperloglog-scenarios": "redis",
         "id-properties": "architecture",
         idempotency: "architecture",
