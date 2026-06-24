@@ -801,40 +801,138 @@ Generate: 综合回答</code></pre>
 
 <section id="agentic-rag">
         <h2>Agentic RAG 是什么？</h2>
-        <p>Agentic RAG 让 Agent <strong>自主决定</strong>何时检索、检索什么、是否重试，而非固定流水线。</p>
-        <h3>与普通 RAG 区别</h3>
+        <p>Agentic RAG 把 RAG 从<strong>固定流水线</strong>升级为<strong>Agent 驱动的动态检索</strong>：由 LLM 自主决定何时检索、检索什么、是否改写 Query、是否多轮重试，而非写死的 query → retrieve → generate。</p>
+        <pre><code class="language-python">普通 RAG：  用户问题 → 检索 → 组装 Prompt → 生成（固定 1 次）
+Agentic RAG：用户问题 → Agent 规划 → 检索/工具调用 → 评估结果 → 可能再检索 → 生成
+             ↑ Agent 可循环：改写 Query、换检索策略、调用 SQL/计算器/搜索</code></pre>
+        <h3>与普通 RAG / Multi-hop RAG 区别</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>普通 RAG</th>
+              <th>Multi-hop RAG</th>
+              <th>Agentic RAG</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>检索次数</td><td>固定 1 次</td><td>预设多跳（2–3 次）</td><td>Agent 动态决定，可 0–N 次</td></tr>
+            <tr><td>决策主体</td><td>硬编码流程</td><td>规则/模板驱动跳数</td><td>LLM 自主规划与反思</td></tr>
+            <tr><td>工具能力</td><td>仅向量检索</td><td>通常仅检索</td><td>检索 + SQL + 搜索 + 计算等多工具</td></tr>
+            <tr><td>灵活性</td><td>低</td><td>中</td><td>高</td></tr>
+            <tr><td>成本/延迟</td><td>低</td><td>中</td><td>高（多轮 LLM + 工具调用）</td></tr>
+          </tbody>
+        </table>
+        <h3>典型 Agent 循环</h3>
+        <ol>
+          <li><strong>规划</strong>：分析问题复杂度，决定是否需要检索、走哪条路径。</li>
+          <li><strong>检索/调用</strong>：执行向量检索、Text-to-SQL、Web Search 等 Tool。</li>
+          <li><strong>评估</strong>：判断检索结果是否足够回答，不足则改写 Query 重检。</li>
+          <li><strong>生成</strong>：综合多轮结果输出最终答案，附引用溯源。</li>
+        </ol>
+        <h3>适用场景</h3>
         <ul>
-          <li>普通 RAG：固定 query -&gt; retrieve -&gt; generate。</li>
-          <li>Agentic RAG：Agent 可多次检索、调用工具、改写策略、自我反思。</li>
+          <li>开放域复杂问题：需组合多数据源（文档 + 数据库 + 实时搜索）。</li>
+          <li>Query 模糊：Agent 先澄清/分解子问题再分别检索。</li>
+          <li>检索一次不够：需要根据中间结果动态调整策略。</li>
         </ul>
-        <p><span class="em-danger">灵活但成本高、难调试</span>；<mark>适合复杂开放域问题，简单 FAQ 用固定链路更稳</mark>。</p>
+        <h3>落地注意</h3>
+        <ul>
+          <li>必须设 <code>max_iterations</code> / <code>max_tool_calls</code> 上限，防止无限循环。</li>
+          <li>简单 FAQ 用固定 RAG 更稳、更快；Agentic RAG ROI 在复杂场景才体现。</li>
+          <li>可观测性要求高：每步检索 Query、命中 Chunk、Tool 调用需全链路日志。</li>
+          <li>LangGraph / ReAct 是常见实现框架：State 管理多轮检索状态。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Agentic RAG 由 Agent 动态决定检索次数、策略和工具调用，而非固定流水线；适合复杂开放域问题，需设迭代上限并加强可观测性；简单 FAQ 仍用普通 RAG 更划算。</p>
       </section>
 
 <section id="self-rag">
         <h2>Self-RAG 是什么？</h2>
-        <p>Self-RAG 让模型在生成过程中<strong>自我评估</strong>：是否需要检索、检索结果是否相关、生成是否忠实。</p>
-        <h3>反思 Token</h3>
+        <p>Self-RAG（Self-Reflective RAG）让模型在生成过程中<strong>自我反思与决策</strong>：判断是否需要检索、检索结果是否相关、生成是否有依据，通过特殊「反思 Token」控制流程，减少无效检索和幻觉。</p>
+        <pre><code class="language-python">传统 RAG：  所有问题都检索 → 不管结果好不好都生成
+Self-RAG：  模型自判 [Retrieve?] → 检索 → 自评 [IsRel?] → 生成 → 自评 [IsSup?] [IsUse?]
+             ↑ 不需要检索的问题直接生成，检索不相关则丢弃重检</code></pre>
+        <h3>四个反思 Token</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>含义</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>[Retrieve]</code></td><td>是否需要检索</td><td>模型自判：常识/简单问题跳过检索，专业问题才检索</td></tr>
+            <tr><td><code>[IsRel]</code></td><td>检索结果是否相关</td><td>过滤无关 Chunk，避免噪声进 Prompt</td></tr>
+            <tr><td><code>[IsSup]</code></td><td>生成是否有检索支撑</td><td>检测幻觉，无依据则重新生成或标注不确定</td></tr>
+            <tr><td><code>[IsUse]</code></td><td>回答是否有用</td><td>评估最终答案质量，不有用则迭代改进</td></tr>
+          </tbody>
+        </table>
+        <h3>工作流程</h3>
+        <ol>
+          <li>输入问题，模型输出 <code>[Retrieve: Yes/No]</code>。</li>
+          <li>若 Yes → 检索 TopK → 对每个 Chunk 评估 <code>[IsRel: Relevant/Irrelevant]</code>，丢弃无关项。</li>
+          <li>基于相关 Chunk 生成答案，同步输出 <code>[IsSup: Fully/Partially/No]</code>。</li>
+          <li>若支撑不足 → 重新检索或重新生成；最终评估 <code>[IsUse: 1–5]</code>。</li>
+        </ol>
+        <h3>与普通 RAG / Agentic RAG 区别</h3>
         <ul>
-          <li><code>[Retrieve]</code>：判断是否需要检索。</li>
-          <li><code>[IsRel]</code>：检索结果是否相关。</li>
-          <li><code>[IsSup]</code>：生成是否有依据。</li>
-          <li><code>[IsUse]</code>：回答是否有用。</li>
+          <li><strong>vs 普通 RAG</strong>：不是每次都检索，模型自判是否需要，减少无效 I/O。</li>
+          <li><strong>vs Agentic RAG</strong>：Self-RAG 的反思内嵌在模型生成中（反思 Token）；Agentic RAG 是外部 Agent 循环调度工具。</li>
+          <li>Self-RAG 需<strong>专门微调</strong>模型学会输出反思 Token，不是 Prompt 即得。</li>
         </ul>
-        <p>减少无效检索和幻觉，但增加推理 Token 和延迟。</p>
+        <h3>优缺点与落地</h3>
+        <ul>
+          <li>优点：减少无效检索、降低幻觉、提高答案忠实度。</li>
+          <li>缺点：推理 Token 和延迟增加；需训练数据支持反思 Token 格式。</li>
+          <li>工程替代：不微调时可用 LLM-as-Judge 做后置评估（检索相关性、忠实度打分）。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Self-RAG 通过反思 Token 让模型自判是否检索、结果是否相关、生成是否有依据；减少无效检索和幻觉；需微调支持，工程上可用 LLM-as-Judge 近似实现。</p>
       </section>
 
 <section id="structured-data-rag">
         <h2>RAG 中如何处理结构化数据查询？</h2>
-        <h3>策略</h3>
+        <p>结构化数据（数据库表、Excel、CSV、JSON）有明确的 schema 和精确字段，<strong>向量检索不适合做聚合/过滤/排序</strong>。核心策略是<strong>路由分流</strong>：结构化走精确查询，非结构化走向量 RAG。</p>
+        <pre><code class="language-python">用户问题 → 意图分类（Classifier / LLM Router）
+  ├─ 结构化（统计/过滤/聚合/精确字段）→ Text-to-SQL / API 查询 → 格式化结果
+  ├─ 半结构化（表格文档）→ 表格切片 RAG + metadata 过滤
+  └─ 非结构化（文档/段落）→ 向量 RAG</code></pre>
+        <h3>三种处理方式</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>方式</th>
+              <th>适用数据</th>
+              <th>做法</th>
+              <th>示例问题</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Text-to-SQL</td><td>MySQL / PG 等关系库</td><td>NL → SQL → 执行 → 结果格式化</td><td>「Q3 华东区销售额 Top5 客户」</td></tr>
+            <tr><td>表格 RAG</td><td>Excel / CSV 文档</td><td>按行/列切片 + 表名 metadata</td><td>「产品手册中 XX 型号参数是多少」</td></tr>
+            <tr><td>API / Tool 调用</td><td>业务系统接口</td><td>LLM 选 Tool + 填参调用</td><td>「查订单 12345 的物流状态」</td></tr>
+          </tbody>
+        </table>
+        <h3>Text-to-SQL 关键步骤</h3>
+        <ol>
+          <li><strong>Schema 注入</strong>：将表名、字段、类型、注释、样例行注入 Prompt 或向量库。</li>
+          <li><strong>SQL 生成</strong>：LLM 输出 SQL，需约束只读（禁止 DROP/UPDATE）。</li>
+          <li><strong>校验执行</strong>：SQL 语法检查 → 权限校验 → 沙箱执行 → 结果截断。</li>
+          <li><strong>结果解释</strong>：将查询结果转为自然语言回答，附 SQL 溯源。</li>
+        </ol>
+        <h3>混合路由设计</h3>
         <ul>
-          <li><strong>Text-to-SQL</strong>：自然语言转 SQL 查数据库。</li>
-          <li><strong>表格 RAG</strong>：行/列切片 + metadata 标记表名。</li>
-          <li><strong>混合路由</strong>：Classifier 判断走向量检索还是 SQL。</li>
+          <li>用轻量 Classifier 或 LLM 判断问题类型：「需要精确数字」→ SQL；「需要文档解释」→ RAG。</li>
+          <li>复杂问题可<strong>组合</strong>：先 SQL 查数据，再 RAG 查文档解释背景。</li>
+          <li>表格文档（PDF 中的表）：解析为 Markdown/HTML 保留行列结构，metadata 标记 <code>table_name</code>、<code>sheet</code>。</li>
         </ul>
-        <pre><code class="language-python">用户问题 -&gt; 意图分类
-  ├─ 结构化 -&gt; Text-to-SQL -&gt; 执行 -&gt; 格式化
-  └─ 非结构化 -&gt; 向量 RAG</code></pre>
-        <p>结构化数据优先精确查询，向量检索仅作补充。</p>
+        <h3>常见坑</h3>
+        <ul>
+          <li>把数据库表全量 Embedding 走向量检索 → 聚合/排序类问题答不对。</li>
+          <li>Text-to-SQL 不做权限控制 → 用户可能查到无权限的数据。</li>
+          <li>Schema 过大时全量注入 Prompt → 用 Schema Linking 只选相关表/字段。</li>
+        </ul>
+        <p><strong>面试回答：</strong>结构化数据优先 Text-to-SQL 精确查询，非结构化走向量 RAG；用意图路由分流，表格文档按行列切片保留结构；Text-to-SQL 需 Schema 注入、SQL 校验和权限控制。</p>
       </section>
 
 <section id="text-to-sql">
@@ -869,6 +967,53 @@ Generate: 综合回答</code></pre>
           </tbody>
         </table>
         <p>表格切忌纯文本乱序提取；保留行列结构才能正确回答「第 3 行销售额」类问题。</p>
+      </section>
+
+<section id="rag-image-handling">
+        <h2>RAG 方案中图片是怎么处理的？</h2>
+        <p>图片无法直接做文本 Embedding，RAG 处理图片的核心是<strong>把视觉信息转成可检索、可进 Prompt 的表示</strong>。生产环境通常组合多种路径，而非单一方案。</p>
+        <pre><code class="language-python">PDF/Word 中的图片
+  ├── 路径 A：OCR 提取图中文字 → 文本 Chunk → 文本 Embedding
+  ├── 路径 B：VLM 生成图片描述/Caption → 文本 Chunk → 文本 Embedding
+  └── 路径 C：多模态 Embedding（CLIP 等）→ 图文统一向量空间检索</code></pre>
+        <h3>三条主流路径</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>路径</th>
+              <th>做法</th>
+              <th>优点</th>
+              <th>局限</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>OCR</td><td>PaddleOCR / Tesseract 提取图中文字</td><td>成本低，适合截图、扫描件、含大量文字的图片</td><td>纯视觉图表（流程图、架构图）效果差</td></tr>
+            <tr><td>VLM 描述</td><td>GPT-4V / Qwen-VL 生成结构化 Caption</td><td>能理解图表语义、流程关系</td><td>多一次模型调用，描述可能遗漏细节</td></tr>
+            <tr><td>多模态 Embedding</td><td>CLIP / SigLIP / BGE-VL 直接编码图片</td><td>支持「以图搜图」「图文混合检索」</td><td>需专用向量库，文本问答召回未必最优</td></tr>
+          </tbody>
+        </table>
+        <h3>离线入库流程</h3>
+        <ol>
+          <li><strong>版面分析</strong>：MinerU / Unstructured 识别 PDF 中图片区域，记录 page、bbox、figure_id。</li>
+          <li><strong>图片存储</strong>：原图存对象存储（S3/OSS），Chunk metadata 存 <code>image_url</code>、<code>figure_caption</code>、<code>page_num</code>。</li>
+          <li><strong>内容提取</strong>：文字型图片走 OCR；图表/架构图走 VLM 生成描述（Prompt 要求输出：标题、关键元素、数据趋势）。</li>
+          <li><strong>索引</strong>：描述文本 + OCR 文本合并为 Chunk 做文本 Embedding；高价值图片额外存多模态向量。</li>
+          <li><strong>关联</strong>：图片 Chunk 与相邻段落 Chunk 共享 <code>doc_id</code>、<code>section_path</code>，检索时可一并召回。</li>
+        </ol>
+        <h3>在线问答怎么处理？</h3>
+        <ul>
+          <li><strong>纯文本 Query</strong>：走文本向量检索，命中图片描述 Chunk 后进 Prompt；必要时把原图 URL 交给多模态 LLM 二次理解。</li>
+          <li><strong>用户上传图片 Query</strong>：多模态 LLM 直接理解 + 多模态向量检索知识库相似图/描述。</li>
+          <li><strong>混合 Prompt</strong>：检索到的文本 Chunk + 图片 URL 一起送入 GPT-4V / Qwen-VL，让模型「看图说话」。</li>
+        </ul>
+        <h3>生产落地建议</h3>
+        <ul>
+          <li>架构图、流程图、数据图表：<strong>优先 VLM 描述 + OCR 补充</strong>，描述 Prompt 要求结构化（节点、箭头、数值）。</li>
+          <li>截图类文档（PPT、工单）：OCR 为主，成本低。</li>
+          <li>回答需展示原图时，metadata 保留 <code>image_url</code>，前端渲染引用卡片。</li>
+          <li>评测：准备含图表的 QA 对，单独测 image recall@K，避免被纯文本指标掩盖。</li>
+        </ul>
+        <p><strong>面试回答：</strong>图片 RAG 本质是视觉→可检索表示：OCR 提文字、VLM 生成描述、或多模态 Embedding 统一检索；离线存原图+描述 Chunk，在线文本 Query 检描述、复杂场景用多模态 LLM 看图；按图片类型选路径，图表类优先 VLM。</p>
       </section>
 
 <section id="incremental-update">
@@ -1084,6 +1229,108 @@ Generate: 综合回答</code></pre>
   }
 }</code></pre>
         <p>Schema 越清晰，模型填参越准；required 字段、enum 约束可减少幻觉参数。</p>
+      </section>
+
+<section id="skills-how-it-works">
+        <h2>Skills 具体是怎么工作的？</h2>
+        <p>Skills（Agent Skills）是<strong>按需加载的领域操作手册</strong>，以 Markdown 文件（如 <code>SKILL.md</code>）形式存放，教 Agent「遇到某类任务时该怎么想、怎么做」，而不是把所有规则塞进 System Prompt。</p>
+        <pre><code class="language-python">Agent 启动：只加载 Skills 清单（名称 + 简短描述），不占大量 Token
+用户任务进来：Agent 判断任务类型 → 匹配相关 Skill → 读取完整 SKILL.md → 按 Skill 指引执行
+执行完毕：Skill 内容可不常驻上下文，下次需要再加载</code></pre>
+        <h3>核心机制：渐进式披露（Progressive Disclosure）</h3>
+        <ul>
+          <li><strong>第一层</strong>：Skills 目录/元数据（name + description），Agent 知道「有哪些能力可选」。</li>
+          <li><strong>第二层</strong>：任务匹配后，Agent 主动 Read 完整 Skill 文件，获取详细 workflow。</li>
+          <li><strong>第三层</strong>：Skill 内引用的脚本、模板、示例文件，执行时再按需加载。</li>
+        </ul>
+        <p>好处：100 个 Skill 不会一次性塞爆 Context Window，只有相关的才加载。</p>
+        <h3>Skill 文件里通常有什么？</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>组成部分</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>触发条件</td><td>什么任务场景应该启用此 Skill（description 字段）</td></tr>
+            <tr><td>Workflow</td><td>分步骤操作指南（先查什么、再改什么、如何验证）</td></tr>
+            <tr><td>规范约束</td><td>命名约定、代码风格、项目特有规则</td></tr>
+            <tr><td>工具指引</td><td>该场景下优先用哪些 MCP Tool / 脚本 / API</td></tr>
+            <tr><td>示例</td><td>输入输出样例、常见错误处理</td></tr>
+          </tbody>
+        </table>
+        <h3>工作流程示例（Cursor Agent）</h3>
+        <ol>
+          <li>用户在项目里配置了 <code>.cursor/skills/</code> 目录，每个子目录一个 Skill。</li>
+          <li>Agent 收到任务「帮我创建 PR」，扫描 Skills 清单，匹配到 <code>create-pull-request</code> Skill。</li>
+          <li>Agent 调用 Read 工具加载 <code>SKILL.md</code>，获取 PR 创建的标准流程（git status → diff → push → gh pr create）。</li>
+          <li>Agent 按 Skill 步骤依次执行 Shell / gh 命令，而非凭空猜测流程。</li>
+        </ol>
+        <h3>与 System Prompt / Rules 的区别</h3>
+        <ul>
+          <li><strong>System Prompt</strong>：全局、常驻、通用行为约束。</li>
+          <li><strong>Rules</strong>：项目级持久规则（编码规范、提交规范），始终生效。</li>
+          <li><strong>Skills</strong>：任务级、按需加载、专精某个 workflow（如「拆 PR」「写 Canvas」「调 CI」）。</li>
+        </ul>
+        <h3>设计 Skill 的最佳实践</h3>
+        <ul>
+          <li>description 写清楚<strong>何时触发</strong>，Agent 靠它做 Skill 路由。</li>
+          <li>步骤要可执行、可验证，避免模糊描述（「适当优化」→ 改为具体检查项）。</li>
+          <li>单 Skill 聚焦一个场景，不要把所有知识塞进一个文件。</li>
+          <li>配合 MCP Tool 使用：Skill 定义流程，Tool 提供能力。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Skills 是按需加载的领域操作手册，通过渐进式披露避免 Context 膨胀；Agent 先扫 Skill 清单匹配任务，再读取完整 SKILL.md 按 workflow 执行；与 System Prompt 全局常驻不同，Skills 是任务级专精指引。</p>
+      </section>
+
+<section id="skills-vs-function-calling">
+        <h2>Skills 和 Function Calling 有什么区别？</h2>
+        <p>两者都扩展 Agent 能力，但层次完全不同：<strong>Skills 教 Agent「怎么做」</strong>，<strong>Function Calling 让 Agent「能调用」</strong>。</p>
+        <pre><code class="language-python">Skills     = 操作手册 / SOP（知识 + 流程，只读文本）
+Function Calling = 工具接口 / API（可执行，JSON Schema 定义入参）</code></pre>
+        <h3>核心对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Skills</th>
+              <th>Function Calling</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>本质</td><td>领域知识与操作流程（Markdown 文档）</td><td>可执行的外部函数/API 调用</td></tr>
+            <tr><td>载体</td><td>SKILL.md 文件，Agent Read 加载</td><td>JSON Schema 描述，模型输出结构化参数</td></tr>
+            <tr><td>作用</td><td>指导推理路径、决策顺序、规范约束</td><td>触发真实动作（查库、发请求、写文件）</td></tr>
+            <tr><td>加载时机</td><td>任务匹配时按需读取</td><td>模型推理时实时选择并调用</td></tr>
+            <tr><td>是否执行代码</td><td>否，仅提供指引</td><td>是，Runtime 执行并返回结果</td></tr>
+            <tr><td>类比</td><td>员工培训手册 / SOP</td><td>电话/API 拨号能力</td></tr>
+          </tbody>
+        </table>
+        <h3>协作关系</h3>
+        <p>Skills 和 Function Calling <strong>互补而非替代</strong>：</p>
+        <ul>
+          <li>Skill 定义「创建 PR 的流程：先 git status，再 diff，再 push，最后 gh pr create」。</li>
+          <li>Function Calling / Tool 提供实际能力：<code>Shell</code> 执行 git、<code>gh</code> 创建 PR。</li>
+          <li>没有 Skill，Agent 可能调用 Tool 但顺序混乱、遗漏步骤。</li>
+          <li>没有 Tool，Skill 只是空有流程无法执行。</li>
+        </ul>
+        <h3>与 MCP 的三角关系</h3>
+        <pre><code class="language-python">Skills        → 告诉 Agent「什么时候、按什么顺序、用什么规范」
+Function Calling → 模型决策层：选哪个 Tool、填什么参数
+MCP           → 工具基础设施层：Tool 如何注册、鉴权、暴露</code></pre>
+        <h3>选型建议</h3>
+        <ul>
+          <li>重复性 workflow、多步骤 SOP → 写 Skill（如 PR 流程、Canvas 规范、CI 排查）。</li>
+          <li>需要访问外部系统、读写数据 → 定义 Function / MCP Tool。</li>
+          <li>复杂 Agent：Skills 编排流程 + Function Calling 执行动作 + MCP 统一工具治理。</li>
+        </ul>
+        <h3>常见误区</h3>
+        <ul>
+          <li>把 Skill 当 Tool：Skill 本身不可执行，不能替代 API 调用。</li>
+          <li>把 Function Schema 当 Skill：Schema 只描述参数，不包含业务流程和决策逻辑。</li>
+          <li>把所有规则写进 System Prompt：应拆分为全局 Rules + 按需 Skills，控制 Token 成本。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Skills 是按需加载的操作手册，指导 Agent 怎么做；Function Calling 是模型输出结构化参数触发真实 API 执行；前者管流程与规范，后者管动作与数据，配合 MCP 构成完整 Agent 能力栈。</p>
       </section>
 
 <section id="tool-fallback">
@@ -1456,6 +1703,58 @@ graph.invoke(input, config)  # 可 resume</code></pre>
           <li>overlap 过大：冗余存储、检索重复命中。</li>
         </ul>
         <p>用评测集对比 overlap=0 vs 10% vs 20% 的 recall@K 选最优值。</p>
+      </section>
+
+<section id="chunk-parent-child">
+        <h2>RAG 中 Chunk 父子块关联方案怎么设计？</h2>
+        <p>父子块（Parent-Child / Small-to-Big）解决 RAG 经典矛盾：<strong>小块检索准、大块上下文全</strong>。思路是用<strong>小子块做向量索引</strong>提高召回精度，命中后<strong>回溯父块</strong>交给 LLM 生成，避免答案缺背景。</p>
+        <pre><code class="language-python">离线：文档 → 切父块（800–1500 Token）→ 再切子块（128–256 Token）
+      子块 Embedding 入向量库，metadata 存 parent_id / child_index / doc_id
+在线：Query → 检索 TopK 子块 → 按 parent_id 去重 → 取对应父块进 Prompt</code></pre>
+        <h3>为什么要父子分离？</h3>
+        <ul>
+          <li>单一大块：Embedding 语义被稀释，TopK 命中率低。</li>
+          <li>单一小块：召回精准但缺前后文，LLM 容易断章取义。</li>
+          <li>父子关联：检索用「针」，生成用「线」，兼顾精度与完整性。</li>
+        </ul>
+        <h3>数据模型设计</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>层级</th>
+              <th>典型大小</th>
+              <th>是否 Embedding</th>
+              <th>关键 metadata</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>父块 Parent</td><td>800–1500 Token</td><td>可选（二次召回）</td><td>parent_id, doc_id, section_path, version</td></tr>
+            <tr><td>子块 Child</td><td>128–256 Token</td><td>是（主检索单元）</td><td>parent_id, child_index, doc_id, char_offset</td></tr>
+          </tbody>
+        </table>
+        <h3>在线检索流程</h3>
+        <ol>
+          <li>向量检索 TopK 子块（如 K=20）。</li>
+          <li>按 <code>parent_id</code> 去重，保留每个父块最高分子块。</li>
+          <li>从文档存储 / KV / 关系库加载父块原文（向量库只存子块向量 + metadata）。</li>
+          <li>可选 Rerank：对「Query + 父块摘要」精排，取 Top3–5 父块进 Prompt。</li>
+          <li>生成时引用子块命中位置，溯源到父块 doc_id + section。</li>
+        </ol>
+        <h3>常见实现模式</h3>
+        <ul>
+          <li><strong>双索引</strong>：子块向量库 + 父块对象存储（S3/MinIO/ES），通过 parent_id 关联。</li>
+          <li><strong>单索引 + 冗余</strong>：子块 metadata 内嵌父块全文（适合父块不大、QPS 低的场景）。</li>
+          <li><strong>多级块</strong>：Document → Section → Paragraph 三层，复杂手册/法规常用。</li>
+          <li><strong>LangChain ParentDocumentRetriever</strong>：框架内置 child_splitter + parent_splitter + docstore 模式。</li>
+        </ul>
+        <h3>落地注意点</h3>
+        <ul>
+          <li>父块更新时必须<strong>级联重建</strong>其下所有子块向量，按 doc_id 批量软删再写入。</li>
+          <li>同一父块多个子块命中时，合并为一条上下文，避免 Token 浪费。</li>
+          <li>表格/代码块尽量<strong>不切进子块中间</strong>，按结构边界切，父块保留完整结构。</li>
+          <li>评测时分别看 child recall@K 和 parent 级 answer 质量，定位瓶颈在检索还是上下文组装。</li>
+        </ul>
+        <p><strong>面试回答：</strong>父子块用小子块做精准向量检索、父块提供完整上下文；metadata 用 parent_id 关联，在线检索后去重回溯父块再生成；适合长文档和技术手册，注意级联更新与结构边界切分。</p>
       </section>
 
 <section id="vector-db-selection">

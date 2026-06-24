@@ -333,16 +333,61 @@ for x in nums():
 
 <section id="context-manager">
         <h2>Python 上下文管理器是什么？</h2>
-        <p>上下文管理器配合 <code>with</code> 使用，进入时调用 <code>__enter__</code>，退出时调用 <code>__exit__</code>，保证资源释放。</p>
-        <pre><code class="language-python">with open(&quot;demo.txt&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
-    f.write(&quot;hello&quot;)</code></pre>
+        <p>上下文管理器（Context Manager）配合 <code>with</code> 语句使用，在代码块<strong>进入时获取资源、退出时自动释放</strong>，无论正常结束还是抛异常都能保证清理逻辑执行。</p>
+        <pre><code class="language-python">with open("demo.txt", "w", encoding="utf-8") as f:
+    f.write("hello")
+# 离开 with 块后文件自动 close，即使 write 抛异常也会 close</code></pre>
+        <h3>协议：__enter__ 与 __exit__</h3>
+        <pre><code class="language-python">class MyLock:
+    def __enter__(self):
+        self.acquire()       # 进入 with 时调用，返回值赋给 as 变量
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()       # 退出 with 时调用（正常/异常都执行）
+        return False           # 返回 False/None：异常继续传播；True：吞掉异常
+
+with MyLock() as lock:
+    do_work()</code></pre>
         <h3>执行流程</h3>
-        <pre><code class="language-python">进入 with
--&gt; 调用 __enter__
--&gt; 执行业务代码
--&gt; 正常或异常退出
--&gt; 调用 __exit__ 做清理</code></pre>
-        <p><code>with</code> 能保证即使发生异常也会执行清理逻辑。</p>
+        <ol>
+          <li>计算 <code>with</code> 后的表达式，得到上下文管理器对象。</li>
+          <li>调用 <code>__enter__()</code>，返回值绑定到 <code>as</code> 变量（可无 as）。</li>
+          <li>执行 <code>with</code> 代码块。</li>
+          <li>无论正常或异常，都调用 <code>__exit__(exc_type, exc_val, exc_tb)</code> 做清理。</li>
+        </ol>
+        <h3>两种实现方式</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>方式</th>
+              <th>写法</th>
+              <th>适用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>类协议</td><td>实现 <code>__enter__</code> / <code>__exit__</code></td><td>复杂状态管理（锁、连接池）</td></tr>
+            <tr><td>装饰器</td><td><code>@contextlib.contextmanager</code> + <code>yield</code></td><td>简单场景，yield 前 setup，yield 后 teardown</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def temp_file(path):
+    f = open(path, "w")
+    try:
+        yield f          # with ... as f 拿到这个值
+    finally:
+        f.close()</code></pre>
+        <h3>常见应用场景</h3>
+        <ul>
+          <li><strong>文件 I/O</strong>：<code>open()</code> 是最典型的上下文管理器。</li>
+          <li><strong>锁</strong>：<code>threading.Lock()</code>、<code>asyncio.Lock()</code> 支持 <code>with</code>。</li>
+          <li><strong>数据库连接</strong>：确保 commit/rollback + close，如 SQLAlchemy Session。</li>
+          <li><strong>计时/日志</strong>：进入记录开始时间，退出记录耗时。</li>
+          <li><strong>FastAPI DI</strong>：<code>yield</code> 依赖本质是上下文管理器模式。</li>
+        </ul>
+        <p><strong>面试回答：</strong>上下文管理器通过 <code>__enter__</code>/<code>__exit__</code> 协议配合 <code>with</code> 语句，保证资源获取与释放；异常时 __exit__ 仍执行；简单场景用 <code>@contextmanager</code> + yield 实现。</p>
       </section>
 
 <section id="memory-leak">
@@ -361,12 +406,6 @@ for x in nums():
           <li>异常对象和 traceback 被长期保存，间接持有局部变量</li>
           <li>文件、数据库连接、HTTP Client、Session 等资源没有及时关闭</li>
           <li>C 扩展或第三方库内存未释放，例如 <code>numpy</code>、<code>pandas</code>、<code>torch</code>、<code>opencv</code></li>
-          <li>Java 静态集合长期持有对象，例如 static Map 只放不删。</li>
-          <li>缓存没有设置过期时间、最大容量或淘汰策略。</li>
-          <li>Java中ThreadLocal 使用后没有 remove，在线程池场景下尤其容易泄漏。</li>
-          <li>监听器、回调、事件订阅注册后没有取消。
-          </li>
-          <li>Java中 对象仍然存在于 List、Map、Queue 等集合中，没有被及时移除。</li>
         </ul>
         <h3>排查思路</h3>
         <pre><code class="language-python">观察进程 RSS / Python heap / 对象数量是否持续增长
@@ -806,66 +845,189 @@ finally:
 
 <section id="gather-vs-create-task">
         <h2>asyncio.gather 和 asyncio.create_task 有什么区别？</h2>
-        <p><code>asyncio.create_task</code> 把协程包装成 Task 并调度到事件循环；<code>asyncio.gather</code> 并发等待多个 awaitable 并收集结果。</p>
+        <p>两者都用于 asyncio 并发，但层次不同：<code>create_task</code> 是<strong>创建并调度单个 Task</strong>；<code>gather</code> 是<strong>并发等待多个 awaitable 并收集结果</strong>的工具函数。</p>
+        <pre><code class="language-python"># create_task：立刻把协程丢进事件循环，返回 Task 对象
+task = asyncio.create_task(fetch_user())
+await do_other_work()          # Task 在后台并发跑
+user = await task              # 需要结果时再 await
+
+# gather：并发跑多个协程，等全部完成后一次性拿结果
+a, b = await asyncio.gather(fetch_a(), fetch_b())</code></pre>
+        <h3>核心区别</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>create_task</th>
+              <th>gather</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>作用</td><td>包装单个协程为 Task，立即调度</td><td>并发执行多个 awaitable，统一等待</td></tr>
+            <tr><td>返回值</td><td>Task 对象，可稍后 await / cancel</td><td>结果列表（顺序与入参一致）</td></tr>
+            <tr><td>粒度</td><td>单任务生命周期管理</td><td>批量并发 + 结果聚合</td></tr>
+            <tr><td>异常</td><td>await Task 时抛出该 Task 的异常</td><td>默认任一失败整体抛异常；<code>return_exceptions=True</code> 收集为结果</td></tr>
+          </tbody>
+        </table>
+        <h3>使用场景</h3>
         <ul>
-          <li><code>create_task(coro)</code> 创建单个后台任务，可单独 await、cancel</li>
-          <li><code>gather(a, b, c)</code> 并发执行并等待全部完成，返回结果列表</li>
-          <li>默认任一异常会导致 gather 失败，可用 <code>return_exceptions=True</code> 收集异常</li>
+          <li><strong>create_task</strong>：需要「先启动、后等待」——启动 I/O 后去做别的事，再回来取结果；或需要单独 cancel 某个任务。</li>
+          <li><strong>gather</strong>：多个独立 I/O 可以并行（调 3 个 API、查 3 张表），全部完成后统一处理。</li>
+          <li>gather 内部可直接传协程，会自动包装成 Task；也可先 create_task 再 gather，便于中途 cancel 单个 Task。</li>
         </ul>
-        <pre><code class="language-python">task = asyncio.create_task(fetch_user())
-result1, result2 = await asyncio.gather(fetch_a(), fetch_b())</code></pre>
+        <h3>常见坑</h3>
+        <ul>
+          <li>只 create_task 不 await → 任务可能被 GC 取消，产生 <code>Task was destroyed but pending</code> 警告。</li>
+          <li>gather 默认 fail-fast：一个子任务异常，其余仍在跑但 gather 立刻抛错；要部分失败用 <code>return_exceptions=True</code>。</li>
+          <li>gather 返回顺序固定按入参顺序，与完成先后无关。</li>
+        </ul>
+        <p><strong>面试回答：</strong>create_task 创建单个后台 Task 并立即调度，适合先启动后等待；gather 并发等待多个 awaitable 并收集结果列表；两者常配合使用，注意必须 await Task 以及 gather 的异常策略。</p>
       </section>
 
 <section id="asyncio-timeout-cancel">
         <h2>Python 协程如何做超时、取消和异常？</h2>
-        <p>协程超时和取消需要显式处理，避免任务泄漏和异常被吞掉。常用 <code>asyncio.wait_for</code>、<code>asyncio.timeout</code>、<code>Task.cancel()</code>。</p>
-        <ul>
-          <li>对外部 HTTP、数据库、LLM 调用设置超时，避免无限等待</li>
-          <li>取消时要捕获 <code>asyncio.CancelledError</code>，在 <code>finally</code> 中释放连接</li>
-          <li>区分全部失败和部分失败，必要时做降级或补偿</li>
-        </ul>
-        <pre><code class="language-python">try:
-    result = await asyncio.wait_for(fetch(), timeout=3)
+        <p>协程不会自动超时或取消，必须显式处理，否则外部 I/O 卡住会导致任务泄漏、连接不释放。常用 <code>asyncio.wait_for</code>、<code>asyncio.timeout</code>（3.11+）、<code>Task.cancel()</code>。</p>
+        <pre><code class="language-python"># 超时：wait_for（通用） / timeout 上下文管理器（3.11+）
+try:
+    result = await asyncio.wait_for(fetch(), timeout=3.0)
 except asyncio.TimeoutError:
     result = None
-finally:
-    await cleanup()</code></pre>
+
+async with asyncio.timeout(3.0):
+    result = await fetch()
+
+# 取消：Task.cancel() → 协程内捕获 CancelledError 做清理
+task = asyncio.create_task(long_running())
+task.cancel()
+try:
+    await task
+except asyncio.CancelledError:
+    pass  # 预期行为，清理在 finally 中</code></pre>
+        <h3>三种机制对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>机制</th>
+              <th>API</th>
+              <th>场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>超时</td><td><code>wait_for(coro, timeout=N)</code></td><td>限制单次 I/O 最大等待时间</td></tr>
+            <tr><td>超时（3.11+）</td><td><code>async with asyncio.timeout(N)</code></td><td>多行代码块统一超时，写法更清晰</td></tr>
+            <tr><td>取消</td><td><code>task.cancel()</code></td><td>用户中断、服务关闭、上游超时联动取消</td></tr>
+          </tbody>
+        </table>
+        <h3>取消的正确姿势</h3>
+        <ul>
+          <li><code>cancel()</code> 不会立刻终止协程，而是在下一个 <code>await</code> 点抛 <code>CancelledError</code>。</li>
+          <li>协程内必须捕获 <code>CancelledError</code> 或在 <code>finally</code> 中释放资源（关连接、删临时文件）。</li>
+          <li>不要吞掉 <code>CancelledError</code> 后继续跑业务逻辑，应 re-raise 或确保任务真正结束。</li>
+        </ul>
+        <h3>生产实践</h3>
+        <ul>
+          <li>HTTP / DB / LLM 调用<strong>必须设超时</strong>，推荐连接超时 + 读超时分开配置。</li>
+          <li>服务 graceful shutdown：取消所有未完成 Task，<code>await asyncio.gather(*tasks, return_exceptions=True)</code>。</li>
+          <li>部分失败场景：用 <code>return_exceptions=True</code> 收集异常，成功的结果仍可用。</li>
+          <li>FastAPI 中客户端断开连接会 cancel 请求 Task，长任务需处理 CancelledError。</li>
+        </ul>
+        <p><strong>面试回答：</strong>协程超时用 wait_for 或 asyncio.timeout，取消用 Task.cancel() 并在协程内捕获 CancelledError 做资源清理；外部 I/O 必须设超时，服务关闭时批量 cancel 未完成任务。</p>
       </section>
 
 <section id="fastapi-di">
         <h2>FastAPI 依赖注入机制是什么？</h2>
-        <p>FastAPI 通过 <code>Depends</code> 声明依赖，在请求进入路由前解析并注入，用于鉴权、数据库会话、配置等横切逻辑。</p>
-        <ul>
-          <li>适合获取当前用户、校验权限、创建 DB Session</li>
-          <li>依赖可以嵌套，FastAPI 会自动解析依赖图</li>
-          <li>使用 <code>yield</code> 可实现资源获取与释放（如关闭 DB 连接）</li>
-        </ul>
-        <pre><code class="language-python">from fastapi import Depends
+        <p>FastAPI 通过 <code>Depends()</code> 实现依赖注入（DI）：路由函数声明需要什么依赖，框架在请求进入前<strong>自动解析、创建并注入</strong>，用于鉴权、DB Session、配置等横切逻辑，避免在每个路由里重复写。</p>
+        <pre><code class="language-python">from fastapi import Depends, FastAPI
 
-def get_current_user():
-    return {&quot;name&quot;: &quot;ren&quot;}
+app = FastAPI()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db          # yield 依赖：请求结束后执行 finally 逻辑
+    finally:
+        db.close()
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    return verify_token(token)
 
 @app.get(&quot;/profile&quot;)
-def profile(user = Depends(get_current_user)):
-    return user</code></pre>
+def profile(user=Depends(get_current_user), db=Depends(get_db)):
+    return db.query(User).filter_by(name=user.name).first()</code></pre>
+        <h3>核心特性</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>特性</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>声明式注入</td><td>参数标注 <code>Depends(func)</code>，框架自动调用 func 并传入结果</td></tr>
+            <tr><td>依赖嵌套</td><td>依赖函数自身可声明 Depends，框架自动解析依赖图（DAG）</td></tr>
+            <tr><td>yield 依赖</td><td>用 <code>yield</code> 替代 <code>return</code>，在 <code>finally</code> 中释放资源（DB/文件/锁）</td></tr>
+            <tr><td>缓存</td><td>同一请求内相同依赖只执行一次（默认 <code>use_cache=True</code>）</td></tr>
+            <tr><td>作用域</td><td>可定义全局依赖（<code>app.dependencies</code>）或路由级依赖</td></tr>
+          </tbody>
+        </table>
+        <h3>常见用途</h3>
+        <ul>
+          <li><strong>鉴权</strong>：从 Header/Cookie 解析 Token → 返回当前用户 → 无权限抛 HTTPException。</li>
+          <li><strong>DB Session</strong>：每个请求创建 Session，请求结束自动 close（yield 模式）。</li>
+          <li><strong>分页参数</strong>：统一解析 <code>page</code>、<code>size</code> 并校验范围。</li>
+          <li><strong>权限校验</strong>：依赖链 <code>get_user → check_admin</code>，非 admin 直接 403。</li>
+        </ul>
+        <h3>与 Spring DI 对比</h3>
+        <p>思路类似（声明依赖、自动注入、生命周期管理），但 FastAPI DI 更轻量：无容器注册，靠函数签名 + Depends 声明；适合请求级短生命周期对象，不适合复杂 Singleton 管理。</p>
+        <p><strong>面试回答：</strong>FastAPI 用 Depends 声明式注入依赖，支持嵌套和 yield 做资源释放；适合鉴权、DB Session 等横切逻辑；同一请求内依赖默认缓存只执行一次。</p>
       </section>
 
 <section id="fastapi-vs-flask-django">
         <h2>FastAPI 与 Flask / Django 的差异是什么？</h2>
-        <p>三者都是 Python Web 框架，但定位不同：FastAPI 偏现代 API 和异步，Flask 偏轻量灵活，Django 偏全栈后台。</p>
+        <p>三者都是 Python Web 框架，但定位不同：FastAPI 偏<strong>现代 API + 异步</strong>，Flask 偏<strong>轻量灵活</strong>，Django 偏<strong>全栈后台</strong>。</p>
+        <pre><code class="language-python">Flask   → WSGI，同步为主，微框架，自由组合
+Django  → WSGI/ASGI，全栈，内置 ORM/Admin/Auth，约定优于配置
+FastAPI → ASGI，原生 async，Pydantic 校验，自动生成 OpenAPI 文档</code></pre>
+        <h3>核心对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>FastAPI</th>
+              <th>Flask</th>
+              <th>Django</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>协议</td><td>ASGI（原生 async）</td><td>WSGI（同步，可配 async）</td><td>WSGI + ASGI 支持</td></tr>
+            <tr><td>定位</td><td>API 服务、微服务</td><td>轻量 Web、自定义架构</td><td>全栈后台、业务系统</td></tr>
+            <tr><td>数据校验</td><td>Pydantic 自动校验 + 类型提示</td><td>需手动或第三方（Marshmallow）</td><td>Form/Serializer 校验</td></tr>
+            <tr><td>API 文档</td><td>自动生成 Swagger / ReDoc</td><td>需插件（flask-restx 等）</td><td>DRF 可生成</td></tr>
+            <tr><td>ORM</td><td>无内置，配 SQLAlchemy/Tortoise</td><td>无内置，配 SQLAlchemy</td><td>内置 Django ORM</td></tr>
+            <tr><td>学习曲线</td><td>低（类型注解驱动）</td><td>低</td><td>中高（概念多）</td></tr>
+            <tr><td>性能（IO 密集）</td><td>高（async 并发）</td><td>中</td><td>中</td></tr>
+          </tbody>
+        </table>
+        <h3>选型建议</h3>
         <ul>
-          <li>FastAPI：ASGI、类型注解、Pydantic 校验、OpenAPI 文档，适合 API 和 AI/RAG 服务</li>
-          <li>Flask：轻量、生态丰富，适合中小型服务和自定义架构</li>
-          <li>Django：内置 ORM、Admin、认证等，适合传统后台和业务系统</li>
+          <li><strong>FastAPI</strong>：REST/GraphQL API、AI/RAG 服务、高并发 IO（LLM 流式、WebSocket）、需要自动文档。</li>
+          <li><strong>Flask</strong>：小型服务、高度自定义、团队熟悉 Flask 生态、渐进式扩展。</li>
+          <li><strong>Django</strong>：传统后台管理系统、需要 Admin/ORM/Auth 开箱即用、CRUD 为主的应用。</li>
         </ul>
-        <p>FastAPI 的异步优势在高并发 IO 场景更明显；CPU 密集仍要配合进程/线程池。</p>
+        <h3>注意</h3>
+        <ul>
+          <li>FastAPI 的 async 优势在 <strong>I/O 密集</strong>场景（HTTP 调用、DB 查询）；CPU 密集仍需 <code>run_in_executor</code> 或独立进程。</li>
+          <li>Flask 2.0+ 支持 async 路由，但生态仍以同步为主。</li>
+          <li>三者可共存：Django 做后台 + FastAPI 做 AI API 网关是常见组合。</li>
+        </ul>
+        <p><strong>面试回答：</strong>FastAPI 是 ASGI 异步 API 框架，Pydantic 校验 + 自动 OpenAPI，适合 AI/RAG 等高 IO 服务；Flask 轻量灵活；Django 全栈开箱即用；按项目规模和是否需要 async/自动文档选型。</p>
       </section>
 
 <section id="dependency-management">
         <h2>Python 项目依赖管理最佳实践？</h2>
         <p>项目应通过虚拟环境和锁文件隔离依赖，保证开发、测试、生产环境一致。</p>
         <ul>
-          <li>推荐 <code>venv</code> + <code>requirements.txt</code>，或 Poetry、PDM、uv 等现代工具</li>
+          <li>推荐 <code>venv</code> + <code>requirements.txt（ 管理<strong>Python 项目依赖的第三方包及其版本</strong>）</code></li>
           <li>锁文件应提交到版本库，CI/CD 使用相同版本安装</li>
           <li>固定 Python 版本，避免“本地能跑、线上不行”</li>
         </ul>

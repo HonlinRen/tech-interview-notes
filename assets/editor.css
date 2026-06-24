@@ -69,6 +69,30 @@ body.edit-mode .editor-sidebar-controls .editor-sidebar-btn[data-action="edit-pr
   color: #dc2626;
 }
 
+.editor-format-btn.editor-highlight-preview {
+  background: #fef9c3;
+  border-color: #fde047;
+  color: #854d0e;
+  font-weight: 600;
+}
+
+body.dark .editor-format-btn.editor-highlight-preview {
+  background: #422006;
+  border-color: #a16207;
+  color: #fde68a;
+}
+
+.editor-format-btn.editor-bullet-btn {
+  letter-spacing: 0.02em;
+}
+
+.editor-format-btn .editor-bullet-dot {
+  font-size: 1.55em;
+  line-height: 1;
+  vertical-align: -0.12em;
+  font-weight: 700;
+}
+
 .editor-format-btn.em-orange-preview {
   color: #b45309;
   font-weight: 600;

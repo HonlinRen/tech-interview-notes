@@ -52,10 +52,10 @@
     '<div class="editor-sidebar-tools">' +
     '<div class="editor-sidebar-tools-row">' +
     '<button type="button" class="tool-btn editor-format-btn" data-action="bold"><strong>B</strong></button>' +
-    '<button type="button" class="tool-btn editor-format-btn" data-action="highlight">高亮</button>' +
+    '<button type="button" class="tool-btn editor-format-btn editor-highlight-preview" data-action="highlight">高亮</button>' +
     '<button type="button" class="tool-btn editor-format-btn em-orange-preview" data-action="orange">橙色</button>' +
     '<button type="button" class="tool-btn editor-format-btn em-red-preview" data-action="red">红色</button>' +
-    '<button type="button" class="tool-btn editor-format-btn" data-action="bullet">标题点</button>' +
+    '<button type="button" class="tool-btn editor-format-btn editor-bullet-btn" data-action="bullet">标题 <span class="editor-bullet-dot" aria-hidden="true">●</span></button>' +
     "</div>" +
     '<div class="editor-sidebar-tools-row">' +
     '<button type="button" class="tool-btn editor-format-btn editor-code-btn editor-code-btn-full" data-action="insert-code">Code</button>' +
