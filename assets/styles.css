@@ -805,10 +805,52 @@
       margin-bottom: 18px;
     }
 
+    .home-hero-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
     .home-hero h1 {
-      margin: 0 0 10px;
+      margin: 0;
       font-size: 28px;
       line-height: 1.25;
+    }
+
+    .home-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .home-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+
+    .home-stat strong {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .home-stat-muted {
+      color: var(--muted);
+    }
+
+    body.dark .home-stat {
+      background: #1f2937;
     }
 
     .home-grid {

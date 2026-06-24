@@ -1597,7 +1597,8 @@ jmap -dump:live,format=b,file=heap.hprof &lt;pid&gt;   # 导出堆快照</code><
 
 <section id="deadlock-analysis">
         <h2>如何分析线程死锁？</h2>
-        <p>死锁（Deadlock）是多个线程<strong>循环等待</strong>彼此持有的锁，导致全部永久阻塞。典型四条件：互斥、占有且等待、不可抢占、循环等待。线上表现为接口超时、线程池耗尽、CPU 不高但吞吐为 0。</p>
+        <p>死锁（Deadlock）是多个线程<strong>循环等待</strong>彼此持有的锁，导致全部永久阻塞。</p>
+        <p>典型四条件：互斥、占有且等待、不可抢占、循环等待。线上表现为接口超时、线程池耗尽、CPU 不高但吞吐为 0。</p>
         <h3>排查步骤</h3>
         <ol>
           <li><code>jps -l</code> 找到 Java 进程 PID。</li>
@@ -1659,7 +1660,6 @@ jmap -dump:live,format=b,file=heap.hprof &lt;pid&gt;   # 导出堆快照</code><
           </thead>
           <tbody>
             <tr><td>Minor GC 极频繁</td><td>Eden 过小、短生命周期对象暴增</td><td>循环内 new 大集合、日志拼接、Stream 中间对象</td></tr>
-            <tr><td>Old 持续涨</td><td>对象无法回收（泄漏）</td><td>静态 Map 无界缓存、ThreadLocal 未 remove、连接未关</td></tr>
             <tr><td>Full GC 频繁</td><td>老年代满、Metaspace OOM、System.gc()</td><td>大对象直接进老年代、动态代理类过多</td></tr>
             <tr><td>GC 后内存不降</td><td>泄漏或堆设过大</td><td>MAT 找 Retained Heap 最大的对象链</td></tr>
           </tbody>

@@ -35,11 +35,74 @@ const CATEGORY_TO_FILE = {
   llm: "llm.html"
 };
 
+function stripHtml(text) {
+  return text.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function collectQuestionsFromHtml(html, category) {
+  const questions = [];
+  const mainMatch = html.match(/<main>([\s\S]*?)<\/main>/i);
+  if (!mainMatch) {
+    return questions;
+  }
+
+  const sectionRegex = /<section\s+id="([^"]+)"[^>]*>([\s\S]*?)<\/section>/gi;
+  let match;
+  while ((match = sectionRegex.exec(mainMatch[1])) !== null) {
+    const id = match[1];
+    if (id === "summary") {
+      continue;
+    }
+
+    const inner = match[2];
+    const h2Match = inner.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+    if (!h2Match) {
+      continue;
+    }
+
+    const title = stripHtml(h2Match[1]);
+    if (/^\d+-\d+\./.test(title)) {
+      continue;
+    }
+
+    questions.push({ id: id, category: category });
+  }
+
+  return questions;
+}
+
+function buildStudyStats() {
+  const questions = [];
+  Object.keys(CATEGORY_TO_FILE).forEach(function (category) {
+    const file = CATEGORY_TO_FILE[category];
+    const filePath = path.join(ROOT, file);
+    if (!fs.existsSync(filePath)) {
+      return;
+    }
+    const html = fs.readFileSync(filePath, "utf8");
+    questions.push.apply(questions, collectQuestionsFromHtml(html, category));
+  });
+  return questions;
+}
+
 const app = express();
 app.use(express.json({ limit: "20mb" }));
 
 app.get("/api/editor-health", function (req, res) {
   res.json({ ok: true });
+});
+
+app.get("/api/stats", function (req, res) {
+  try {
+    const questions = buildStudyStats();
+    res.json({
+      ok: true,
+      total: questions.length,
+      questions: questions
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || "Stats failed" });
+  }
 });
 
 app.get("/favicon.ico", function (req, res) {

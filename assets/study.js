@@ -1265,6 +1265,23 @@ const categoryLabels = {
         });
       }
 
+      function restoreEditorScroll() {
+        const raw = sessionStorage.getItem("editor-scroll-restore");
+        if (!raw) {
+          return false;
+        }
+        sessionStorage.removeItem("editor-scroll-restore");
+        try {
+          const data = JSON.parse(raw);
+          requestAnimationFrame(function () {
+            window.scrollTo(0, data.scrollY || 0);
+          });
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+
       function restoreLastQuestion() {
         const savedKey = localStorage.getItem("study-current-question");
         const question = state.questions.find(function (item) {
@@ -1419,5 +1436,7 @@ const categoryLabels = {
           darkBtn.textContent = "\u6d45\u8272\u6a21\u5f0f";
         }
 
-      restoreLastQuestion();
+      if (!restoreEditorScroll()) {
+        restoreLastQuestion();
+      }
     })();

@@ -913,6 +913,86 @@
     setStatus("");
   }
 
+  const ROW_CONTROLS_HTML =
+    '<button type="button" class="editor-row-btn" data-row-action="insert-above" title="在上方插入行">+↑</button>' +
+    '<button type="button" class="editor-row-btn" data-row-action="insert-below" title="在下方插入行">+↓</button>' +
+    '<button type="button" class="editor-row-btn danger" data-row-action="delete" title="删除行">×</button>';
+
+  let tableOverlayLayer = null;
+  let overlayRepositionScheduled = false;
+
+  function rememberScrollForReload() {
+    sessionStorage.setItem("editor-scroll-restore", JSON.stringify({
+      scrollY: window.scrollY
+    }));
+  }
+
+  function ensureTableOverlayLayer() {
+    if (!tableOverlayLayer) {
+      tableOverlayLayer = document.createElement("div");
+      tableOverlayLayer.className = "editor-table-overlay-layer";
+      tableOverlayLayer.hidden = true;
+      document.body.appendChild(tableOverlayLayer);
+      window.addEventListener("scroll", scheduleTableOverlayReposition, true);
+      window.addEventListener("resize", scheduleTableOverlayReposition);
+    }
+    return tableOverlayLayer;
+  }
+
+  function scheduleTableOverlayReposition() {
+    if (!state.editing || overlayRepositionScheduled) {
+      return;
+    }
+    overlayRepositionScheduled = true;
+    requestAnimationFrame(function () {
+      overlayRepositionScheduled = false;
+      repositionTableOverlays();
+    });
+  }
+
+  function repositionTableOverlays() {
+    if (!tableOverlayLayer || tableOverlayLayer.hidden) {
+      return;
+    }
+    tableOverlayLayer.querySelectorAll(".editor-row-controls-floating").forEach(function (strip) {
+      const row = strip._anchorRow;
+      if (!row || !row.isConnected) {
+        strip.remove();
+        return;
+      }
+      const rect = row.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        strip.style.visibility = "hidden";
+        return;
+      }
+      strip.style.visibility = "visible";
+      strip.style.top = Math.round(rect.top) + "px";
+      strip.style.left = Math.max(8, Math.round(rect.left - 92)) + "px";
+      strip.style.height = Math.round(rect.height) + "px";
+    });
+  }
+
+  function bindTableRowOverlay(row) {
+    const legacyControls = row.querySelector(".editor-row-controls");
+    if (legacyControls) {
+      legacyControls.remove();
+    }
+    if (row.dataset.editorOverlayBound === "1") {
+      return;
+    }
+    const layer = ensureTableOverlayLayer();
+    layer.hidden = false;
+    row.dataset.editorOverlayBound = "1";
+    row.classList.add("editor-table-row");
+
+    const strip = document.createElement("div");
+    strip.className = "editor-row-controls-floating";
+    strip.setAttribute("contenteditable", "false");
+    strip.innerHTML = ROW_CONTROLS_HTML;
+    strip._anchorRow = row;
+    layer.appendChild(strip);
+  }
+
   function setEditMode(enabled) {
     state.editing = enabled;
     document.body.classList.toggle("edit-mode", enabled);
@@ -930,9 +1010,6 @@
       }
       section.classList.toggle("editor-section-active", enabled);
       if (enabled) {
-        normalizeOrphanInlines(contentRoot);
-        normalizeCodeBlocks(contentRoot);
-        normalizeLists(contentRoot);
         protectCodeBlocks(contentRoot);
         attachTableControls(section);
       } else {
@@ -940,94 +1017,62 @@
       }
     });
 
+    if (enabled) {
+      scheduleTableOverlayReposition();
+    }
+
     if (!enabled) {
       closeCodePanel();
       setStatus("");
     }
   }
 
-  function ensureTableHeaderSpacer(table) {
-    const thead = table.querySelector("thead");
-    if (!thead) {
-      return;
-    }
-    const headerRow = thead.querySelector(":scope > tr");
-    if (!headerRow || headerRow.querySelector(".editor-row-controls-header")) {
-      return;
-    }
-    const spacer = document.createElement("th");
-    spacer.className = "editor-row-controls-header";
-    spacer.setAttribute("aria-hidden", "true");
-    spacer.innerHTML = "&nbsp;";
-    headerRow.insertBefore(spacer, headerRow.firstChild);
-  }
-
-  function removeTableHeaderSpacer(table) {
-    table.querySelectorAll(".editor-row-controls-header").forEach(function (cell) {
-      cell.remove();
-    });
-  }
-
   function attachTableControls(section) {
     const root = getSectionAnswer(section) || section;
-    root.querySelectorAll("table").forEach(function (table) {
-      ensureTableHeaderSpacer(table);
+    root.querySelectorAll(".editor-row-controls-header").forEach(function (cell) {
+      cell.remove();
     });
-    root.querySelectorAll("table tbody tr").forEach(function (row) {
-      if (row.dataset.editorBound === "1") {
-        return;
-      }
-      row.dataset.editorBound = "1";
-      row.classList.add("editor-table-row");
-
-      const controls = document.createElement("td");
-      controls.className = "editor-row-controls";
-      controls.contentEditable = "false";
-      controls.innerHTML =
-        '<button type="button" class="editor-row-btn" data-row-action="insert-above" title="在上方插入行">+↑</button>' +
-        '<button type="button" class="editor-row-btn" data-row-action="insert-below" title="在下方插入行">+↓</button>' +
-        '<button type="button" class="editor-row-btn danger" data-row-action="delete" title="删除行">×</button>';
-      row.insertBefore(controls, row.firstChild);
-    });
+    root.querySelectorAll("table tbody tr").forEach(bindTableRowOverlay);
+    repositionTableOverlays();
   }
 
   function detachTableControls(section) {
     const root = getSectionAnswer(section) || section;
     root.querySelectorAll("table tbody tr").forEach(function (row) {
       row.classList.remove("editor-table-row");
-      delete row.dataset.editorBound;
-      const controls = row.querySelector(".editor-row-controls");
-      if (controls) {
-        controls.remove();
+      delete row.dataset.editorOverlayBound;
+      const legacyControls = row.querySelector(".editor-row-controls");
+      if (legacyControls) {
+        legacyControls.remove();
       }
     });
-    root.querySelectorAll("table").forEach(function (table) {
-      removeTableHeaderSpacer(table);
+    root.querySelectorAll(".editor-row-controls-header").forEach(function (cell) {
+      cell.remove();
     });
+    if (!tableOverlayLayer) {
+      return;
+    }
+    tableOverlayLayer.querySelectorAll(".editor-row-controls-floating").forEach(function (strip) {
+      const row = strip._anchorRow;
+      if (row && root.contains(row)) {
+        strip.remove();
+      }
+    });
+    if (!tableOverlayLayer.querySelector(".editor-row-controls-floating")) {
+      tableOverlayLayer.hidden = true;
+    }
   }
 
-  function createTableRow(templateRow, insertBelow) {
+  function createTableRow(templateRow) {
     const row = document.createElement("tr");
-    const templateCells = Array.from(templateRow.children).filter(function (cell) {
-      return !cell.classList.contains("editor-row-controls");
-    });
-
-    templateCells.forEach(function (cell) {
+    Array.from(templateRow.children).forEach(function (cell) {
+      if (cell.classList.contains("editor-row-controls")) {
+        return;
+      }
       const td = document.createElement(cell.tagName === "TH" ? "th" : "td");
       td.innerHTML = "&nbsp;";
       row.appendChild(td);
     });
-
-    const controls = document.createElement("td");
-    controls.className = "editor-row-controls";
-    controls.contentEditable = "false";
-    controls.innerHTML =
-      '<button type="button" class="editor-row-btn" data-row-action="insert-above" title="在上方插入行">+↑</button>' +
-      '<button type="button" class="editor-row-btn" data-row-action="insert-below" title="在下方插入行">+↓</button>' +
-      '<button type="button" class="editor-row-btn danger" data-row-action="delete" title="删除行">×</button>';
-    row.insertBefore(controls, row.firstChild);
-    row.dataset.editorBound = "1";
-    row.classList.add("editor-table-row");
     return row;
   }
 
@@ -1036,7 +1081,8 @@
   }
 
   function handleTableAction(button) {
-    const row = button.closest("tr");
+    const strip = button.closest(".editor-row-controls-floating");
+    const row = strip ? strip._anchorRow : button.closest("tr");
     const tbody = row && row.parentElement;
     if (!row || !tbody) {
       return;
@@ -1044,11 +1090,17 @@
 
     const action = button.dataset.rowAction;
     if (action === "insert-above") {
-      tbody.insertBefore(createTableRow(row, false), row);
+      const newRow = createTableRow(row);
+      tbody.insertBefore(newRow, row);
+      bindTableRowOverlay(newRow);
+      repositionTableOverlays();
       return;
     }
     if (action === "insert-below") {
-      tbody.insertBefore(createTableRow(row, true), row.nextSibling);
+      const newRow = createTableRow(row);
+      tbody.insertBefore(newRow, row.nextSibling);
+      bindTableRowOverlay(newRow);
+      repositionTableOverlays();
       return;
     }
     if (action === "delete") {
@@ -1057,7 +1109,11 @@
         setStatus("表格至少保留一行", true);
         return;
       }
+      if (strip) {
+        strip.remove();
+      }
       row.remove();
+      repositionTableOverlays();
     }
   }
 
@@ -1356,7 +1412,7 @@
       }
 
       setStatus("已保存，正在刷新…");
-      setEditMode(false);
+      rememberScrollForReload();
       window.location.reload();
     } catch (error) {
       console.error("[editor save]", error);
@@ -1384,6 +1440,7 @@
       return;
     }
     if (action === "cancel") {
+      rememberScrollForReload();
       window.location.reload();
       return;
     }

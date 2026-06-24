@@ -50,7 +50,9 @@
 
 <section id="spring-aop">
         <h2>Spring AOP 原理</h2>
-        <p>Spring AOP 的核心原理是 <strong>动态代理</strong>。当一个 Bean 需要被切面增强时，Spring 容器里实际暴露的通常不是原始对象，而是代理对象。调用方调用的是代理方法，执行时会先经过切面逻辑，再进入目标方法。</p>
+        <p>Spring AOP 的核心原理是 <strong></strong><span class="em-warn"><strong>动态代理</strong></span></p>
+        <p>当一个 Bean 需要被切面增强时，Spring 容器里实际暴露的通常不是原始对象，而是代理对象。</p>
+        <p>调用方调用的是代理方法，执行时会先经过切面逻辑，再进入目标方法。</p>
         <pre><code class="language-java">调用方
 -&gt; 调用代理对象方法
 -&gt; 执行切面前置逻辑
@@ -131,7 +133,8 @@ public class LogAspect {
           </tbody>
         </table>
         <h3>编程式事务</h3>
-        <p>通过 <code>TransactionTemplate</code> 或 <code>PlatformTransactionManager</code> 手动控制提交和回滚。优点是控制精细，缺点是代码侵入性强、可读性较差。</p>
+        <p>通过 <code>TransactionTemplate</code> 或 <code>PlatformTransactionManager</code> 手动控制提交和回滚。</p>
+        <p>优点是<strong>控制精细</strong>，<span class="em-danger">缺点是代码侵入性强、可读性较差</span>。</p>
         <pre><code class="language-java">@Autowired
 private TransactionTemplate transactionTemplate;
 
@@ -150,7 +153,7 @@ public void createOrder() {
     inventoryMapper.deduct(skuId, count);
 }</code></pre>
         <p>声明式事务是项目中最常见的方式，因为它把事务边界和具体业务逻辑解耦。</p>
-        <p>需要注意：方法必须是 public、避免自调用、异常被吞掉等情况可能导致事务不按预期生效。</p>
+        <p><span class="em-danger">需要注意：</span>方法必须是 public、避免自调用、异常被吞掉等情况可能导致事务不按预期生效。</p>
       </section>
 
 <section id="transactional">
@@ -162,9 +165,6 @@ public void createOrder() {
           <li><strong>方法不是 public</strong>：默认基于 Spring AOP，非 public 方法通常不会被事务增强。</li>
           <li><strong>异常被捕获未抛出</strong>：事务管理器感知不到异常，就不会回滚。</li>
           <li><strong>数据库引擎不支持事务</strong>：例如 MyISAM。</li>
-          <li><strong>对象不是 Spring Bean</strong>：手动 <code>new</code> 出来的对象没有代理。</li>
-          <li><strong>final 类或 final 方法</strong>：CGLIB 无法代理 final 方法。</li>
-          <li><strong>多线程调用</strong>：子线程不会自动继承当前线程的事务上下文。</li>
         </ol>
         <h3>自调用示例</h3>
         <pre><code class="language-java">@Service
@@ -193,15 +193,47 @@ public void pay() throws Exception {
         <pre><code class="language-java">@Transactional(rollbackFor = Exception.class)</code></pre>
       </section>
 
+<section id="boot-startup-flow">
+        <h2>Spring Boot 启动流程介绍？</h2>
+        <p>Spring Boot 启动入口是 <code>SpringApplication.run(...)</code>，在 Spring 容器基础上增加了<strong>环境准备、自动配置、嵌入式 Web 容器启动</strong>等步骤，目标是「约定优于配置」，开箱即用。</p>
+        <h3>核心流程</h3>
+        <pre><code class="language-java">main 调用 SpringApplication.run
+-&gt; 创建 SpringApplication（推断应用类型、加载 ApplicationContextInitializer / Listener）
+-&gt; 准备 Environment（读取 application.yml、命令行参数、环境变量）
+-&gt; 打印 Banner，发布 ApplicationStarting / EnvironmentPrepared 等事件
+-&gt; 创建并 refresh ApplicationContext
+   - 扫描 @Component、执行 @Configuration
+   - 加载 META-INF/spring/*.imports 自动配置类
+   - 条件注解筛选后注册 Bean，完成依赖注入与初始化
+-&gt; 执行 ApplicationRunner / CommandLineRunner
+-&gt; 嵌入式 Tomcat / Netty 开始监听端口，应用就绪</code></pre>
+        <h3>关键阶段</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Environment 准备</td><td>合并多源配置，决定端口、数据源等外部化属性</td></tr>
+            <tr><td>Context refresh</td><td>容器核心：Bean 定义加载、实例化、AOP 代理、事件发布</td></tr>
+            <tr><td>自动配置</td><td><code>@EnableAutoConfiguration</code> 按 classpath 条件装配 Starter 组件</td></tr>
+            <tr><td>Web 容器启动</td><td><code>spring-boot-starter-web</code> 内嵌 Servlet 容器，无需单独部署 WAR</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>从 <code>SpringApplication.run</code> 开始，先准备 Environment 和监听器，再 refresh ApplicationContext——期间完成组件扫描、自动配置和 Bean 初始化；最后执行 Runner 并启动嵌入式 Web 容器。与纯 Spring 相比，Boot 把配置加载、条件装配和容器启动串成一条自动化链路。</p>
+      </section>
+
 <section id="auto-config">
         <h2>Spring Boot 自动配置原理？</h2>
         <p>Spring Boot 自动配置的目标是：<strong>根据 classpath、已有 Bean、配置属性等条件，自动装配常用组件</strong>，让开发者少写大量样板配置。</p>
         <h3>入口注解</h3>
         <p><code>@SpringBootApplication</code> 是一个组合注解，核心包括：</p>
         <ul>
-          <li><code>@SpringBootConfiguration</code>：标识配置类。</li>
-          <li><code>@EnableAutoConfiguration</code>：开启自动配置。</li>
-          <li><code>@ComponentScan</code>：扫描当前包及子包组件。</li>
+          <li><code>@SpringBootConfiguration</code>：Spring的配置类 @Configuration</li>
+          <li><code>@EnableAutoConfiguration</code>：开启自动配置 根据引入的依赖和配置文件，自动创建Bean（Redis、JDBC）</li>
+          <li><code>@ComponentScan</code>：扫描自己写的业务组件 常见：@Controller @Component @Service</li>
         </ul>
         <pre><code class="language-java">@SpringBootApplication
 public class Application {
@@ -209,28 +241,7 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 }</code></pre>
-        <h3>加载流程</h3>
-        <pre><code class="language-java">Spring Boot 启动
--&gt; 读取自动配置候选类
--&gt; 根据条件注解判断是否生效
--&gt; 注册满足条件的 Bean
--&gt; 应用用户自定义配置覆盖默认值</code></pre>
-        <h3>常见条件注解</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>注解</th>
-              <th>作用</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>@ConditionalOnClass</code></td><td>classpath 中存在指定类时生效</td></tr>
-            <tr><td><code>@ConditionalOnMissingBean</code></td><td>容器中不存在指定 Bean 时生效</td></tr>
-            <tr><td><code>@ConditionalOnProperty</code></td><td>配置属性满足条件时生效</td></tr>
-            <tr><td><code>@ConditionalOnWebApplication</code></td><td>当前是 Web 应用时生效</td></tr>
-          </tbody>
-        </table>
-        <p>例如引入 <code>spring-boot-starter-data-redis</code> 后，classpath 存在 Redis 相关类，就会自动装配 <code>RedisTemplate</code> 等常用 Bean。如果用户自己定义了同名 Bean，默认配置会让位。</p>
+        <h3></h3>
       </section>
 
 <section id="starter">
@@ -261,7 +272,7 @@ public class Application {
 
 <section id="bean-lifecycle">
         <h2>Spring Bean 生命周期是什么？</h2>
-        <p>Spring Bean 生命周期描述的是：对象从创建、初始化、可用，到容器关闭时销毁的完整过程。理解生命周期有助于理解 AOP 代理、初始化回调和循环依赖等问题。</p>
+        <p>Spring Bean 生命周期描述的是：对象从<mark>创建、初始化、可用，到容器关闭时销毁</mark>的完整过程。理解生命周期有助于理解 AOP 代理、初始化回调和循环依赖等问题。</p>
         <h3>核心流程</h3>
         <pre><code class="language-java">实例化 Bean
 -&gt; 属性填充（依赖注入）
@@ -271,30 +282,6 @@ public class Application {
 -&gt; BeanPostProcessor 后置处理（AOP 代理常在此阶段完成）
 -&gt; Bean 可使用
 -&gt; 容器关闭时执行销毁（@PreDestroy / DisposableBean / destroy-method）</code></pre>
-        <pre><code class="language-java">@Component
-public class DemoBean implements InitializingBean, DisposableBean {
-
-    @PostConstruct
-    public void init() {
-        System.out.println(&quot;post construct&quot;);
-    }
-
-    @Override
-    public void afterPropertiesSet() {
-        System.out.println(&quot;after properties set&quot;);
-    }
-
-    @PreDestroy
-    public void destroy() {
-        System.out.println(&quot;pre destroy&quot;);
-    }
-
-    @Override
-    public void destroy() {
-        System.out.println(&quot;disposable bean destroy&quot;);
-    }
-}</code></pre>
-        <p>面试重点：AOP 代理通常在 <code>BeanPostProcessor</code> 后置阶段生成，因此容器里最终拿到的常常是代理对象，而不是原始目标对象。</p>
       </section>
 
 <section id="bean-scope">
@@ -313,14 +300,8 @@ public class DemoBean implements InitializingBean, DisposableBean {
             <tr><td><code>prototype</code></td><td>每次获取都创建新实例</td><td>有状态对象、短生命周期对象</td></tr>
             <tr><td><code>request</code></td><td>每个 HTTP 请求一个实例</td><td>请求上下文对象</td></tr>
             <tr><td><code>session</code></td><td>每个 HTTP Session 一个实例</td><td>用户会话状态</td></tr>
-            <tr><td><code>application</code></td><td>ServletContext 级别共享</td><td>全局 Web 共享对象</td></tr>
           </tbody>
         </table>
-        <pre><code class="language-java">@Scope(&quot;prototype&quot;)
-@Component
-public class PrototypeBean {
-}</code></pre>
-        <p>注意：<code>singleton</code> Bean 注入 <code>prototype</code> Bean 时，prototype 不会每次都新建，需通过 <code>@Lookup</code>、<code>ObjectProvider</code> 等方式解决。</p>
       </section>
 
 <section id="spring-mvc-flow">
@@ -453,7 +434,27 @@ com.example.DemoAutoConfiguration</code></pre>
 
 <section id="tx-propagation">
         <h2>Spring 事务传播机制是什么？</h2>
-        <p>事务传播机制定义：当一个事务方法调用另一个事务方法时，Spring 如何处理现有事务上下文。通过 <code>@Transactional(propagation = ...)</code> 配置。</p>
+        <p>事务传播机制定义：当一个事务方法调用另一个事务方法时，Spring 如何处理现有事务上下文。</p>
+        <pre><code class="language-java">@Service
+public class OrderService {
+
+    @Transactional
+    public void createOrder() {
+        // 1. 创建订单
+        orderMapper.insert();
+
+        // 2. 扣减库存
+        stockService.deductStock();
+    }
+}</code></pre>
+        <pre><code class="language-java">@Service
+public class StockService {
+
+    @Transactional
+    public void deductStock() {
+        stockMapper.update();
+    }
+}</code></pre>
         <table>
           <thead>
             <tr>
@@ -465,9 +466,6 @@ com.example.DemoAutoConfiguration</code></pre>
           <tbody>
             <tr><td><code>REQUIRED</code></td><td>有事务就加入，没有就新建</td><td>默认，最常用</td></tr>
             <tr><td><code>REQUIRES_NEW</code></td><td>挂起当前事务并新建独立事务</td><td>审计日志、独立保存</td></tr>
-            <tr><td><code>NESTED</code></td><td>嵌套事务，基于保存点</td><td>部分回滚</td></tr>
-            <tr><td><code>SUPPORTS</code></td><td>有事务就加入，没有就非事务执行</td><td>查询类方法</td></tr>
-            <tr><td><code>NOT_SUPPORTED</code></td><td>挂起当前事务，非事务执行</td><td>不需要事务的操作</td></tr>
             <tr><td><code>MANDATORY</code></td><td>必须在事务中运行，否则异常</td><td>强制依赖外层事务</td></tr>
             <tr><td><code>NEVER</code></td><td>不能在事务中运行，否则异常</td><td>明确禁止事务</td></tr>
           </tbody>
@@ -476,7 +474,6 @@ com.example.DemoAutoConfiguration</code></pre>
 public void writeAuditLog() {
     auditMapper.insert(log);
 }</code></pre>
-        <p>常见场景：<code>REQUIRED</code> 和 <code>REQUIRES_NEW</code> 的区别是前者共享同一事务，后者子方法失败不会导致外层整体回滚，反之亦然。</p>
       </section>
 
 <section id="spring-ioc">
@@ -500,7 +497,7 @@ public class OrderService {
     }
 }</code></pre>
         <p>上面这种构造器注入就是 IoC 的典型体现：OrderService 不自己创建 Mapper，而是容器注入。</p>
-        <p>面试可补充：IoC 是思想，DI 是实现方式。Spring 的核心容器接口是 <code>BeanFactory</code>，实际开发常用 <code>ApplicationContext</code>。</p>
+        <p><span class="em-danger">IoC 是思想，DI （依赖注入）是实现方式。</span>Spring 的核心容器接口是 <code>BeanFactory</code>，实际开发常用 <code>ApplicationContext</code>。</p>
       </section>
 
 <section id="spring-di">
@@ -517,18 +514,37 @@ public class OrderService {
             </tr>
           </thead>
           <tbody>
-            <tr><td>构造器注入</td><td>构造函数参数</td><td>依赖明确、便于测试、推荐</td><td>依赖多时构造函数较长</td></tr>
+            <tr><td>构造器注入</td><td>构造函数参数</td><td><span class="em-warn">依赖关系明确</span></td><td>依赖多时构造函数较长</td></tr>
             <tr><td>Setter 注入</td><td><code>setXxx()</code></td><td>可选依赖灵活</td><td>对象可能存在不完整状态</td></tr>
             <tr><td>字段注入</td><td><code>@Autowired</code> 直接注字段</td><td>写法简单</td><td>不利于测试，隐藏依赖</td></tr>
           </tbody>
         </table>
-        <pre><code class="language-java">@Service
+        <pre><code class="language-java">// 构造器注入
+@Service
 public class UserService {
     private final UserRepository userRepository;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
+}</code></pre>
+        <pre><code class="language-java">//set注入
+@Service
+public class OrderService {
+
+    private PayService payService;
+
+    @Autowired
+    public void setPayService(PayService payService) {
+        this.payService = payService;
+    }
+}</code></pre>
+        <pre><code class="language-java">//字段注入
+@Service
+public class OrderService {
+
+    @Autowired
+    private PayService payService;
 }</code></pre>
         <p>Spring 官方更推荐构造器注入，因为依赖在对象创建时就确定，且方便写单元测试。Setter 注入适合可选依赖，字段注入虽然常见，但工程上更偏向构造器注入。</p>
       </section>
@@ -578,7 +594,7 @@ public class UserService {
 
 <section id="autowired-vs-resource">
         <h2>@Autowired 和 @Resource 有什么区别？</h2>
-        <p>两者都用于依赖注入，但来源、默认匹配规则和习惯用法不同。</p>
+        <p>两者都用于<strong>依赖注入</strong>，但来源、默认匹配规则和习惯用法不同。</p>
         <table>
           <thead>
             <tr>
@@ -600,7 +616,8 @@ private RedisTemplate&lt;String, Object&gt; redisTemplate;
 
 @Resource(name = &quot;redisTemplate&quot;)
 private RedisTemplate&lt;String, Object&gt; redisTemplate2;</code></pre>
-        <p>Spring 项目里更常见 <code>@Autowired</code>，构造器注入场景更推荐它；如果需要明确按 Bean 名称注入，<code>@Resource</code> 也很直观。</p>
+        <p>Spring 项目里更常见 <code>@Autowired</code>，构造器注入场景更推荐它；</p>
+        <p>如果需要明确按 Bean 名称注入，<code>@Resource</code> 也很直观。</p>
       </section>
 
 <section id="spring-design-patterns">
@@ -619,8 +636,6 @@ private RedisTemplate&lt;String, Object&gt; redisTemplate2;</code></pre>
             <tr><td>代理模式</td><td>AOP、事务基于动态代理实现</td></tr>
             <tr><td>模板方法</td><td><code>JdbcTemplate</code>、<code>RestTemplate</code></td></tr>
             <tr><td>观察者模式</td><td>事件机制 <code>ApplicationEvent</code> / <code>ApplicationListener</code></td></tr>
-            <tr><td>适配器模式</td><td>Spring MVC 的 <code>HandlerAdapter</code></td></tr>
-            <tr><td>装饰器模式</td><td><code>BeanWrapper</code>、部分 IO / 包装类设计</td></tr>
           </tbody>
         </table>
         <p>最好结合“为什么需要代理”“为什么容器统一管理对象创建”来回答，而不是只列名词。</p>
@@ -681,21 +696,6 @@ public class SmsListener {
     }
 }</code></pre>
         <p>注意：如果想从容器拿到 FactoryBean 工厂对象本身，而不是它生产的对象，需要在 Bean 名前加 <code>&amp;</code>，例如 <code>&amp;demoFactoryBean</code>。</p>
-      </section>
-
-<section id="handler-mapping-adapter">
-        <h2>Spring MVC 的 HandlerMapping 和 HandlerAdapter 分别做什么？</h2>
-        <p>两者都是 <code>DispatcherServlet</code> 的协作组件，但分工不同：<strong>HandlerMapping 负责找谁处理，HandlerAdapter 负责怎么调用</strong>。</p>
-        <h3>HandlerMapping</h3>
-        <p>根据请求 URL、HTTP 方法、注解等信息，找到对应的处理器对象。例如把 <code>@RequestMapping(&quot;/users&quot;)</code> 映射到某个 Controller 方法。</p>
-        <h3>HandlerAdapter</h3>
-        <p>由于处理器实现方式可能不同，适配器提供统一调用入口。它负责调用 Controller 方法，并完成校验、参数解析和返回值处理。</p>
-        <pre><code class="language-java">请求 /users/1
--&gt; HandlerMapping 找到 UserController#getUser
--&gt; HandlerAdapter 适配并调用方法
--&gt; 参数解析器把路径变量绑定到方法参数
--&gt; 返回值经 HttpMessageConverter 转成 JSON</code></pre>
-        <p>这种“映射”和“调用”分离设计，是 Spring MVC 可扩展、可支持多种处理器类型的关键。</p>
       </section>
 
 <section id="embedded-tomcat">
@@ -809,210 +809,6 @@ spring:
 -&gt; 关闭线程池、消息消费者、数据库连接
 -&gt; 进程退出</code></pre>
         <p>在 K8S 中还要配合 <code>preStop</code> 钩子、合理设置 <code>terminationGracePeriodSeconds</code>，并注意消费者、定时任务、长连接资源是否在关闭前释放。</p>
-      </section>
-
-<section id="mybatis-intro">
-        <h2>MyBatis 是什么？</h2>
-        <p>MyBatis 是一个<strong>半自动 ORM 持久层框架</strong>，它把 JDBC 的重复代码（连接获取、参数设置、结果映射、资源关闭）封装起来，同时保留开发者对 SQL 的完全控制权。</p>
-        <p>与 Hibernate 不同，MyBatis 不会自动跟踪对象状态生成复杂 SQL，而是强调 <strong>SQL 与 Java 对象解耦、映射关系清晰、复杂查询可控</strong>。</p>
-        <h3>核心组件</h3>
-        <ul>
-          <li><code>SqlSessionFactory</code>：创建 <code>SqlSession</code> 的工厂。</li>
-          <li><code>SqlSession</code>：执行 SQL 的会话对象。</li>
-          <li><code>Mapper 接口</code>：声明数据访问方法。</li>
-          <li><code>Mapper XML</code>：编写 SQL 和结果映射。</li>
-        </ul>
-        <pre><code class="language-java">public interface UserMapper {
-    User selectById(@Param(&quot;id&quot;) Long id);
-}</code></pre>
-        <p>在国内业务系统中，MyBatis 很常见，因为报表、联表、复杂查询多，手写 SQL 更便于审查和优化。</p>
-      </section>
-
-<section id="mybatis-vs-hibernate">
-        <h2>MyBatis 和 Hibernate 有什么区别？</h2>
-        <p>MyBatis 是半自动 ORM，更强调 SQL 可控；Hibernate 是全自动 ORM，更强调对象关系映射和实体状态管理。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>对比项</th>
-              <th>MyBatis</th>
-              <th>Hibernate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>SQL 控制</td><td>手写 SQL，更可控</td><td>多数 SQL 自动生成</td></tr>
-            <tr><td>学习成本</td><td>相对低，接近 JDBC</td><td>相对高，要理解实体状态</td></tr>
-            <tr><td>复杂查询</td><td>更直观</td><td>复杂 SQL 可能不直观</td></tr>
-            <tr><td>性能优化</td><td>容易定位和调 SQL</td><td>需要理解一级/二级缓存、懒加载</td></tr>
-            <tr><td>适用场景</td><td>复杂业务 SQL、报表系统</td><td>领域模型驱动、标准 CRUD</td></tr>
-          </tbody>
-        </table>
-        <p>面试可总结：简单 CRUD Hibernate 省心，复杂 SQL 和性能优化 MyBatis 更可控。</p>
-      </section>
-
-<section id="mybatis-placeholder">
-        <h2>#{} 和 ${} 有什么区别？</h2>
-        <p><code>#{}</code> 是预编译参数绑定，<code>${}</code> 是字符串替换。前者更安全，后者容易 SQL 注入。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>对比项</th>
-              <th>#{}</th>
-              <th>${}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>处理方式</td><td>生成 <code>?</code> 占位符</td><td>直接拼接到 SQL 中</td></tr>
-            <tr><td>安全性</td><td>高，参数按值处理</td><td>低，容易被注入</td></tr>
-            <tr><td>适用位置</td><td>where 条件、参数值</td><td>动态表名、排序字段</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-xml">&lt;select id=&quot;selectByName&quot;&gt;
-  SELECT * FROM user WHERE name = #{name}
-&lt;/select&gt;
-
-&lt;select id=&quot;selectByTable&quot;&gt;
-  SELECT * FROM ${tableName}
-&lt;/select&gt;</code></pre>
-        <p>结论很明确：能用 <code>#{}</code> 就不用 <code>${}</code>；如果必须用 <code>${}</code>，一定要做白名单校验。</p>
-      </section>
-
-<section id="mybatis-sql-injection">
-        <h2>MyBatis 如何防止 SQL 注入？</h2>
-        <p>MyBatis 防止 SQL 注入的关键是：<strong>参数值使用预编译，结构片段使用白名单</strong>，而不是把用户输入直接拼进 SQL。</p>
-        <h3>安全实践</h3>
-        <ul>
-          <li>查询条件、参数值统一使用 <code>#{}</code>。</li>
-          <li>动态表名、排序字段若使用 <code>${}</code>，必须后端枚举或白名单映射。</li>
-          <li>不要把前端传入的排序字段直接传入 Mapper。</li>
-          <li>数据库使用最小权限账号，限制破坏范围。</li>
-        </ul>
-        <pre><code class="language-java">private static final Set&lt;String&gt; ALLOWED_ORDER = Set.of(&quot;id&quot;, &quot;create_time&quot;);
-
-public String safeOrder(String orderBy) {
-    return ALLOWED_ORDER.contains(orderBy) ? orderBy : &quot;id&quot;;
-}</code></pre>
-        <p>面试可强调：MyBatis 本身不是绝对安全，错误使用 <code>${}</code> 一样会注入。</p>
-      </section>
-
-<section id="mybatis-cache">
-        <h2>MyBatis 一级缓存和二级缓存是什么？</h2>
-        <p>MyBatis 缓存分为一级缓存和二级缓存。一级缓存是 <code>SqlSession</code> 级别，默认开启；二级缓存是 <code>Mapper namespace</code> 级别，默认关闭。</p>
-        <h3>一级缓存</h3>
-        <p>同一个 <code>SqlSession</code> 中，相同查询条件会命中本地缓存。执行增删改、调用 <code>clearCache()</code>、提交或关闭会话后，一级缓存会失效。</p>
-        <h3>二级缓存</h3>
-        <p>跨 <code>SqlSession</code> 共享，需要在 Mapper 上显式开启和配置。生产环境要谨慎使用，因为容易出现脏读和分布式一致性问题。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>缓存级别</th>
-              <th>作用范围</th>
-              <th>默认状态</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>一级缓存</td><td>SqlSession</td><td>开启</td></tr>
-            <tr><td>二级缓存</td><td>Mapper namespace</td><td>关闭</td></tr>
-          </tbody>
-        </table>
-        <p>实际项目里，热点数据更常用 Redis 等外部缓存，而不是重度依赖 MyBatis 二级缓存。</p>
-      </section>
-
-<section id="mybatis-plugin">
-        <h2>MyBatis 插件机制是什么？</h2>
-        <p>MyBatis 插件基于<strong>拦截器 + 动态代理</strong>，可以在 SQL 执行的关键环节做增强，例如分页、审计、慢 SQL 监控。</p>
-        <h3>可拦截的四大对象</h3>
-        <ul>
-          <li><code>Executor</code></li>
-          <li><code>StatementHandler</code></li>
-          <li><code>ParameterHandler</code></li>
-          <li><code>ResultSetHandler</code></li>
-        </ul>
-        <pre><code class="language-java">@Intercepts({
-    @Signature(type = Executor.class, method = &quot;query&quot;,
-        args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
-})
-public class SlowSqlInterceptor implements Interceptor {
-    @Override
-    public Object intercept(Invocation invocation) throws Throwable {
-        long start = System.currentTimeMillis();
-        Object result = invocation.proceed();
-        long cost = System.currentTimeMillis() - start;
-        // 记录慢 SQL
-        return result;
-    }
-}</code></pre>
-        <p>PageHelper 就是典型的 MyBatis 插件应用。</p>
-      </section>
-
-<section id="mybatis-dynamic-sql">
-        <h2>MyBatis 动态 SQL 是什么？</h2>
-        <p>动态 SQL 用于根据条件动态拼接 SQL 语句，避免在 Java 代码里手工拼接字符串，既提升可读性，也降低出错概率。</p>
-        <h3>常用标签</h3>
-        <ul>
-          <li><code>&lt;if&gt;</code>：条件判断</li>
-          <li><code>&lt;choose&gt;</code>、<code>&lt;when&gt;</code>、<code>&lt;otherwise&gt;</code>：多分支选择</li>
-          <li><code>&lt;where&gt;</code>：自动处理 where 和 and</li>
-          <li><code>&lt;set&gt;</code>：自动处理 set 和逗号</li>
-          <li><code>&lt;foreach&gt;</code>：处理 in 列表、批量插入</li>
-        </ul>
-        <pre><code class="language-xml">&lt;select id=&quot;searchUser&quot;&gt;
-  SELECT * FROM user
-  &lt;where&gt;
-    &lt;if test=&quot;name != null and name != ''&quot;&gt;
-      AND name = #{name}
-    &lt;/if&gt;
-    &lt;if test=&quot;status != null&quot;&gt;
-      AND status = #{status}
-    &lt;/if&gt;
-  &lt;/where&gt;
-&lt;/select&gt;</code></pre>
-        <p>动态 SQL 仍然要保证参数绑定安全，参数值优先使用 <code>#{}</code>。</p>
-      </section>
-
-<section id="mybatis-mapper-proxy">
-        <h2>MyBatis Mapper 接口为什么不需要实现类？</h2>
-        <p>因为 MyBatis 在运行时通过<strong>JDK 动态代理</strong>为 Mapper 接口生成实现对象。调用接口方法时，代理会根据接口全限定名、方法名、参数找到对应的 Mapped Statement 并执行 SQL。</p>
-        <pre><code class="language-java">Mapper 接口方法调用
--&gt; JDK 动态代理拦截
--&gt; 定位 MappedStatement
--&gt; SqlSession 执行 SQL
--&gt; 结果映射为 Java 对象</code></pre>
-        <pre><code class="language-java">public interface UserMapper {
-    User selectById(@Param(&quot;id&quot;) Long id);
-}</code></pre>
-        <p>这也是为什么 Mapper 方法名、参数注解要和 XML 或注解 SQL 配置保持一致。Spring Boot 里通常通过 <code>@MapperScan</code> 把代理对象注册成 Bean。</p>
-      </section>
-
-<section id="mybatis-lazy-loading">
-        <h2>MyBatis 延迟加载是什么？</h2>
-        <p>延迟加载是指在查询主对象时，不立即加载关联对象，而是在真正访问关联属性时才触发额外查询。目标是减少不必要的联表或附加查询。</p>
-        <pre><code class="language-xml">&lt;setting name=&quot;lazyLoadingEnabled&quot; value=&quot;true&quot;/&gt;
-&lt;setting name=&quot;aggressiveLazyLoading&quot; value=&quot;false&quot;/&gt;</code></pre>
-        <h3>优点与风险</h3>
-        <ul>
-          <li>优点：减少一次查询里无关关联数据的加载。</li>
-          <li>风险：容易触发 N+1 查询问题。</li>
-          <li>风险：在事务关闭后访问懒加载属性可能被报错。</li>
-        </ul>
-        <p>如果明确知道业务会用到关联数据，通常直接 join 查询或分步批量查询更可控、可重复。</p>
-      </section>
-
-<section id="mybatis-n-plus-one">
-        <h2>MyBatis 如何处理 N+1 查询问题？</h2>
-        <p>N+1 问题指：先查 1 次主表得到 N 条记录，再对每条记录额外查 1 次关联数据，最终变成 N+1 次 SQL。常见于循环调用 Mapper 时。</p>
-        <h3>常见解决方案</h3>
-        <ul>
-          <li>使用 join 一次查出需要的数据。</li>
-          <li>先查主表 ID 列表，再 <code>where id in (...)</code> 批量查关联数据。</li>
-          <li>在业务层封装 map，避免循环里单条查询。</li>
-          <li>谨慎使用懒加载，配合 SQL 监控定位问题。</li>
-        </ul>
-        <pre><code class="language-java">List&lt;Long&gt; orderIds = orders.stream().map(Order::getId).toList();
-List&lt;OrderItem&gt; items = orderItemMapper.selectByOrderIds(orderIds);
-Map&lt;Long, List&lt;OrderItem&gt;&gt; itemMap = items.stream()
-    .collect(Collectors.groupingBy(OrderItem::getOrderId));</code></pre>
-        <p>面试回答时最好补充：不是只说“用 join”，还要强调批量查询、结果组装和 SQL 可观测性。</p>
       </section>
 </main>
   </div>

@@ -10,7 +10,12 @@
 <body>
   <main style="width: min(1120px, 100%); margin: 0 auto; padding: 28px;">
     <section class="home-hero">
-      <h1>面试知识点整理</h1>
+      <div class="home-hero-head">
+        <h1>面试知识点整理</h1>
+        <div id="homeStats" class="home-stats" aria-live="polite">
+          <span class="home-stat home-stat-muted">统计加载中…</span>
+        </div>
+      </div>
       <p>按主题拆分后的学习入口。学习状态仍使用浏览器 localStorage 保存，各主题页可独立搜索、折叠和标记已学习。</p>
     </section>
     <section class="home-grid" aria-label="主题入口">
@@ -64,5 +69,7 @@
         </a>
     </section>
   </main>
+  <script src="assets/study-legacy-map.js"></script>
+  <script src="assets/home.js"></script>
 </body>
 </html>
