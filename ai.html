@@ -717,6 +717,69 @@ graph = builder.compile(checkpointer=memory)</code></pre>
         <p>大多数 Embedding 模型输出已 L2 归一化，余弦与点积排序一致。选型时与向量库默认度量对齐。</p>
       </section>
 
+<section id="vector-vs-bm25">
+        <h2>向量检索和 BM25 区别是什么？</h2>
+        <p>向量检索（Dense Retrieval）和 BM25（Sparse Retrieval）是 RAG 中最常见的两种召回方式，<strong>匹配逻辑不同</strong>，生产环境通常组合使用（Hybrid Search）。</p>
+        <h3>核心对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>BM25</th>
+              <th>向量召回</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>本质</td><td>关键词 / 词项匹配</td><td>语义相似度匹配</td></tr>
+            <tr><td>擅长</td><td>精确词、型号、错误码、字段名</td><td>同义表达、自然语言语义</td></tr>
+            <tr><td>不擅长</td><td>同义词、改写表达</td><td>数字、编号、精确匹配</td></tr>
+            <tr><td>例子</td><td>E01、A100、v1.2.3</td><td>「无法启动」≈「开机失败」</td></tr>
+          </tbody>
+        </table>
+        <h3>工作原理简述</h3>
+        <pre><code class="language-python">BM25：Query 分词 → 倒排索引查词频/逆文档频率 → 算 BM25 分数 → TopK
+向量：Query Embedding → ANN 近邻搜索（余弦/点积）→ TopK</code></pre>
+        <p><strong>面试回答：</strong>BM25 做词项精确匹配，适合错误码、型号；向量检索做语义相似，适合同义改写。两者互补，生产 RAG 常用 Hybrid Search 融合后再 Rerank。</p>
+      </section>
+
+<section id="bm25-vs-keyword">
+        <h2>BM25 和普通关键词匹配有什么区别？</h2>
+        <p>普通关键词匹配（如 SQL <code>LIKE</code>、简单 contains）往往是<strong>二元命中</strong>：文档包含关键词就返回，不考虑相关程度排序。</p>
+        <p>BM25（Best Matching 25）是经典的<strong>概率检索模型</strong>，为每个文档计算相关性分数并排序，是 Elasticsearch、Lucene 等搜索引擎的默认排序算法之一。</p>
+        <h3>BM25 考虑的三个因素</h3>
+        <ul>
+          <li><strong>词频（TF）</strong>：词在文档中出现越多，一般越相关（但有饱和上限，不会无限加分）。</li>
+          <li><strong>逆文档频率（IDF）</strong>：词越稀有（全库越少文档含该词），权重越高；「的、是」等常见词权重低。</li>
+          <li><strong>文档长度归一化</strong>：文档太长会被适当惩罚，避免长文档仅仅因为词多而排名靠前。</li>
+        </ul>
+        <pre><code class="language-python">普通关键词匹配：
+  Query = "Redis 持久化"
+  → 文档含 "Redis" AND "持久化" → 命中（无分数或固定分）
+
+BM25：
+  Query = "Redis 持久化"
+  → 分别算 "Redis"、"持久化" 的 TF-IDF 贡献
+  → 短且两词都高频出现的文档排更前
+  → 返回按 BM25 分数排序的 TopK</code></pre>
+        <h3>对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>普通关键词匹配</th>
+              <th>BM25</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>排序</td><td>通常无相关性排序，或按时间/ID</td><td>按相关性分数排序</td></tr>
+            <tr><td>词频</td><td>不考虑出现次数</td><td>考虑 TF，但有饱和</td></tr>
+            <tr><td>稀有词</td><td>与普通词同等对待</td><td>IDF 加权，稀有词更重要</td></tr>
+            <tr><td>文档长度</td><td>长文档易误命中</td><td>长度惩罚，更公平</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>普通匹配是「包含即命中」；BM25 进一步算相关性分数，综合词频、词稀有度和文档长度，返回排序后的 TopK，检索质量明显更好。</p>
+      </section>
+
 <section id="hybrid-search">
         <h2>Hybrid Search 混合检索是什么？为什么要结合向量检索和 BM25？</h2>
         <p>Hybrid Search 融合<strong>稠密检索</strong>（语义）和<strong>稀疏检索</strong>（关键词），互补各自弱点。</p>
@@ -733,9 +796,13 @@ graph = builder.compile(checkpointer=memory)</code></pre>
             <tr><td>BM25（Sparse）</td><td>精确关键词、专有名词</td><td>语义理解弱</td></tr>
           </tbody>
         </table>
-        <h3></h3>
+        <h3>融合方式</h3>
         <ul>
+          <li><strong>RRF（Reciprocal Rank Fusion）</strong>：按排名倒数加权融合，不依赖分数尺度，最常用。</li>
+          <li><strong>加权分数</strong>：向量分 × α + BM25 分 × (1-α)，需归一化。</li>
+          <li>融合后通常再经 Cross-Encoder Rerank 精排 TopN 进 LLM 上下文。</li>
         </ul>
+        <p><strong>面试回答：</strong>向量补语义、BM25 补精确词，Hybrid Search 用 RRF 或加权融合双路召回，是生产 RAG 的标配方案。</p>
       </section>
 
 <section id="graph-rag">

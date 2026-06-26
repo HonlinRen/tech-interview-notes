@@ -256,25 +256,7 @@
   function serializePre(pre, baseIndent) {
     const code = pre.querySelector("code");
     if (!code) {
-      const out = baseIndent + "<pre>" + escapeHtml(pre.textContent) + "</pre>";
-      // #region agent log
-      if (pre.textContent.indexOf("CompletableFuture") !== -1 && typeof fetch === "function") {
-        fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
-          body: JSON.stringify({
-            sessionId: "ce29c0",
-            location: "html-serializer.js:serializePre",
-            message: "serialize pre without code child",
-            data: { preTag: pre.tagName, outSnippet: out.slice(0, 200) },
-            hypothesisId: "B",
-            runId: "pre-fix",
-            timestamp: Date.now()
-          })
-        }).catch(function () {});
-      }
-      // #endregion
-      return out;
+      return baseIndent + "<pre>" + escapeHtml(pre.textContent) + "</pre>";
     }
 
     const langMatch = code.className.match(/language-([\w+-]+)/);
@@ -285,31 +267,7 @@
         ? ' class="language-' + escapeHtml(dataLang) + '"'
         : "";
     const text = extractCodeText(code).replace(/\r\n/g, "\n");
-    const out = baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text) + "</code></pre>";
-    // #region agent log
-    if (text.indexOf("CompletableFuture") !== -1 && typeof fetch === "function") {
-      fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
-        body: JSON.stringify({
-          sessionId: "ce29c0",
-          location: "html-serializer.js:serializePre",
-          message: "serialize pre with code",
-          data: {
-            codeClass: code.className,
-            langMatch: langMatch ? langMatch[1] : null,
-            newlineCount: text.split("\n").length - 1,
-            hasPreInOut: out.indexOf("<pre>") !== -1,
-            outSnippet: out.slice(0, 250)
-          },
-          hypothesisId: "B,C",
-          runId: "pre-fix",
-          timestamp: Date.now()
-        })
-      }).catch(function () {});
-    }
-    // #endregion
-    return out;
+    return baseIndent + "<pre><code" + langClass + ">" + escapeHtml(text) + "</code></pre>";
   }
 
   function serializeTableCell(cell, tag) {
@@ -441,56 +399,14 @@
         return serializePre(el.firstElementChild, baseIndent);
       }
       if (!hasBlockChild(el)) {
-        // #region agent log
-        if (el.textContent.indexOf("CompletableFuture") !== -1 && typeof fetch === "function") {
-          fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
-            body: JSON.stringify({
-              sessionId: "ce29c0",
-              location: "html-serializer.js:serializeBlock:div-inline",
-              message: "DIV with code serialized as inline p",
-              data: {
-                childTags: Array.from(el.children).map(function (c) { return c.tagName + ":" + c.className; }),
-                textSnippet: el.textContent.slice(0, 200)
-              },
-              hypothesisId: "B",
-              runId: "pre-fix",
-              timestamp: Date.now()
-            })
-          }).catch(function () {});
-        }
-        // #endregion
         return serializeInlineBlock(el, baseIndent);
       }
-      const divResult = Array.from(el.children)
+      return Array.from(el.children)
         .map(function (child) {
           return serializeBlock(child, baseIndent);
         })
         .filter(Boolean)
         .join("\n");
-      // #region agent log
-      if (!divResult && el.textContent.trim() && typeof fetch === "function") {
-        fetch("/api/debug-log", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: "5803c5",
-            location: "html-serializer.js:serializeBlock:div-empty",
-            message: "DIV serialized to empty",
-            data: {
-              text: el.textContent.trim().slice(0, 120),
-              childTags: Array.from(el.children).map(function (c) { return c.tagName + ":" + c.className; }),
-              inSection: (el.closest("section") || {}).id
-            },
-            hypothesisId: "A",
-            runId: "post-fix-2",
-            timestamp: Date.now()
-          })
-        }).catch(function () {});
-      }
-      // #endregion
-      return divResult;
     }
     if (tag === "P") {
       return serializeParagraph(el, baseIndent);
@@ -564,28 +480,6 @@
         return serializeBlock(node, "        ");
       })
       .filter(Boolean);
-
-    // #region agent log
-    if (id === "compile-and-interpret" && typeof fetch === "function") {
-      fetch("/api/debug-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: "5803c5",
-          location: "html-serializer.js:serializeSection",
-          message: "Section node analysis",
-          data: {
-            elementChildCount: blocks.length,
-            blockTags: blocks.map(function (b) { return b.trim().slice(0, 40); }),
-            hasGraalVM: blocks.join("\n").indexOf("GraalVM") !== -1
-          },
-          hypothesisId: "B,G",
-          runId: "post-fix-2",
-          timestamp: Date.now()
-        })
-      }).catch(function () {});
-    }
-    // #endregion
 
     const lines = ['<section id="' + escapeHtml(id) + '">'];
     if (title) {

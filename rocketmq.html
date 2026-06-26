@@ -143,6 +143,46 @@ if (result.getSendStatus() != SendStatus.SEND_OK) {
         </ol>
       </section>
 
+<section id="rocketmq-order-vs-normal">
+        <h2>RocketMQ 顺序消息和普通消息的区别？</h2>
+        <p>普通消息（并发消息）是 RocketMQ 的默认模式，追求<strong>高吞吐与负载均衡</strong>；顺序消息在特定业务键内保证<strong>先进先出</strong>，牺牲部分并行度换取有序性。</p>
+        <h3>核心对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>普通消息</th>
+              <th>顺序消息</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>消费顺序</td><td>不保证全局或局部顺序</td><td>同一 Queue 内严格 FIFO</td></tr>
+            <tr><td>生产端</td><td>默认轮询选择 MessageQueue</td><td>按 shardingKey（如 orderId）固定选 Queue</td></tr>
+            <tr><td>消费端</td><td><code>MessageListenerConcurrently</code>，多线程并发</td><td><code>MessageListenerOrderly</code>，单 Queue 单线程</td></tr>
+            <tr><td>并发能力</td><td>高，Queue 越多并行度越高</td><td>较低，同一 Queue 串行消费</td></tr>
+            <tr><td>失败处理</td><td>单条失败可重试，不阻塞其他消息</td><td>失败会阻塞该 Queue 后续消息</td></tr>
+            <tr><td>典型场景</td><td>日志、通知、异步解耦</td><td>订单状态流转、库存扣减流水</td></tr>
+          </tbody>
+        </table>
+        <h3>代码差异</h3>
+        <pre><code class="language-java">// 普通消息：并发消费
+consumer.registerMessageListener((MessageListenerConcurrently) (msgs, ctx) -&gt; {
+    return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+});
+
+// 顺序消息：按 Queue 顺序消费
+consumer.registerMessageListener((MessageListenerOrderly) (msgs, ctx) -&gt; {
+    return ConsumeOrderlyStatus.SUCCESS;
+});</code></pre>
+        <h3>选型建议</h3>
+        <ul>
+          <li>只有<strong>同一业务实体</strong>（同一订单、同一账户）需要有序时，用局部顺序，不要全局单 Queue。</li>
+          <li>普通消息 + 消费端幂等，仍是大多数场景的首选。</li>
+          <li>顺序消息要控制 Queue 数量与消费者实例数，并快速处理 poison message，避免整队列阻塞。</li>
+        </ul>
+        <p><strong>面试回答：</strong>普通消息并发投递、并发消费，不保证顺序；顺序消息通过 shardingKey 固定 Queue + Orderly 单线程消费保证局部 FIFO。区别在选 Queue 策略、监听器类型和失败是否阻塞队列，顺序消息吞吐更低但适合状态机类业务。</p>
+      </section>
+
 <section id="rocketmq-ordered-message">
         <h2>49. RocketMQ 顺序消息怎么实现？</h2>
         <p>RocketMQ 的顺序消息分为<strong>全局顺序</strong>和<strong>分区顺序（局部顺序）</strong>。实际业务中几乎都用局部顺序，例如同一订单、同一用户的消息按发送顺序消费。</p>
@@ -1062,6 +1102,10 @@ Master 宕机后，Slave 可手动或自动切换为 Master</code></pre>
           <li>Kafka 偏<strong>流式数据平台</strong>，吞吐更高，与大数据生态深度集成。</li>
           <li>具体选型看业务需求：可靠性功能 vs 吞吐和流处理能力。</li>
         </ol>
+      </section>
+
+<section id="consumer-retry-on-error">
+        <h2>MQ 消费方异常后怎么保证重试？</h2>
       </section>
     </main>
   </div>

@@ -1862,6 +1862,10 @@ CompletableFuture.supplyAsync(() -&gt; fetch())
         </table>
         <p>ByteBuf 的风险也很明确：池化和引用计数提升性能的同时，也要求开发者严格管理生命周期，否则容易出现直接内存泄漏。</p>
       </section>
+
+<section id="child-thread-exception-main">
+        <h2>子线程异常会不会影响主线程？</h2>
+      </section>
 </main>
   </div>
   <script src="assets/highlight.min.js"></script>

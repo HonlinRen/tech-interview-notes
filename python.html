@@ -301,14 +301,55 @@ def hello():
 
 <section id="iterator-generator">
         <h2>迭代器和生成器区别？</h2>
-        <p>迭代器实现 <code>__iter__()</code> 和 <code>__next__()</code>；生成器是用 <code>yield</code> 简化创建的迭代器。</p>
-        <pre><code class="language-python">def nums():
-    yield 1
-    yield 2
+        <p>迭代器（Iterator）和生成器（Generator）都用于<strong>逐个访问元素</strong>，但生成器是创建迭代器的一种简便写法。理解三者关系：<strong>可迭代对象 → 迭代器 → 逐个产出元素</strong>。</p>
+        <h3>概念关系</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>概念</th>
+              <th>协议 / 特征</th>
+              <th>例子</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>可迭代对象 Iterable</td><td>实现 <code>__iter__()</code>，可 for 循环</td><td>list、str、dict</td></tr>
+            <tr><td>迭代器 Iterator</td><td>实现 <code>__iter__()</code> + <code>__next__()</code></td><td><code>iter([1,2])</code>、文件对象</td></tr>
+            <tr><td>生成器 Generator</td><td>含 <code>yield</code> 的函数或生成器表达式</td><td><code>def gen(): yield 1</code></td></tr>
+          </tbody>
+        </table>
+        <h3>手写迭代器 vs 生成器</h3>
+        <pre><code class="language-python"># 迭代器：需自己实现 __iter__ 和 __next__
+class Counter:
+    def __init__(self, n):
+        self.n = n
+        self.i = 0
+    def __iter__(self):
+        return self
+    def __next__(self):
+        if self.i &gt;= self.n:
+            raise StopIteration
+        self.i += 1
+        return self.i
 
-for x in nums():
-    print(x)</code></pre>
-        <p>生成器适合大文件读取、流式处理、分页拉取等按需产生数据的场景，节省内存。</p>
+# 生成器：yield 自动封装为迭代器，代码更简洁
+def counter(n):
+    for i in range(1, n + 1):
+        yield i
+
+# 生成器表达式（惰性）
+squares = (x * x for x in range(10))</code></pre>
+        <h3>核心区别</h3>
+        <table>
+          <thead><tr><th>对比项</th><th>迭代器</th><th>生成器</th></tr></thead>
+          <tbody>
+            <tr><td>创建方式</td><td>类实现协议，或 <code>iter()</code> 获得</td><td><code>yield</code> 函数 / 生成器表达式</td></tr>
+            <tr><td>状态保存</td><td>手动维护实例属性</td><td>函数局部变量自动挂起</td></tr>
+            <tr><td>内存</td><td>惰性，不一次性加载全部</td><td>同样惰性，适合大文件/流式处理</td></tr>
+            <tr><td>额外能力</td><td>标准 next</td><td>支持 <code>send()</code>、<code>throw()</code> 协程式交互</td></tr>
+          </tbody>
+        </table>
+        <p>生成器<strong>一定是迭代器</strong>，但迭代器不一定是生成器（如 <code>list_iterator</code> 是 C 实现的迭代器）。</p>
+        <p><strong>面试回答：</strong>迭代器通过 <code>__next__()</code> 逐个返回值；生成器是用 <code>yield</code> 简化创建的迭代器，自动保存状态、代码简洁，适合流式读取和按需生成数据以节省内存。</p>
       </section>
 
 <section id="builtin-types">
@@ -1108,6 +1149,18 @@ def f(items: list[str]) -&gt; dict[str, int]: ...</code></pre>
           <li><strong>3.13</strong>：实验性<strong>无 GIL</strong>构建（多线程真并行）；REPL 支持多行编辑与颜色高亮。</li>
         </ul>
         <p>生产选型建议：新项目优先 <strong>3.11+</strong>（性能与生态兼顾）；AI/RAG 栈常见 3.10~3.12。升级前检查依赖 wheel 支持与废弃 API。</p>
+      </section>
+
+<section id="fastapi-sync-async">
+        <h2>Python FastAPI 同步 / 异步底层区别是什么？</h2>
+      </section>
+
+<section id="coroutine-read-write-isolation">
+        <h2>多协程读写如何隔离？</h2>
+      </section>
+
+<section id="async-vs-sync-database">
+        <h2>异步数据库和同步数据库有什么区别？</h2>
       </section>
 </main>
   </div>

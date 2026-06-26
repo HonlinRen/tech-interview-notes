@@ -623,62 +623,6 @@
     });
   }
 
-  function debugLog(location, message, data, hypothesisId) {
-    fetch("/api/debug-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "5803c5",
-        location: location,
-        message: message,
-        data: data,
-        hypothesisId: hypothesisId,
-        runId: "post-fix-2",
-        timestamp: Date.now()
-      })
-    }).catch(function () {});
-  }
-
-  function debugLogCe(location, message, data, hypothesisId) {
-    const payload = {
-      sessionId: "ce29c0",
-      location: location,
-      message: message,
-      data: data,
-      hypothesisId: hypothesisId,
-      runId: "post-fix",
-      timestamp: Date.now()
-    };
-    fetch("/api/debug-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }).catch(function () {});
-    fetch("http://127.0.0.1:7812/ingest/52ee4261-ce2a-45ff-9202-7e39a9415d65", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "ce29c0" },
-      body: JSON.stringify(payload)
-    }).catch(function () {});
-  }
-
-  function scanCodeBlocks(root, label) {
-    if (!root) {
-      return [];
-    }
-    return Array.from(root.querySelectorAll("pre, p")).map(function (el) {
-      const code = el.querySelector("code");
-      return {
-        label: label,
-        tag: el.tagName,
-        className: el.className || "",
-        codeClass: code ? code.className : "",
-        textLen: (code || el).textContent.length,
-        newlineCount: (code || el).textContent.split("\n").length - 1,
-        outerSnippet: el.outerHTML.slice(0, 200)
-      };
-    });
-  }
-
   function normalizeLists(root) {
     Array.from(root.querySelectorAll("p")).forEach(function (p) {
       const lists = Array.from(p.children).filter(function (el) {
@@ -1142,16 +1086,6 @@
     codePanel.hidden = false;
     codeTextarea.focus();
     pre.classList.add("editor-code-active");
-
-    // #region agent log
-    debugLogCe("content-editor.js:openCodePanel", "open code panel", {
-      preTag: pre.tagName,
-      codeClass: code.className || "",
-      langDetected: getCodeLanguage(pre),
-      newlineCount: code.textContent.split("\n").length - 1,
-      outerSnippet: pre.outerHTML.slice(0, 300)
-    }, "B,D");
-    // #endregion
   }
 
   function closeCodePanel() {
@@ -1199,17 +1133,6 @@
       code.removeAttribute("data-highlighted");
       window.hljs.highlightElement(code);
     }
-
-    // #region agent log
-    debugLogCe("content-editor.js:applyCodePanel", "after apply", {
-      preTag: state.activePre.tagName,
-      codeClass: code.className,
-      langSelect: langSelect.value,
-      newlineCount: code.textContent.split("\n").length - 1,
-      childTags: Array.from(code.children).map(function (c) { return c.tagName; }),
-      outerSnippet: state.activePre.outerHTML.slice(0, 300)
-    }, "C,E");
-    // #endregion
 
     closeCodePanel();
   }
@@ -1300,57 +1223,14 @@
     saveExitBtn.disabled = true;
 
     try {
-      // #region agent log
-      const _dbgTarget = document.getElementById("compile-and-interpret");
-      const _dbgAnsBefore = _dbgTarget && getSectionAnswer(_dbgTarget);
-      debugLog("content-editor.js:savePage:before-normalize", "DOM before normalize", {
-        innerHTML: _dbgAnsBefore ? _dbgAnsBefore.innerHTML : null,
-        childTags: _dbgAnsBefore ? Array.from(_dbgAnsBefore.children).map(function (c) { return c.tagName + ":" + c.className; }) : null,
-        childNodes: _dbgAnsBefore ? Array.from(_dbgAnsBefore.childNodes).map(function (n) {
-          return n.nodeType === 3 ? "#text:" + n.textContent.trim().slice(0, 60) : n.tagName + ":" + n.className;
-        }) : null,
-        textContent: _dbgAnsBefore ? _dbgAnsBefore.textContent : null
-      }, "B,C,F,G");
-      // #endregion
       getSections().forEach(function (section) {
         const contentRoot = getSectionContentRoot(section);
-        // #region agent log
-        const beforeBlocks = scanCodeBlocks(contentRoot, section.id);
-        if (beforeBlocks.some(function (b) { return b.newlineCount > 2; })) {
-          debugLogCe("content-editor.js:savePage:before-repair", "blocks before repair", {
-            sectionId: section.id,
-            blocks: beforeBlocks
-          }, "A,E");
-        }
-        // #endregion
         normalizeOrphanInlines(contentRoot);
         normalizeCodeBlocks(contentRoot);
         normalizeLists(contentRoot);
         normalizeOrphanInlines(contentRoot);
         prepareCodeBlocksForSave(contentRoot);
-        // #region agent log
-        const finalBlocks = scanCodeBlocks(contentRoot, section.id);
-        if (
-          section.id === "Java-mul-thread" ||
-          beforeBlocks.some(function (b) { return b.newlineCount > 2; }) ||
-          finalBlocks.some(function (b) { return b.newlineCount > 2; })
-        ) {
-          debugLogCe("content-editor.js:savePage:final", "save pipeline final state", {
-            sectionId: section.id,
-            before: beforeBlocks,
-            final: finalBlocks
-          }, "A,E");
-        }
-        // #endregion
       });
-
-      // #region agent log
-      const _dbgAnsAfter = _dbgTarget && getSectionAnswer(_dbgTarget);
-      debugLog("content-editor.js:savePage:after-normalize", "DOM after normalize", {
-        innerHTML: _dbgAnsAfter ? _dbgAnsAfter.innerHTML : null,
-        childTags: _dbgAnsAfter ? Array.from(_dbgAnsAfter.children).map(function (c) { return c.tagName + ":" + c.className; }) : null
-      }, "C");
-      // #endregion
 
       let sectionsHtml;
       try {
@@ -1358,33 +1238,6 @@
       } catch (serializeError) {
         throw new Error("内容序列化失败：" + (serializeError.message || serializeError));
       }
-
-      // #region agent log
-      getSections().forEach(function (section) {
-        const serialized = window.HtmlSerializer.serializeSection(section);
-        if (serialized.indexOf("CompletableFuture") !== -1 || serialized.indexOf("supplyAsync") !== -1) {
-          debugLogCe("content-editor.js:savePage:after-serialize", "serialized section with code", {
-            sectionId: section.id,
-            hasPre: serialized.indexOf("<pre>") !== -1,
-            hasLanguageJava: serialized.indexOf("language-java") !== -1,
-            pCodeCount: (serialized.match(/<p>[^<]*<code/g) || []).length,
-            snippet: serialized.slice(serialized.indexOf("CompletableFuture") - 80, serialized.indexOf("CompletableFuture") + 400)
-          }, "B,C");
-        }
-      });
-      // #endregion
-
-      // #region agent log
-      if (_dbgTarget) {
-        const _dbgSection = window.HtmlSerializer.serializeSection(_dbgTarget);
-        debugLog("content-editor.js:savePage:after-serialize", "Serialized section", {
-          hasGraalVM: _dbgSection.indexOf("GraalVM") !== -1,
-          hasEmWarn: _dbgSection.indexOf("em-warn") !== -1,
-          hasMark: _dbgSection.indexOf("<mark>") !== -1,
-          sectionSnippet: _dbgSection.slice(-500)
-        }, "A,D,E,F,G");
-      }
-      // #endregion
 
       if (!sectionsHtml.trim()) {
         throw new Error("没有可保存的题目内容，请刷新页面后重试");

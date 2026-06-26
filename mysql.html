@@ -50,7 +50,7 @@
 
 <section id="isolation">
         <h2>MySQL 四种隔离级别</h2>
-        <p>事务隔离级别决定并发事务之间能「看到」彼此多少数据。级别越高，一致性越强，但并发性能通常越低。</p>
+        <p>事务隔离级别决定并发事务之间能「看到」彼此多少数据。<span class="em-danger">级别越高，</span><span class="em-danger">一致性越强，但并发性能通常越低</span>。</p>
         <table>
           <thead>
             <tr>
@@ -63,7 +63,7 @@
           <tbody>
             <tr><td>READ UNCOMMITTED</td><td>可能</td><td>可能</td><td>可能</td></tr>
             <tr><td>READ COMMITTED</td><td>不会</td><td>可能</td><td>可能</td></tr>
-            <tr><td>REPEATABLE READ</td><td>不会</td><td>不会</td><td>InnoDB 下大多可避免</td></tr>
+            <tr><td><strong>REPEATABLE READ</strong></td><td>不会</td><td>不会</td><td>InnoDB 下大多可避免</td></tr>
             <tr><td>SERIALIZABLE</td><td>不会</td><td>不会</td><td>不会</td></tr>
           </tbody>
         </table>
@@ -72,9 +72,9 @@
         <h3>READ COMMITTED</h3>
         <p><span class="em-warn">读已提交</span>。只能读到其他事务已经提交的数据，可能产生不可重复读。Oracle 默认级别。</p>
         <h3>REPEATABLE READ</h3>
-        <p><span class="em-warn">可重复读</span>。同一个事务中多次读取同一条数据，结果一致。这是 MySQL InnoDB 默认隔离级别，配合 MVCC 和 Next-Key Lock 在多数场景下能避免幻读。</p>
+        <p><span class="em-warn">可重复读</span>。同一个事务中多次读取同一条数据，结果一致。<span class="em-warn">MySQL InnoDB 默认隔离级别</span>，<mark>配合 MVCC 和 Next-Key Lock 在多数场景下能避免幻读</mark>。</p>
         <h3>SERIALIZABLE</h3>
-        <p><span class="em-warn">串行化</span>。隔离级别最高，读操作也会加锁，<mark>相当于事务串行执行</mark>，安全性最高，但并发性能最低。</p>
+        <p><span class="em-warn">串行化</span>。隔离级别最高，读操作也会加锁，<mark>相当于事务串行执行</mark>，<span class="em-danger">安全性最高，但并发性能最低</span>。</p>
         <h3>三种读异常</h3>
         <table>
           <thead>
@@ -126,11 +126,11 @@
 
 <section id="for-update">
         <h2>select for update 使用场景</h2>
-        <p><code>SELECT ... FOR UPDATE</code> 用于在事务中查询数据并对查询到的行加<strong>排他锁（X 锁）</strong>，阻止其他事务同时修改这些行。</p>
+        <p><code>SELECT ... FOR UPDATE</code> 用于在事务中查询数据并对查询到的行加<strong>排他锁（X 锁）</strong>，阻止其他事务同时修改这些行。普通读可以读，当前读(for update)和写会等(update delete)。</p>
         <pre><code class="language-sql">BEGIN;
 
 SELECT * FROM account WHERE id = 1 FOR UPDATE;
-
+// 判断余额足够
 UPDATE account SET balance = balance - 100 WHERE id = 1;
 
 COMMIT;</code></pre>
@@ -150,9 +150,9 @@ WHERE id = 100 AND stock &gt; 0;
 COMMIT;</code></pre>
         <h3>注意点</h3>
         <ol>
-          <li>必须在事务中使用，否则锁会立即释放。</li>
-          <li>查询条件最好命中索引，否则可能锁表或锁范围扩大。</li>
-          <li>只对 InnoDB 等支持事务和行锁的引擎有效。</li>
+          <li><span class="em-warn">必须在事务中使用，<span class="em-danger">否则锁会立即释放</span>。</span></li>
+          <li><span class="em-warn">查询条件最好命中索引</span>，<span class="em-danger">否则可能锁表或锁范围扩大</span>。</li>
+          <li>只对 <span class="em-warn">InnoDB </span>等支持事务和行锁的引擎有效。</li>
           <li>避免长事务，锁持有时间越长，越容易造成阻塞甚至死锁。</li>
         </ol>
         <p><code>FOR UPDATE</code> 属于<strong>当前读</strong>，会读取最新版本并加锁，与普通快照读行为不同。</p>
@@ -160,7 +160,7 @@ COMMIT;</code></pre>
 
 <section id="index-speed">
         <h2>MySQL 索引为什么能加快查询？</h2>
-        <p>InnoDB 常用 B+Tree 索引。索引按 key 有序组织，查询时通过树形结构快速定位，减少全表扫描，把查找范围缩小到少量数据页。</p>
+        <p>InnoDB 常用 B+Tree 索引。索引按 key 有序组织，查询时通过<strong>树形结构快速定位</strong>，<strong>减少全表扫描</strong>，把查找范围缩小到少量数据页。</p>
         <h3>核心原理</h3>
         <table>
           <thead>
@@ -170,9 +170,9 @@ COMMIT;</code></pre>
             </tr>
           </thead>
           <tbody>
-            <tr><td>有序结构</td><td>B+Tree 叶子节点按索引列有序，支持等值和范围查找</td></tr>
-            <tr><td>减少 IO</td><td>树高通常 3～4 层，百万级数据只需几次磁盘页读取</td></tr>
-            <tr><td>缩小扫描范围</td><td>从 O(n) 全表扫描降为 O(log n) 索引定位</td></tr>
+            <tr><td>有序结构</td><td>B+Tree 叶子节点按索引列有序，<strong>支持等值和范围查找</strong></td></tr>
+            <tr><td>减少 IO</td><td>树高通常 <strong>3～4 层</strong>，百万级数据只需几次磁盘页读取</td></tr>
+            <tr><td>缩小扫描范围</td><td>从<strong> O(n) </strong>全表扫描降为<strong> O(log n) </strong>索引定位</td></tr>
           </tbody>
         </table>
         <pre><code class="language-sql">无索引：逐行扫描整张表
@@ -182,7 +182,9 @@ COMMIT;</code></pre>
 
 <section id="clustered-index">
         <h2>聚簇索引和非聚簇索引区别？</h2>
-        <p>InnoDB 中，<strong>聚簇索引</strong>的叶子节点保存整行数据；<strong>非聚簇索引（二级索引）</strong>的叶子节点保存索引列值和对应的主键值。</p>
+        <p>InnoDB 中，</p>
+        <p><strong>聚簇索引</strong>的叶子节点保存整行数据；</p>
+        <p><strong>非聚簇索引（二级索引）</strong>的叶子节点保存索引列值和对应的主键值。</p>
         <h3>对比</h3>
         <table>
           <thead>
@@ -202,12 +204,14 @@ COMMIT;</code></pre>
         <pre><code class="language-sql">-- 二级索引 idx_name 查到 id=100
 -- 再回聚簇索引查 id=100 的整行
 SELECT * FROM user WHERE name = 'Tom';</code></pre>
-        <p>覆盖索引可以避免回表；没有主键时 InnoDB 会选唯一非空索引，否则自动生成 hidden row_id 作为聚簇索引。</p>
+        <p><span class="em-warn">覆盖索引可以避免回表</span>；没有主键时 InnoDB 会选唯一非空索引，否则自动生成 hidden row_id 作为聚簇索引。</p>
       </section>
 
 <section id="covering-index">
         <h2>覆盖索引是什么？</h2>
-        <p>覆盖索引指查询需要的列都能从索引中直接拿到，<strong>不需要回表</strong>查聚簇索引。Extra 中通常出现 <code>Using index</code>。</p>
+        <p><span class="em-warn">覆盖索引指查询需要的列都能从索引中直接拿到</span>，<strong>不需要回表</strong>查聚簇索引。</p>
+        <p>Extra 中通常出现 <code>Using index</code>。<code>Extra</code> 是 <code>EXPLAIN</code> 执行计划里的一个字段</p>
+        <p>（<code>EXPLAIN</code> 执行计：划查看 SQL 大概会怎么执行、用不用索引、扫描多少行、是否回表、排序、临时表）</p>
         <pre><code class="language-sql">CREATE INDEX idx_user_name_age ON user(name, age);
 
 SELECT name, age
@@ -333,8 +337,8 @@ EXPLAIN SELECT id, name FROM user WHERE status = 1;</code></pre>
         </table>
         <h3>为什么需要两种读？</h3>
         <ul>
-          <li>快照读强调读写并发，读不阻塞写、写不阻塞普通读。</li>
-          <li>当前读强调读取最新数据并参与并发控制，更新前必须看到最新状态。</li>
+          <li><strong>快照读强调读写并发</strong>，读不阻塞写、写不阻塞普通读。</li>
+          <li><strong>当前读强调读取最新数据</strong>并参与并发控制，更新前必须看到最新状态。</li>
         </ul>
         <pre><code class="language-sql">事务 A：SELECT age FROM user WHERE id=1;        -- 快照读，可能读到旧值
 事务 B：UPDATE user SET age=30 WHERE id=1;       -- 当前读 + 加锁
@@ -343,7 +347,8 @@ EXPLAIN SELECT id, name FROM user WHERE status = 1;</code></pre>
 
 <section id="next-key-lock">
         <h2>Next-Key Lock 是什么？</h2>
-        <p>Next-Key Lock 是 InnoDB 在 RR 隔离级别下使用的<strong>记录锁 + 间隙锁（Gap Lock）</strong>组合，锁住索引记录及其前面的间隙，用于避免并发插入导致的幻读。</p>
+        <p>Next-Key Lock 是 InnoDB 在 RR 隔离级别下使用的<strong>记录锁 + 间隙锁（Gap Lock）</strong>组合，</p>
+        <p>锁住索引记录及其前面的间隙，用于避免并发插入导致的幻读。</p>
         <h3>三种锁</h3>
         <table>
           <thead>
@@ -361,7 +366,7 @@ EXPLAIN SELECT id, name FROM user WHERE status = 1;</code></pre>
         <pre><code class="language-sql">-- 假设 id 索引有 10、20、30
 SELECT * FROM t WHERE id = 20 FOR UPDATE;
 -- 可能锁住 (10, 20] 区间，阻止 id=15 的插入</code></pre>
-        <p>Next-Key Lock 依赖索引。若查询未命中索引，可能退化为锁大量记录甚至锁表，严重影响并发。RC 级别通常不使用 Gap Lock。</p>
+        <p><strong>Next-Key Lock 依赖索引</strong>。若查询未命中索引，可能退化为锁大量记录甚至锁表，严重影响并发。RC 级别通常不使用 Gap Lock。</p>
       </section>
 
 <section id="innodb-engine">
@@ -749,6 +754,42 @@ orders_hist  -- 冷数据，归档到对象存储 / ClickHouse</code></pre>
 5. 提前规划读写分离 / 分库分表 / 归档</code></pre>
       </section>
 
+<section id="connection-pool-full">
+        <h2>数据库连接池满了怎么办？</h2>
+        <p>连接池满通常表现为应用报错 <code>Could not get JDBC Connection</code>、HikariCP <code>Connection is not available, request timed out</code>，或 MySQL 侧 <code>Too many connections</code>。本质是<strong>连接被占满且长时间未归还</strong>，新请求拿不到连接。</p>
+        <h3>排查步骤</h3>
+        <pre><code class="language-sql">-- 1. 看 MySQL 当前连接与等待
+SHOW STATUS LIKE 'Threads_connected';
+SHOW STATUS LIKE 'Threads_running';
+SHOW PROCESSLIST;
+
+-- 2. 看应用连接池指标（HikariCP）
+-- active / idle / pending / timeout 次数</code></pre>
+        <h3>常见原因与处理</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>原因</th>
+              <th>处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>慢 SQL / 锁等待</td><td>优化 SQL、加索引、缩短事务，避免长查询占连接</td></tr>
+            <tr><td>连接泄漏</td><td>检查未关闭 Connection/Statement；用 try-with-resources</td></tr>
+            <tr><td>大事务未提交</td><td>拆分批量操作，控制单事务时长</td></tr>
+            <tr><td>池配置过小</td><td>按 QPS 与平均 SQL 耗时估算：<code>连接数 ≈ QPS × 平均耗时(s)</code></td></tr>
+            <tr><td>实例连接上限</td><td>调大 <code>max_connections</code>，但需评估内存；多应用共享时要统筹</td></tr>
+            <tr><td>流量突增</td><td>限流、熔断、队列削峰，避免瞬时打满连接池</td></tr>
+          </tbody>
+        </table>
+        <h3>配置参考（HikariCP）</h3>
+        <pre><code class="language-yaml">spring.datasource.hikari.maximum-pool-size: 20
+spring.datasource.hikari.connection-timeout: 3000
+spring.datasource.hikari.max-lifetime: 1800000
+spring.datasource.hikari.leak-detection-threshold: 60000</code></pre>
+        <p><strong>面试回答：</strong>先区分是应用池满还是 MySQL 连接打满；用 PROCESSLIST 和连接池监控定位慢 SQL、锁等待或泄漏。短期可限流、临时扩容连接池；长期优化 SQL/事务、修复泄漏、合理设置池大小与超时，并保证连接总数不超过数据库上限。</p>
+      </section>
+
 <section id="field-design">
         <h2>数据库字段设计有哪些规范？</h2>
         <h3>通用规范</h3>
@@ -849,8 +890,6 @@ SELECT * FROM user WHERE name LIKE '张%' AND age = 25;</code></pre>
             <tr><td>前导模糊匹配</td><td><code>LIKE '%abc'</code></td></tr>
             <tr><td>OR 连接不同列</td><td><code>WHERE a=1 OR b=2</code> 可能全表扫</td></tr>
             <tr><td>不等于 / NOT IN</td><td>优化器可能认为全表扫更优</td></tr>
-            <tr><td>区分度低</td><td>性别字段建索引，优化器可能放弃</td></tr>
-            <tr><td>字符集不一致</td><td>JOIN 时隐式转换</td></tr>
           </tbody>
         </table>
         <pre><code class="language-sql">-- 失效
@@ -874,8 +913,8 @@ WHERE create_time &gt;= '2024-06-01' AND create_time &lt; '2024-06-02'</code></p
           </thead>
           <tbody>
             <tr><td><code>type</code></td><td>访问类型</td><td>优劣：<code>system</code> &gt; <code>const</code> &gt; <code>eq_ref</code> &gt; <code>ref</code> &gt; <code>range</code> &gt; <code>index</code> &gt; <code>ALL</code></td></tr>
-            <tr><td><code>key</code></td><td>实际使用的索引</td><td><code>NULL</code> 表示未用索引</td></tr>
-            <tr><td><code>rows</code></td><td>估算扫描行数</td><td>越小通常越好，但是估算值</td></tr>
+            <tr><td><code>key</code></td><td><span class="em-warn">实际使用的索引</span></td><td><code>NULL</code> 表示未用索引</td></tr>
+            <tr><td><code>rows</code></td><td><span class="em-warn">估算扫描行数</span></td><td>越小通常越好，但是估算值</td></tr>
             <tr><td><code>Extra</code></td><td>额外信息</td><td><code>Using index</code> 好；<code>Using filesort</code>、<code>Using temporary</code> 需关注</td></tr>
           </tbody>
         </table>
@@ -923,9 +962,9 @@ WHERE create_time &gt;= '2024-06-01' AND create_time &lt; '2024-06-02'</code></p
             </tr>
           </thead>
           <tbody>
-            <tr><td>binlog</td><td>Server 层</td><td>归档日志，主从复制、基于时间点的恢复</td></tr>
-            <tr><td>redo log</td><td>InnoDB</td><td>重做日志，保证事务持久性，崩溃恢复已提交事务</td></tr>
-            <tr><td>undo log</td><td>InnoDB</td><td>回滚日志，事务回滚 + MVCC 多版本</td></tr>
+            <tr><td>binlog</td><td>Server 层</td><td>归档日志，<strong>主从复制、基于时间点的恢复</strong></td></tr>
+            <tr><td>redo log</td><td>InnoDB</td><td>重做日志，保证<strong>事务持久性</strong>，崩溃恢复已提交事务</td></tr>
+            <tr><td>undo log</td><td>InnoDB</td><td>回滚日志，<strong>事务回滚</strong> + MVCC 多版本</td></tr>
           </tbody>
         </table>
         <h3>协作关系</h3>
@@ -1086,10 +1125,10 @@ orders_0, orders_1, ... orders_15
             </tr>
           </thead>
           <tbody>
-            <tr><td>maximumPoolSize</td><td>最大连接数，过大占满 DB max_connections</td></tr>
-            <tr><td>minimumIdle</td><td>最小空闲连接</td></tr>
-            <tr><td>connectionTimeout</td><td>获取连接超时时间</td></tr>
-            <tr><td>idleTimeout</td><td>空闲连接回收时间</td></tr>
+            <tr><td>maximumPoolSize</td><td><strong>最大连接数</strong>，过大占满 DB max_connections</td></tr>
+            <tr><td>minimumIdle</td><td><strong>最小空闲连接</strong></td></tr>
+            <tr><td>connectionTimeout</td><td><strong>等待连接超时时间</strong></td></tr>
+            <tr><td>idleTimeout</td><td><strong>空闲连接回收时间</strong></td></tr>
             <tr><td>maxLifetime</td><td>连接最大存活时间，应小于 DB wait_timeout</td></tr>
             <tr><td>validationTimeout</td><td>连接有效性检测超时</td></tr>
           </tbody>
@@ -1097,18 +1136,19 @@ orders_0, orders_1, ... orders_15
         <pre><code class="language-sql">经验公式（仅供参考）：
 连接数 ≈ ((核心数 × 2) + 有效磁盘数)
 实际需压测；过多连接反而因上下文切换降低吞吐</code></pre>
-        <p>连接池耗尽表现为获取连接超时。排查：慢 SQL 占满连接、连接泄漏（未 close）、池大小配置过小、DB 端连接数上限。</p>
+        <p>连接池耗尽表现为获取连接超时。</p>
+        <p>排查：<span class="em-danger">慢 SQL 占满连接</span>、<span class="em-danger">连接泄漏</span>（未 close）、池大小<span class="em-danger">配置过小、</span>DB 端连接数上限。</p>
       </section>
 
 <section id="deadlock-troubleshoot">
         <h2>MySQL 死锁如何排查？</h2>
-        <p>InnoDB 会自动检测死锁并回滚其中一个事务（代价较小者），但频繁死锁说明并发控制设计有问题。</p>
+        <p>InnoDB <span class="em-danger"><span class="em-warn">会自动检测死锁并回滚其中一个事务</span></span>（代价较小者），但频繁死锁说明并发控制设计有问题。</p>
         <h3>排查步骤</h3>
         <ol>
-          <li>查看最近一次死锁信息：<code>SHOW ENGINE INNODB STATUS\G</code> 中 LATEST DETECTED DEADLOCK。</li>
+          <li>查看最近一次<strong>死锁信息</strong>：<code>SHOW ENGINE INNODB STATUS\G</code> 中 LATEST DETECTED DEADLOCK。</li>
           <li>分析相互等待的锁：哪两条 SQL、哪两个索引、加锁顺序是否相反。</li>
           <li>结合应用日志、TraceId 定位业务代码路径。</li>
-          <li>检查长事务、未命中索引导致锁范围扩大。</li>
+          <li>检查<strong>长事务</strong>、未命中索引导致<strong>锁范围</strong>扩大。</li>
         </ol>
         <pre><code class="language-sql">-- 查看当前锁等待
 SELECT * FROM information_schema.innodb_locks;
@@ -1129,6 +1169,14 @@ SELECT * FROM performance_schema.data_locks;  -- 8.0+</code></pre>
           </tbody>
         </table>
         <p>死锁不一定是错误，少量可接受；高频死锁需从索引、事务边界和加锁顺序上根治。</p>
+      </section>
+
+<section id="explain-fields-to-check">
+        <h2>MySQL explain 看哪些字段？</h2>
+      </section>
+
+<section id="index-creation-evaluation">
+        <h2>索引创建怎么评估？</h2>
       </section>
 </main>
   </div>

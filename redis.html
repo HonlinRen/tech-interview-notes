@@ -48,82 +48,292 @@
 
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
-
 <section id="redis-fast">
-        <h2>42. Redis 为什么快？</h2>
-        <p>Redis 快的主要原因包括：数据在内存中、核心命令执行路径高效、采用事件驱动 IO 模型、数据结构设计紧凑、避免频繁磁盘随机 IO。</p>
-        <p>Redis 单线程主要指命令执行的主路径单线程，这减少了锁竞争；现代 Redis 在网络 IO、持久化等方面也有多线程辅助能力。</p>
+        <h2>Redis 为什么快？</h2>
+        <p>Redis 是<strong>基于内存的 KV 存储</strong>，读写不走磁盘随机 IO，延迟通常在亚毫秒到毫秒级。快的原因是多方面叠加，不只是「数据在内存里」这么简单。</p>
+        <h3>核心原因</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>因素</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>纯<strong>内存读写</strong></td><td>数据常驻内存，避免磁盘寻道；持久化异步进行，不阻塞主路径</td></tr>
+            <tr><td><strong>单线程</strong>命令执行</td><td>命令串行执行，无锁竞争、无上下文切换开销（Redis 6+ 网络 IO 可多线程辅助）</td></tr>
+            <tr><td><strong>IO 多路复用</strong></td><td>基于 epoll/kqueue 的事件驱动模型，单线程处理大量并发连接</td></tr>
+            <tr><td><strong>高效数据结构</strong></td><td>SDS、跳表、压缩列表等针对场景优化，编码会按数据量自动切换（如 ziplist → hashtable）</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-redis"># 典型 QPS：单机可达 10 万+（简单 GET/SET，视硬件与命令复杂度而定）
+GET key
+SET key value</code></pre>
+        <p><strong>注意：</strong>「单线程」指命令执行主路径，持久化（AOF rewrite）、网络 IO（可选）、Lazy Free 等可有后台线程参与。复杂命令（<code>KEYS</code>、大 key 操作）仍会阻塞，生产应避免。</p>
+        <p><strong>面试回答：</strong>内存 + 单线程无锁 + IO 多路复用 + 紧凑数据结构，使 Redis 读写极快；但要区分命令执行单线程与 IO/持久化多线程辅助，并注意大 key、慢命令对单线程模型的影响。</p>
       </section>
+
 <section id="rdb-aof">
-        <h2>43. Redis 持久化 RDB 和 AOF 区别？</h2>
+        <h2>Redis 持久化 RDB 和 AOF 区别？</h2>
+        <p>Redis 是内存数据库，重启后数据会丢失，需通过 <strong>RDB 快照</strong>或 <strong>AOF 日志</strong>持久化到磁盘。两者机制不同，生产常混合使用。</p>
+        <h3>对比</h3>
         <table>
-          <thead><tr><th>对比项</th><th>RDB</th><th>AOF</th></tr></thead>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>RDB</th>
+              <th>AOF</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td>方式</td><td>周期性生成快照</td><td>记录写命令日志</td></tr>
-            <tr><td>恢复速度</td><td>通常较快</td><td>取决于日志大小</td></tr>
-            <tr><td>数据丢失窗口</td><td>可能丢失最近一次快照后的数据</td><td>通常更小</td></tr>
-            <tr><td>适合场景</td><td>备份、灾备、快速恢复</td><td>更重视数据安全</td></tr>
+            <tr><td>原理</td><td>fork 子进程，将内存数据序列化写入 .rdb 文件</td><td>追加写命令到 .aof 文件，重启时重放</td></tr>
+            <tr><td>触发</td><td><code>save 900 1</code> 等规则，或 <code>BGSAVE</code> 手动触发</td><td>每条写命令追加；<code>appendfsync</code> 控制刷盘频率</td></tr>
+            <tr><td>恢复速度</td><td>快，直接加载二进制快照</td><td>慢，需重放全部写命令（可 AOF rewrite 压缩）</td></tr>
+            <tr><td>数据丢失</td><td>可能丢失上次快照后的写入</td><td><code>always</code> 最多丢 1 条；<code>everysec</code> 最多约 1 秒</td></tr>
+            <tr><td>文件体积</td><td>紧凑，适合备份归档</td><td>较大，rewrite 后缩小</td></tr>
           </tbody>
         </table>
-        <p>生产环境常见做法是 RDB 和 AOF 结合使用，兼顾恢复速度与数据安全。</p>
+        <h3>混合持久化（Redis 4.0+）</h3>
+        <p>开启 <code>aof-use-rdb-preamble yes</code> 后，AOF 重写时先写 RDB 格式快照，再追加增量 AOF，兼顾恢复速度与数据安全。</p>
+        <pre><code class="language-redis"># 推荐生产配置思路
+save 900 1
+save 300 10
+appendonly yes
+appendfsync everysec
+aof-use-rdb-preamble yes</code></pre>
+        <p><strong>面试回答：</strong>RDB 是定时快照，恢复快但可能丢数据；AOF 是命令日志，更安全但文件大、恢复慢。生产建议混合持久化，并注意 fork 时内存翻倍（写时复制）对大数据集的影响。</p>
       </section>
+
 <section id="cache-problems">
-        <h2>44. 缓存穿透、击穿、雪崩是什么？</h2>
+        <h2>缓存穿透、击穿、雪崩是什么？</h2>
+        <p>三者都是缓存与数据库之间的典型故障模式，表现相似（DB 压力骤增），但成因和应对不同，面试需能区分。</p>
+        <h3>对比与方案</h3>
         <table>
-          <thead><tr><th>问题</th><th>含义</th><th>常见方案</th></tr></thead>
+          <thead>
+            <tr>
+              <th>问题</th>
+              <th>含义</th>
+              <th>典型场景</th>
+              <th>常见方案</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td>穿透</td><td>查询不存在的数据，缓存和数据库都没有</td><td>缓存空值、布隆过滤器、参数校验</td></tr>
-            <tr><td>击穿</td><td>热点 key 过期，大量请求打到数据库</td><td>互斥锁、逻辑过期、热点 key 不过期</td></tr>
-            <tr><td>雪崩</td><td>大量 key 同时失效或 Redis 故障</td><td>过期时间随机化、多级缓存、限流降级</td></tr>
+            <tr><td>穿透</td><td>查询<strong>不存在</strong>的数据，缓存和 DB 都没有</td><td>恶意刷不存在的 id</td><td>缓存空值（短 TTL）、布隆过滤器、参数校验</td></tr>
+            <tr><td>击穿</td><td><strong>热点 key 过期</strong>，大量并发同时查 DB</td><td>秒杀商品详情缓存失效</td><td>互斥锁重建、逻辑过期（不设 TTL，异步刷新）</td></tr>
+            <tr><td>雪崩</td><td><strong>大量 key 同时失效</strong> Redis 整体不可用</td><td>批量缓存同一时刻过期、Redis 宕机</td><td>过期时间加随机值、多级缓存、限流降级、集群高可用</td></tr>
           </tbody>
         </table>
+        <h3>击穿 — 互斥锁示例</h3>
+        <pre><code class="language-redis"># 伪代码思路
+val = GET key
+if val == null:
+  if SET lock:key NX EX 10:   # 只有一个线程去查 DB
+    val = queryDB()
+    SET key val EX 3600
+    DEL lock:key
+  else:
+    wait and retry GET</code></pre>
+        <p><strong>面试回答：</strong>穿透是查不存在的数据，用布隆过滤器或空值缓存；击穿是热点 key 过期，用互斥锁或逻辑过期；雪崩是批量失效或 Redis 故障，用过期随机化、多级缓存和限流。三者都要避免 DB 被瞬时打垮。</p>
       </section>
+
 <section id="distributed-lock">
-        <h2>45. Redis 分布式锁怎么实现？</h2>
-        <p>基本做法是使用 <code>SET key value NX PX milliseconds</code> 原子加锁，释放锁时用 Lua 脚本判断 value 是否匹配，避免误删其他客户端的锁。</p>
-        <pre><code class="language-redis">SET lock:order:1 request-id NX PX 30000</code></pre>
-        <p>注意锁超时、业务执行时间、续期、可重入、主从切换一致性等问题。对强一致要求极高的场景，应谨慎评估 Redis 锁是否足够。</p>
-      </section>
-<section id="replication-modes">
-        <h2>46. Redis 主从、哨兵、集群区别？</h2>
+        <h2>Redis 分布式锁怎么实现？</h2>
+        <p>分布式锁用于多实例环境下对共享资源的互斥访问。Redis 实现的核心是<strong>原子加锁 + 唯一 value + 安全释放</strong>。</p>
+        <h3>基本实现</h3>
+        <pre><code class="language-redis"># 加锁：NX 不存在才设，PX 毫秒过期防死锁
+SET lock:order:1001 uuid-xxx NX PX 30000
+
+# 释放：Lua 保证「判断 value + 删除」原子性，避免误删他人锁
+if redis.call(&quot;GET&quot;, KEYS[1]) == ARGV[1] then
+  return redis.call(&quot;DEL&quot;, KEYS[1])
+else
+  return 0
+end</code></pre>
+        <h3>关键问题</h3>
         <table>
-          <thead><tr><th>模式</th><th>作用</th></tr></thead>
+          <thead>
+            <tr>
+              <th>问题</th>
+              <th>说明</th>
+              <th>应对</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td>主从复制</td><td>读写分离、数据副本、提升读能力</td></tr>
-            <tr><td>哨兵 Sentinel</td><td>监控主从、故障转移、自动选主</td></tr>
-            <tr><td>Cluster</td><td>数据分片、横向扩展、高可用</td></tr>
+            <tr><td>锁超时</td><td>业务未完成锁已过期，其他线程获得锁</td><td>看门狗续期（Redisson）、合理设置 TTL</td></tr>
+            <tr><td>误删锁</td><td>线程 A 超时后删了线程 B 的锁</td><td>value 存唯一标识，Lua 脚本校验后删除</td></tr>
+            <tr><td>主从切换</td><td>锁写在 Master，宕机前未同步到 Slave，可能双写</td><td>RedLock 或改用 etcd/ZooKeeper 等 CP 组件</td></tr>
+            <tr><td>不可重入</td><td>同一线程无法再次加锁</td><td>Hash 结构记录重入次数（Redisson 已实现）</td></tr>
           </tbody>
         </table>
-        <p>Redis Cluster 通过 hash slot 分片，不同 key 会被映射到不同槽位，再由不同节点负责。</p>
+        <p><strong>面试回答：</strong>用 <code>SET NX PX</code> 原子加锁，value 存 UUID，释放时用 Lua 校验再删。注意超时续期、主从一致性；强一致场景 Redis 锁有局限，可结合 Redisson 或专用协调服务。</p>
       </section>
-<section id="maxmemory">
-        <h2>66. Redis maxmemory 有什么作用？</h2>
-        <p><code>maxmemory</code> 用于限制 Redis 可使用的最大内存。达到限制后，Redis 会根据配置的淘汰策略删除 key，或者在 <code>noeviction</code> 策略下拒绝新的写入。</p>
-        <p>容器化部署时，<code>maxmemory</code> 应小于容器内存上限，给系统、复制缓冲、客户端缓冲等留出余量。</p>
-      </section>
-<section id="eviction-policy">
-        <h2>67. Redis 内存淘汰策略有哪些？</h2>
-        <p>常见策略包括 <code>allkeys-lru</code>、<code>volatile-lru</code>、<code>allkeys-lfu</code>、<code>volatile-lfu</code>、<code>allkeys-random</code>、<code>volatile-random</code>、<code>volatile-ttl</code>、<code>noeviction</code>。</p>
-        <p><code>allkeys</code> 面向所有 key，<code>volatile</code> 只面向设置了过期时间的 key。缓存场景常用 LRU 或 LFU，不能丢数据的场景要谨慎使用淘汰。</p>
-      </section>
-<section id="memory-growth">
-        <h2>68. Redis 内存异常增长如何排查？</h2>
-        <ol>
-          <li>查看 <code>INFO memory</code>，确认 used_memory、碎片率、客户端缓冲等指标。</li>
-          <li>用 <code>SCAN</code> 或分析工具找大 key、热 key、无过期 key。</li>
-          <li>检查是否有列表、集合、Stream 持续追加未清理。</li>
-          <li>核对过期策略、业务缓存 key 设计和数据写入量。</li>
-        </ol>
-      </section>
-<section id="sliding-window-rate-limit">
-        <h2>69. Redis 如何实现滑动窗口限流？</h2>
-        <p>可以用 Sorted Set 记录请求时间戳，每次请求删除窗口外数据，统计窗口内请求数，未超过阈值则写入当前时间戳并放行。</p>
-        <p>生产中通常用 Lua 脚本把清理、计数、写入、设置过期时间做成原子操作，避免并发误判。</p>
-      </section>
-<section id="redis-vs-memcached">
-        <h2>234. Redis 和 Memcached 有什么区别？</h2>
+
+<section id="replication-modes">
+        <h2>Redis 主从、哨兵、集群区别？</h2>
+        <p>Redis 高可用与扩展有三种常见架构，解决不同层次的问题：复制、自动故障转移、数据分片。</p>
+        <h3>三种模式</h3>
         <table>
-          <thead><tr><th>对比项</th><th>Redis</th><th>Memcached</th></tr></thead>
+          <thead>
+            <tr>
+              <th>模式</th>
+              <th>作用</th>
+              <th>适用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>主从复制</td><td>Master 写，Slave 异步复制；读写分离提升读能力</td><td>读多写少、数据量适中</td></tr>
+            <tr><td>哨兵 Sentinel</td><td>监控主从健康，Master 宕机自动选举新主、通知客户端</td><td>需要自动故障转移，数据单机可存下</td></tr>
+            <tr><td>Cluster 集群</td><td>16384 个 hash slot 分片到多节点，节点间 Gossip 通信</td><td>数据量大、需水平扩展</td></tr>
+          </tbody>
+        </table>
+        <h3>Cluster 分片要点</h3>
+        <pre><code class="language-redis"># slot = CRC16(key) % 16384
+# 多 key 操作需在同一 slot，可用 hash tag：{user}:1001 与 {user}:1002
+
+CLUSTER KEYSLOT user:1001
+MGET {user}:1001 {user}:1002   # 同一 hash tag，可同节点执行</code></pre>
+        <ul>
+          <li>至少 3 主 3 从，主节点负责 slot，从节点做副本与故障转移。</li>
+          <li>客户端需支持 Cluster 协议，或使用代理（Codis、Twemproxy）。</li>
+          <li>主从 + 哨兵不能分片；Cluster 能分片但跨 slot 事务/multi 受限。</li>
+        </ul>
+        <p><strong>面试回答：</strong>主从做读写分离和副本；哨兵在主从之上加自动选主；Cluster 通过 hash slot 做数据分片和水平扩展。选型看数据量是否需要分片、以及能否接受 Cluster 的跨 key 限制。</p>
+      </section>
+
+<section id="maxmemory">
+        <h2>Redis maxmemory 有什么作用？</h2>
+        <p><code>maxmemory</code> 限制 Redis 进程可使用的<strong>最大内存上限</strong>。Redis 是内存数据库，不设上限可能导致 OOM 被系统 Kill，生产必须配置。</p>
+        <h3>达到上限后的行为</h3>
+        <p>由 <code>maxmemory-policy</code> 决定：按策略淘汰 key，或 <code>noeviction</code> 下拒绝新写入（读/删仍可用），写命令返回 OOM 错误。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>used_memory</code></td><td>Redis 分配器实际占用的内存</td></tr>
+            <tr><td><code>used_memory_rss</code></td><td>操作系统视角的物理内存（含碎片）</td></tr>
+            <tr><td><code>mem_fragmentation_ratio</code></td><td>rss / used_memory，&gt;1.5 需关注碎片</td></tr>
+          </tbody>
+        </table>
+        <h3>配置建议</h3>
+        <pre><code class="language-redis"># redis.conf
+maxmemory 4gb
+maxmemory-policy allkeys-lru
+
+# 容器部署：maxmemory 应小于容器 limit，预留 20%~30% 给：
+# 复制 backlog、AOF rewrite buffer、客户端输出缓冲、系统开销</code></pre>
+        <p><strong>面试回答：</strong>maxmemory 防止 Redis 无限占内存；触顶后按淘汰策略删 key 或拒绝写入。容器环境要留余量，并监控 used_memory 与碎片率。</p>
+      </section>
+
+<section id="eviction-policy">
+        <h2>Redis 内存淘汰策略有哪些？</h2>
+        <p>当内存达到 <code>maxmemory</code> 时，<code>maxmemory-policy</code> 决定<strong>淘汰哪些 key</strong>。缓存场景必须选对策略，否则可能误删重要数据或频繁 OOM。</p>
+        <h3>八种策略</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>策略</th>
+              <th>淘汰范围</th>
+              <th>算法</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>noeviction</code></td><td>不淘汰</td><td>写命令报错，默认策略</td></tr>
+            <tr><td><code>allkeys-lru</code></td><td>所有 key</td><td>最近最少使用（推荐缓存）</td></tr>
+            <tr><td><code>allkeys-lfu</code></td><td>所有 key</td><td>最不经常使用（Redis 4.0+，热点更准）</td></tr>
+            <tr><td><code>allkeys-random</code></td><td>所有 key</td><td>随机淘汰</td></tr>
+            <tr><td><code>volatile-lru</code></td><td>设了 TTL 的 key</td><td>LRU</td></tr>
+            <tr><td><code>volatile-lfu</code></td><td>设了 TTL 的 key</td><td>LFU</td></tr>
+            <tr><td><code>volatile-random</code></td><td>设了 TTL 的 key</td><td>随机</td></tr>
+            <tr><td><code>volatile-ttl</code></td><td>设了 TTL 的 key</td><td>优先淘汰 TTL 更短的</td></tr>
+          </tbody>
+        </table>
+        <h3>LRU vs LFU</h3>
+        <ul>
+          <li><strong>LRU</strong>：淘汰最久未访问的 key，适合访问模式较均匀的场景。</li>
+          <li><strong>LFU</strong>：淘汰访问频率最低的 key，适合有明显热点、长尾 key 多的场景。</li>
+          <li>Redis 的 LRU/LFU 是<strong>近似算法</strong>（采样而非精确），节省内存与 CPU。</li>
+        </ul>
+        <p><strong>面试回答：</strong>allkeys 面向全部 key，volatile 只淘汰带 TTL 的。纯缓存用 <code>allkeys-lru</code> 或 <code>allkeys-lfu</code>；不能丢数据的 key 要么不设 maxmemory 淘汰、要么用 noeviction 并保证内存充足。</p>
+      </section>
+
+<section id="memory-growth">
+        <h2>Redis 内存异常增长如何排查？</h2>
+        <p>内存持续增长可能导致 OOM、淘汰加剧、延迟升高。排查需从<strong>监控指标 → 大 key → 业务写入 → 碎片</strong>逐层定位。</p>
+        <h3>排查步骤</h3>
+        <ol>
+          <li><code>INFO memory</code>：看 used_memory 趋势、mem_fragmentation_ratio、maxmemory 使用率。</li>
+          <li><code>INFO clients</code>：客户端输出缓冲区是否过大（慢消费者堆积）。</li>
+          <li>找大 key：<code>redis-cli --bigkeys</code>，或 RDB 分析工具（rdb-tools、redis-memory-analyzer）。</li>
+          <li><code>SCAN</code> + <code>MEMORY USAGE key</code> 抽样检查异常 key 类型与大小。</li>
+          <li>检查 List/Set/ZSet/Stream 是否只增不删；缓存 key 是否未设 TTL。</li>
+          <li>核对 AOF rewrite、主从复制 backlog 是否占用过多缓冲。</li>
+        </ol>
+        <pre><code class="language-redis">INFO memory
+MEMORY USAGE mykey
+redis-cli --bigkeys -i 0.1
+
+# 碎片率过高时可尝试（Redis 4.0+，会短暂阻塞）
+MEMORY PURGE
+# 或重启 / 开启 activedefrag</code></pre>
+        <h3>常见原因</h3>
+        <table>
+          <thead><tr><th>原因</th><th>处理</th></tr></thead>
+          <tbody>
+            <tr><td>大 key / 热 key 膨胀</td><td>拆分 key、压缩 value、设置合理 TTL</td></tr>
+            <tr><td>无过期缓存堆积</td><td>统一 key 规范，强制 TTL</td></tr>
+            <tr><td>内存碎片</td><td>active defrag、低峰重启、控制大 key 频繁更新</td></tr>
+            <tr><td>持久化/复制缓冲</td><td>调 repl-backlog-size、避免过大 AOF</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>先看 INFO memory 和碎片率，再用 bigkeys/SCAN 找大 key 和无 TTL  key，结合业务看是否有结构只写不删；碎片高可 active defrag 或重启。</p>
+      </section>
+
+<section id="sliding-window-rate-limit">
+        <h2>Redis 如何实现滑动窗口限流？</h2>
+        <p>滑动窗口限流比固定窗口更平滑：在<strong>任意连续时间窗口</strong>内限制请求数，避免窗口边界处的流量突刺。</p>
+        <h3>基于 ZSet 的实现</h3>
+        <p>以时间戳为 score，member 为请求唯一 ID；每次请求前删除窗口外记录，统计剩余数量，未超限则写入并放行。</p>
+        <pre><code class="language-redis"># key = rate:{userId}:{api}
+# 窗口 60 秒，上限 100 次
+
+now = 当前毫秒时间戳
+windowStart = now - 60000
+
+ZREMRANGEBYSCORE key 0 windowStart      # 清理过期
+count = ZCARD key
+if count &lt; 100:
+  ZADD key now requestId
+  EXPIRE key 61
+  放行
+else:
+  拒绝</code></pre>
+        <h3>生产注意点</h3>
+        <table>
+          <thead><tr><th>要点</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>原子性</td><td>清理 + 计数 + 写入 + EXPIRE 用 Lua 脚本一次完成</td></tr>
+            <tr><td>member 唯一</td><td>用 UUID 或 <code>now:seq</code>，避免同毫秒冲突</td></tr>
+            <tr><td>内存</td><td>窗口内每条请求占一条 ZSet 记录，高 QPS 时注意 key 大小</td></tr>
+            <tr><td>替代方案</td><td>令牌桶/漏桶（Redisson RRateLimiter）；固定窗口用 INCR + EXPIRE 更简单</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>ZSet 以时间戳为 score，请求前删窗口外数据再 ZCARD 计数，Lua 保证原子性。比固定窗口更准，但内存随 QPS 增长；超高并发可用 Redisson 或近似算法（如 Redis Cell 模块）。</p>
+      </section>
+
+<section id="redis-vs-memcached">
+        <h2>Redis 和 Memcached 有什么区别？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Redis</th>
+              <th>Memcached</th>
+            </tr>
+          </thead>
           <tbody>
             <tr><td>数据结构</td><td>String/Hash/List/Set/ZSet 等</td><td>主要是 KV</td></tr>
             <tr><td>持久化</td><td>支持 RDB/AOF</td><td>不支持</td></tr>
@@ -132,13 +342,15 @@
           </tbody>
         </table>
       </section>
+
 <section id="redis-vs-local-cache">
-        <h2>235. 为什么用 Redis 而不是本地缓存？</h2>
+        <h2>为什么用 Redis 而不是本地缓存？</h2>
         <p>本地缓存（Caffeine/Guava）访问快，但多实例间不共享，更新不一致，重启丢失。</p>
         <p>Redis 提供跨进程、跨节点的共享缓存，适合分布式系统；常配合本地缓存做多级缓存。</p>
       </section>
+
 <section id="redis-use-cases">
-        <h2>236. Redis 除了缓存还能做什么？</h2>
+        <h2>Redis 除了缓存还能做什么？</h2>
         <ul>
           <li>分布式锁、限流计数</li>
           <li>排行榜（ZSet）、延时任务（ZSet 或 Stream）</li>
@@ -146,64 +358,82 @@
           <li>会话存储、Bitmap 签到、HyperLogLog UV 统计</li>
         </ul>
       </section>
+
 <section id="redis-module">
-        <h2>237. Redis Module 是什么？</h2>
+        <h2>Redis Module 是什么？</h2>
         <p>Redis Module 允许通过动态库扩展 Redis 能力，例如 RediSearch、RedisJSON、RedisGraph 等，在不改核心代码的情况下增加新数据类型和命令。</p>
       </section>
+
 <section id="redis-mq">
-        <h2>238. Redis 可以做消息队列吗？</h2>
+        <h2>Redis 可以做消息队列吗？</h2>
         <p>可以，但不适合替代 RocketMQ/Kafka 等专业 MQ。List 做简单队列，Stream 支持消费组和 ACK，Pub/Sub 适合广播但不持久化。</p>
         <p>轻量异步、允许丢消息的场景可用 Redis；强可靠、堆积量大应选专业 MQ。</p>
       </section>
+
 <section id="delayed-task">
-        <h2>239. Redis 如何实现延时任务？</h2>
+        <h2>Redis 如何实现延时任务？</h2>
         <p>常见方案：ZSet 以执行时间戳为 score 存储任务 ID，定时扫描 <code>ZRANGEBYSCORE</code> 到期任务；或使用 Redisson DelayedQueue、Stream 延时消费。</p>
       </section>
+
 <section id="string-scenarios">
-        <h2>240. Redis String 适合哪些场景？</h2>
+        <h2>Redis String 适合哪些场景？</h2>
         <ul>
           <li>缓存对象 JSON、计数器（INCR）</li>
           <li>分布式锁、限流令牌</li>
           <li>Session、验证码、短链映射</li>
         </ul>
       </section>
+
 <section id="hash-object">
-        <h2>241. Redis Hash 存对象什么时候更合适？</h2>
+        <h2>Redis Hash 存对象什么时候更合适？</h2>
         <p>对象字段较多且需要部分更新时，Hash 比整段 JSON String 更省带宽、支持 <code>HGET/HSET</code> 单字段操作。</p>
         <p>字段少、整体读写为主时，String 存 JSON 更简单。</p>
       </section>
+
 <section id="cart-storage">
-        <h2>242. 购物车信息用 String 还是 Hash 存储更好？</h2>
+        <h2>购物车信息用 String 还是 Hash 存储更好？</h2>
         <p>推荐 Hash：<code>cart:{userId}</code> 下 field 为 skuId，value 为数量，支持单商品增减而不重写整个购物车。</p>
       </section>
+
 <section id="leaderboard">
-        <h2>243. Redis 如何实现排行榜？</h2>
+        <h2>Redis 如何实现排行榜？</h2>
         <p>使用 ZSet，member 为用户/商品 ID，score 为分数。支持 <code>ZREVRANGE</code> 取 TopN、<code>ZRANK</code> 查名次、<code>ZINCRBY</code> 加分。</p>
       </section>
+
 <section id="zset-skiplist">
-        <h2>244. Redis 有序集合为什么使用跳表？</h2>
+        <h2>Redis 有序集合为什么使用跳表？</h2>
         <p>跳表在平均 O(log N) 时间内支持范围查询和排名，实现比红黑树简单，且与 Redis 的 ziplist 等紧凑编码配合良好。</p>
       </section>
+
 <section id="bitmap-scenarios">
-        <h2>245. Bitmap 适合什么场景？</h2>
+        <h2>Bitmap 适合什么场景？</h2>
         <p>大量布尔状态：用户签到、日活统计、布隆过滤器底层、权限位图。极省内存，支持 <code>BITCOUNT</code>、<code>BITOP</code>。</p>
       </section>
+
 <section id="hyperloglog-scenarios">
-        <h2>246. HyperLogLog 适合什么场景？</h2>
+        <h2>HyperLogLog 适合什么场景？</h2>
         <p>海量 UV/独立访客统计，用固定约 12KB 内存估算基数，允许约 0.81% 误差，不适合需要精确计数的场景。</p>
       </section>
+
 <section id="geo-scenarios">
-        <h2>247. GEO 适合什么场景？</h2>
+        <h2>GEO 适合什么场景？</h2>
         <p>附近的人/店、距离计算、地理围栏。底层基于 ZSet 存储经纬度编码。</p>
       </section>
+
 <section id="redis-tx-no-rollback">
-        <h2>248. Redis 事务为什么不支持回滚？</h2>
+        <h2>Redis 事务为什么不支持回滚？</h2>
         <p>Redis 追求高性能和简单语义，命令错误在入队时不会阻止执行；运行时错误不会回滚已执行的命令。复杂原子性应使用 Lua 脚本。</p>
       </section>
+
 <section id="data-structures">
-        <h2>354. Redis 常用数据结构及底层实现是什么？</h2>
+        <h2>Redis 常用数据结构及底层实现是什么？</h2>
         <table>
-          <thead><tr><th>类型</th><th>典型编码</th></tr></thead>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>典型编码</th>
+            </tr>
+          </thead>
           <tbody>
             <tr><td>String</td><td>SDS、int、embstr</td></tr>
             <tr><td>Hash</td><td>ziplist、hashtable</td></tr>
@@ -213,57 +443,74 @@
           </tbody>
         </table>
       </section>
+
 <section id="sds">
-        <h2>355. Redis String 的 SDS 是什么？</h2>
+        <h2>Redis String 的 SDS 是什么？</h2>
         <p>SDS（Simple Dynamic String）是 Redis 自定义字符串结构，记录 len、free，支持 O(1) 取长度、二进制安全、预分配减少扩容。</p>
       </section>
+
 <section id="hash-scenarios">
-        <h2>356. Redis Hash 适合什么场景？</h2>
+        <h2>Redis Hash 适合什么场景？</h2>
         <p>对象属性存储、购物车、用户信息字段级更新。小 Hash 用 ziplist 紧凑存储，大 Hash 转 hashtable。</p>
       </section>
+
 <section id="zset-structure">
-        <h2>357. Redis ZSet 底层结构是什么？</h2>
+        <h2>Redis ZSet 底层结构是什么？</h2>
         <p>元素少时用 ziplist；元素多时使用跳表（按 score 排序）+ 哈希表（member → score）双结构，兼顾范围查询与 O(1) 单点查找。</p>
       </section>
+
 <section id="skiplist">
-        <h2>358. Redis 跳表是什么？</h2>
+        <h2>Redis 跳表是什么？</h2>
         <p>多层有序链表，通过随机层高实现近似平衡，支持 O(log N) 插入、删除、范围查询，实现比平衡树更简单。</p>
       </section>
+
 <section id="big-hot-key">
-        <h2>359. Redis Big Key 和 Hot Key 分别是什么？</h2>
+        <h2>Redis Big Key 和 Hot Key 分别是什么？</h2>
         <p>Big Key：value 过大或集合元素过多，导致阻塞、迁移慢。Hot Key：访问频率极高，造成单分片/单节点压力过大。</p>
       </section>
+
 <section id="big-key-governance">
-        <h2>360. 如何发现和治理 Big Key？</h2>
+        <h2>如何发现和治理 Big Key？</h2>
         <ul>
           <li>发现：<code>redis-cli --bigkeys</code>、RDB 分析、内存采样</li>
           <li>治理：拆分 key、压缩、异步删除（UNLINK）、限制集合大小</li>
         </ul>
       </section>
+
 <section id="hot-key-governance">
-        <h2>361. 如何发现和治理 Hot Key？</h2>
+        <h2>如何发现和治理 Hot Key？</h2>
         <ul>
           <li>发现：monitor 采样、hotkeys 命令、客户端上报</li>
           <li>治理：本地缓存、key 副本扩散、读写分离、限流</li>
         </ul>
       </section>
+
 <section id="pipeline">
-        <h2>362. Redis Pipeline 是什么？</h2>
+        <h2>Redis Pipeline 是什么？</h2>
         <p>客户端批量发送多条命令再批量读取结果，减少 RTT，但不保证事务原子性。适合大量独立读写。</p>
       </section>
+
 <section id="lua-atomic">
-        <h2>363. Redis Lua 脚本为什么能保证原子性？</h2>
+        <h2>Redis Lua 脚本为什么能保证原子性？</h2>
         <p>Redis 单线程执行模型下，Lua 脚本执行期间不会插入其他命令，因此脚本内多条命令作为一个整体连续执行。</p>
         <p>常用于分布式锁释放、限流、库存扣减。脚本应短小，避免阻塞主线程。</p>
       </section>
+
 <section id="stream">
-        <h2>364. Redis Stream 是什么？适合什么场景？</h2>
+        <h2>Redis Stream 是什么？适合什么场景？</h2>
         <p>Stream 是 Redis 5.0 引入的持久化消息结构，支持消费组、ACK、消息 ID 有序，适合轻量 MQ、日志流、事件溯源。</p>
       </section>
+
 <section id="pubsub-vs-stream">
-        <h2>365. Redis Pub/Sub 和 Stream 有什么区别？</h2>
+        <h2>Redis Pub/Sub 和 Stream 有什么区别？</h2>
         <table>
-          <thead><tr><th>对比项</th><th>Pub/Sub</th><th>Stream</th></tr></thead>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Pub/Sub</th>
+              <th>Stream</th>
+            </tr>
+          </thead>
           <tbody>
             <tr><td>持久化</td><td>否，订阅者离线丢消息</td><td>是</td></tr>
             <tr><td>消费组</td><td>无</td><td>支持</td></tr>
@@ -271,18 +518,30 @@
           </tbody>
         </table>
       </section>
+
 <section id="replication-sync">
-        <h2>366. Redis 主从复制全量同步和增量同步是什么？</h2>
+        <h2>Redis 主从复制全量同步和增量同步是什么？</h2>
         <p>全量同步：从库首次连接或 offset 差距过大时，主库 RDB 快照 + 缓冲期间命令。增量同步：基于 replication backlog 传播 offset 之后的写命令。</p>
       </section>
+
 <section id="hash-slot">
-        <h2>367. Redis Cluster hash slot 是什么？</h2>
+        <h2>Redis Cluster hash slot 是什么？</h2>
         <p>Cluster 将 key 空间分为 16384 个槽位，每个 master 负责一部分 slot。key 通过 CRC16 对 slot 取模路由，支持 slot 迁移实现扩缩容。</p>
       </section>
+
 <section id="split-brain">
-        <h2>368. Redis 脑裂问题是什么？如何降低风险？</h2>
+        <h2>Redis 脑裂问题是什么？如何降低风险？</h2>
         <p>网络分区导致出现多个 master 同时写入，恢复后可能丢数据。治理：min-replicas-to-write、合理超时、Sentinel/Cluster 多数派选主。</p>
-      </section>    </main>
+      </section>
+
+<section id="redis-pool-management">
+        <h2>Redis 连接池如何管理？</h2>
+      </section>
+
+<section id="redis-coroutine-connection">
+        <h2>Redis 连接如何管理，避免多协程连接冲突？</h2>
+      </section>
+</main>
   </div>
   <script src="assets/highlight.min.js"></script>
   <script src="assets/study-legacy-map.js"></script>

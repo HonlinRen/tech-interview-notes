@@ -48,6 +48,386 @@
 
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
+<section id="inference-vs-training">
+        <h2>大模型推理和训练有什么区别？</h2>
+        <p>训练是<strong>学习参数</strong>，推理是<strong>使用已学参数生成结果</strong>。两者计算图、资源需求和优化目标完全不同。</p>
+        <h3>核心对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>训练</th>
+              <th>推理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>目标</td><td>最小化 loss，更新权重</td><td>给定输入，生成输出 Token</td></tr>
+            <tr><td>计算</td><td>前向 + 反向传播 + 梯度更新</td><td>仅前向传播</td></tr>
+            <tr><td>显存</td><td>权重 + 梯度 + 优化器状态（约为推理 3~4 倍）</td><td>权重 + KV Cache + 激活</td></tr>
+            <tr><td>精度</td><td>通常 FP32/BF16 + 混合精度</td><td>FP16/BF16/INT8/INT4 量化常见</td></tr>
+            <tr><td>并行</td><td>Data / Tensor / Pipeline / ZeRO</td><td>Tensor / Pipeline Parallel，侧重 batch 调度</td></tr>
+            <tr><td>优化指标</td><td>收敛速度、loss、泛化</td><td>延迟（TTFT/TPOT）、吞吐（TPS）、成本</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>训练要反向传播和优化器，显存开销大，追求收敛；</p>
+        <p>推理只做前向、逐 Token 自回归生成，瓶颈在 Attention 和 KV Cache，追求低延迟和高吞吐。</p>
+      </section>
+
+<section id="inference-flow">
+        <h2>大模型推理流程是什么？</h2>
+        <p>大模型推理（以 Decoder-only 为例）是将用户输入编码后，<strong>自回归逐 Token 生成</strong>完整回复，直到遇到 EOS 或达到最大长度。</p>
+        <h3>完整流程</h3>
+        <pre><code class="language-python">1. 接收请求：prompt + 采样参数（temperature、top_p、max_tokens）
+2. Tokenize：文本 → token id 序列
+3. Prefill 阶段：并行处理整个 prompt，计算 Attention，建立 KV Cache
+4. Decode 阶段：循环生成
+   - 取上一步 logits → 采样/贪心选下一个 token
+   - 将新 token 送入模型，更新 KV Cache
+   - 重复直到 EOS 或 max_tokens
+5. Detokenize：token 序列 → 文本
+6. 流式返回（SSE/WebSocket）或一次性返回</code></pre>
+        <h3>关键指标</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>TTFT</td><td>Time To First Token，首 Token 延迟（含 Prefill）</td></tr>
+            <tr><td>TPOT</td><td>Time Per Output Token，解码阶段每 Token 耗时</td></tr>
+            <tr><td>TPS</td><td>Tokens Per Second，吞吐</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>Tokenize → Prefill 处理 prompt 建 KV Cache → Decode 循环采样生成 → Detokenize 输出；关注 TTFT 和 TPOT 两个延迟指标。</p>
+      </section>
+
+<section id="prefill-decode">
+        <h2>Prefill 和 Decode 是什么？</h2>
+        <p>大模型自回归推理分为两阶段：<strong>Prefill（预填充）</strong>和 <strong>Decode（解码）</strong>，计算特征和瓶颈不同。</p>
+        <h3>对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>输入</th>
+              <th>计算特点</th>
+              <th>瓶颈</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Prefill</td><td>完整 prompt（可能很长）</td><td>所有 token 并行计算，计算密集（compute-bound）</td><td>矩阵乘法 FLOPs</td></tr>
+            <tr><td>Decode</td><td>每次仅 1 个新 token</td><td>读取全部历史 KV Cache，访存密集（memory-bound）</td><td>显存带宽、KV Cache 大小</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-python">Prefill:  prompt=[t1, t2, ..., tn]  → 一次前向，输出 logits + KV Cache
+Decode:   每步输入=[t_new]           → 读历史 KV，算新 token logits，追加 KV</code></pre>
+        <p>长 prompt 场景 TTFT 高（Prefill 慢）；长输出场景 TPOT 累积明显（Decode 步数多）。优化需分别针对两阶段：FlashAttention 加速 Prefill，PagedAttention / KV 量化降低 Decode 显存压力。</p>
+        <p><strong>面试回答：</strong>Prefill 并行处理 prompt，计算密集；Decode 每次生成一个 token，依赖 KV Cache，访存密集。两者瓶颈不同，优化手段也不同。</p>
+      </section>
+
+<section id="token-by-token">
+        <h2>为什么大模型逐 token 生成？</h2>
+        <p>主流 Causal LM（GPT、LLaMA 等）采用<strong>自回归（Autoregressive）</strong>建模：用已生成序列预测下一个 Token 的概率分布，无法一次性并行输出整句。</p>
+        <h3>原因</h3>
+        <ul>
+          <li><strong>训练目标</strong>：语言模型学的是 P(token_t | token_1, ..., token_{t-1})，天然是逐位预测。</li>
+          <li><strong>Causal Mask</strong>：当前 token 只能 attend 到左侧历史，不能看未来，保证生成时因果性。</li>
+          <li><strong>输出空间巨大</strong>：词表通常 3 万~10 万，每步从整表采样，无法一步输出整段文本。</li>
+        </ul>
+        <pre><code class="language-python">Step 1: &quot;今天&quot; → P(下一token) → 采样得 &quot;天气&quot;
+Step 2: &quot;今天天气&quot; → P(下一token) → 采样得 &quot;很&quot;
+Step 3: ... 直到 EOS</code></pre>
+        <h3>能否并行生成？</h3>
+        <p>标准自回归不行，但有加速思路：<strong>Speculative Decoding</strong>（小模型草稿 + 大模型验证）、<strong>Medusa</strong>（多头并行预测）等，在不改变训练范式前提下减少大模型调用次数。</p>
+        <p><strong>面试回答：</strong>因为 Causal LM 训练目标是逐 token 条件概率，推理必须自回归；每步依赖上一步结果，所以是串行生成，这也是 Decode 阶段延迟的主要来源。</p>
+      </section>
+
+<section id="attention-mechanism">
+        <h2>Attention 机制是什么？</h2>
+        <p>Attention（注意力）让模型在处理当前 token 时，<strong>动态加权聚合其他位置的信息</strong>，解决长距离依赖问题，是 Transformer 的核心。</p>
+        <h3>计算流程</h3>
+        <pre><code class="language-python">输入 X → 线性变换得 Q、K、V
+Attention(Q,K,V) = softmax(QK^T / √d_k) · V</code></pre>
+        <p>QK^T 得到每个 query 对所有 key 的相似度（注意力分数），softmax 归一化后与 V 加权求和，得到融合了上下文的新表示。</p>
+        <h3>多头注意力（Multi-Head）</h3>
+        <p>将 Q/K/V 拆成 h 个头并行计算，各头关注不同模式（语法、语义、指代等），最后拼接再线性变换。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>概念</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Self-Attention</td><td>序列内部互相关注，Encoder/Decoder 均用</td></tr>
+            <tr><td>Causal / Masked Attention</td><td>Decoder 中只能看左侧，保证自回归</td></tr>
+            <tr><td>Cross-Attention</td><td>Decoder 关注 Encoder 输出（Seq2Seq 场景）</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>Attention 通过 QK 相似度对 V 加权求和，让模型动态关注相关位置；多头并行捕捉多种依赖关系，是 Transformer 性能的关键。</p>
+      </section>
+
+<section id="qkv-meaning">
+        <h2>Q、K、V 分别是什么？</h2>
+        <p>Q（Query）、K（Key）、V（Value）是 Attention 中三个线性变换得到的矩阵，类比<strong>信息检索</strong>：用 Query 去匹配 Key，按匹配度取 Value。</p>
+        <h3>含义与类比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>符号</th>
+              <th>含义</th>
+              <th>检索类比</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Q（Query）</td><td>当前 token「想要查什么」</td><td>搜索 query</td></tr>
+            <tr><td>K（Key）</td><td>每个位置「能被怎样匹配」</td><td>文档索引/标题</td></tr>
+            <tr><td>V（Value）</td><td>每个位置「实际携带的信息」</td><td>文档正文内容</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-python">Q = X @ W_q    # (seq_len, d_k)
+K = X @ W_k    # (seq_len, d_k)
+V = X @ W_v    # (seq_len, d_v)
+
+scores = Q @ K^T / sqrt(d_k)   # 相似度
+weights = softmax(scores)
+output = weights @ V            # 加权聚合</code></pre>
+        <p>同一输入 X 经不同权重矩阵 W_q、W_k、W_v 投影到不同子空间，使模型能分别学习「查询、匹配、取值」三种角色。</p>
+        <p><strong>面试回答：</strong>Q 是当前位置的查询，K 是各位置的索引，V 是各位置的内容；QK^T 算相似度，softmax 后与 V 相乘得到上下文融合结果。</p>
+      </section>
+
+<section id="attention-on2">
+        <h2>为什么 Attention 是 O(n²)？</h2>
+        <p>n 为序列长度。标准 Self-Attention 需计算<strong>每个 token 与所有 token 的相似度</strong>，时间和空间均随序列长度平方增长。</p>
+        <h3>复杂度分析</h3>
+        <pre><code class="language-python">Q: (n, d)    K^T: (d, n)    →  QK^T: (n, n)  共 n² 次相似度计算
+softmax + 乘 V: 也是 (n, n) 矩阵运算
+空间：需存储 (n, n) 注意力矩阵（训练时）</code></pre>
+        <table>
+          <thead>
+            <tr>
+              <th>长度 n</th>
+              <th>注意力矩阵大小</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>2K</td><td>4M 元素</td></tr>
+            <tr><td>8K</td><td>64M 元素</td></tr>
+            <tr><td>32K</td><td>1B 元素</td></tr>
+          </tbody>
+        </table>
+        <h3>优化方向</h3>
+        <ul>
+          <li><strong>FlashAttention</strong>：分块计算，不物化完整 n×n 矩阵，降低显存 IO。</li>
+          <li><strong>稀疏 Attention</strong>：Local、Longformer 等只算部分位置。</li>
+          <li><strong>KV Cache</strong>：推理时 Decode 阶段 Q 只有 1 行，但 K/V 随 n 增长，瓶颈转为访存。</li>
+        </ul>
+        <p><strong>面试回答：</strong>因为要算 n×n 的注意力矩阵，计算和显存都是 O(n²)；长上下文靠 FlashAttention、稀疏注意力等技术缓解。</p>
+      </section>
+
+<section id="kv-cache">
+        <h2>什么是 KV Cache？</h2>
+        <p>KV Cache 是推理时对历史 token 的 <strong>Key 和 Value 向量的缓存</strong>，避免 Decode 阶段每步重复计算已处理 token 的 K/V。</p>
+        <h3>为什么需要</h3>
+        <pre><code class="language-python">无 KV Cache：每生成 1 token，重算全部历史 token 的 Attention → O(n²) 每步
+有 KV Cache：Prefill 算一次存下来，Decode 每步只算新 token 的 Q，与缓存 K/V 做 Attention → O(n) 每步</code></pre>
+        <h3>工作流程</h3>
+        <ol>
+          <li><strong>Prefill</strong>：处理 prompt，计算每层 K/V，写入 Cache。</li>
+          <li><strong>Decode</strong>：新 token 只算自己的 Q 和新 K/V，追加到 Cache；Attention 用 Q 与全部缓存 K 算分数，加权缓存 V。</li>
+        </ol>
+        <p>KV Cache 是推理加速的<strong>必要手段</strong>，但长上下文 + 高并发下会成为显存主要占用来源（见下一题）。</p>
+        <p><strong>面试回答：</strong>KV Cache 缓存历史 K/V，Decode 时避免重复计算，把每步从 O(n²) 降到 O(n)；是推理必备优化，但占显存大。</p>
+      </section>
+
+<section id="kv-cache-memory">
+        <h2>KV Cache 为什么占显存？</h2>
+        <p>KV Cache 为<strong>每一层、每个 token、每个请求</strong>各存一份 K 和 V 向量，随层数、序列长度、并发请求数线性增长，往往是推理显存的大头。</p>
+        <h3>显存估算</h3>
+        <pre><code class="language-python">单层单 token KV 大小 ≈ 2 × num_heads × head_dim × dtype_bytes
+总 KV Cache ≈ 2 × num_layers × seq_len × hidden_size × dtype_bytes × batch_size
+
+例：LLaMA-7B, FP16, seq_len=4096, batch=1
+≈ 2 × 32 × 4096 × 4096 × 2 bytes ≈ 2 GB</code></pre>
+        <h3>增长因素</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>因素</th>
+              <th>影响</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>序列长度</td><td>线性增长，128K 上下文 KV 可达数十 GB</td></tr>
+            <tr><td>模型层数/宽度</td><td>更大模型 KV 更大</td></tr>
+            <tr><td>并发请求</td><td>每个请求独立 KV Cache</td></tr>
+            <tr><td>精度</td><td>FP16 → INT8/INT4 量化可减半或更多</td></tr>
+          </tbody>
+        </table>
+        <h3>缓解手段</h3>
+        <ul>
+          <li>PagedAttention（vLLM）：分页管理，减少碎片，提高并发。</li>
+          <li>KV 量化（INT8/INT4）、Multi-Query Attention（MQA）、Grouped-Query Attention（GQA）。</li>
+          <li>限制 max_seq_len、Prompt 压缩、上下文裁剪。</li>
+        </ul>
+        <p><strong>面试回答：</strong>每层每 token 存 K 和 V，长度 × 层数 × 并发 × 精度决定显存；长上下文和高并发下 KV Cache 常超过权重本身，需 PagedAttention、GQA、量化等手段。</p>
+      </section>
+
+<section id="vllm-what">
+        <h2>vLLM 是什么？</h2>
+        <p>vLLM 是 UC Berkeley 开源的<strong>大模型推理服务框架</strong>，主打高吞吐、低延迟的自托管 LLM 部署，已成为工业界主流推理引擎之一。</p>
+        <h3>核心特性</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>特性</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PagedAttention</td><td>分页管理 KV Cache，减少显存碎片，提高并发</td></tr>
+            <tr><td>Continuous Batching</td><td>动态插入/移除请求，GPU 利用率高</td></tr>
+            <tr><td>OpenAI 兼容 API</td><td><code>/v1/chat/completions</code>，易接入现有应用</td></tr>
+            <tr><td>多模型支持</td><td>LLaMA、Qwen、Mistral 等 HuggingFace 模型</td></tr>
+            <tr><td>量化推理</td><td>AWQ、GPTQ、FP8 等</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-bash"># 启动服务
+python -m vllm.entrypoints.openai.api_server \
+  --model meta-llama/Llama-2-7b-chat-hf \
+  --tensor-parallel-size 2</code></pre>
+        <p>同类方案：TGI（HuggingFace）、TensorRT-LLM（NVIDIA）、SGLang。选型看生态、硬件、是否需极致延迟。</p>
+        <p><strong>面试回答：</strong>vLLM 是高性能 LLM 推理框架，核心是 PagedAttention + Continuous Batching，提供 OpenAI 兼容 API，适合自托管高并发推理场景。</p>
+      </section>
+
+<section id="paged-attention">
+        <h2>PagedAttention 解决什么问题？</h2>
+        <p>PagedAttention 是 vLLM 提出的 KV Cache 管理方案，借鉴操作系统<strong>虚拟内存分页</strong>思想，解决 KV Cache 显存碎片和并发利用率低的问题。</p>
+        <h3>传统 KV Cache 的问题</h3>
+        <ul>
+          <li>每个请求预分配连续显存（按 max_seq_len），实际序列短则大量浪费。</li>
+          <li>请求长度不一，释放后产生碎片，无法给其他请求复用。</li>
+          <li>并发数受限于「预分配总和」，而非「实际使用量」。</li>
+        </ul>
+        <h3>PagedAttention 做法</h3>
+        <pre><code class="language-python">KV Cache 切成固定大小 block（如 16 token/block）
+逻辑 KV 地址 → 物理 block 映射表（类似页表）
+block 可不连续存放，按需分配/回收
+多个请求共享 block 池，碎片率大幅降低</code></pre>
+        <p>效果：同等显存下并发请求数可提升 2~4 倍，显存利用率从约 20%~40% 提升到 80%+。</p>
+        <p><strong>面试回答：</strong>PagedAttention 把 KV Cache 分页管理，解决预分配浪费和碎片问题，让显存利用率大幅提升，从而支持更高并发推理。</p>
+      </section>
+
+<section id="parallel-tp-pp-dp">
+        <h2>Tensor Parallel / Pipeline Parallel / Data Parallel 区别？</h2>
+        <p>大模型单卡放不下或算不动时，需<strong>模型并行</strong>。三种并行切分维度不同，可组合使用。</p>
+        <h3>对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>并行方式</th>
+              <th>切分维度</th>
+              <th>通信特点</th>
+              <th>适用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Data Parallel (DP)</td><td>数据 batch 切分到多卡，每卡完整模型副本</td><td>梯度 AllReduce</td><td>训练为主；推理中每卡独立处理不同请求</td></tr>
+            <tr><td>Tensor Parallel (TP)</td><td>单层权重矩阵按列/行切到多卡</td><td>每层前向/反向需 AllReduce / AllGather</td><td>单层太大放不下；推理常 TP=2/4/8</td></tr>
+            <tr><td>Pipeline Parallel (PP)</td><td>按模型层切分，不同卡负责不同层</td><td>层间传递激活值（micro-batch 流水）</td><td>层数多、单层可放下但整模放不下</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-python">训练常见：DP + TP + PP（3D 并行，如 Megatron-LM）
+推理常见：TP（低延迟）或 TP + PP（超大模型如 70B+）</code></pre>
+        <p><strong>面试回答：</strong>DP 切数据、每卡完整模型；TP 切单层权重、需频繁通信；PP 切层、流水线传递。推理多用 TP，超大模型 TP+PP 组合。</p>
+      </section>
+
+<section id="pp-why-separate">
+        <h2>PP 分离是什么？</h2>
+        <p>「PP 分离」通常指<strong>Prefill 和 Decode 分离部署</strong>（也叫 Disaggregated Prefill），或 Pipeline Parallel 中阶段分离。面试中以前者更为热点。</p>
+        <h3>Prefill / Decode 分离的原因</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>计算特征</th>
+              <th>资源偏好</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Prefill</td><td>计算密集（大矩阵乘）</td><td>高算力 GPU（如 A100/H100）</td></tr>
+            <tr><td>Decode</td><td>访存密集（读 KV Cache）</td><td>大显存、高带宽 GPU</td></tr>
+          </tbody>
+        </table>
+        <p>混在一起时，长 Prefill 会阻塞 Decode 请求（拖高 TPOT），短 Decode 又浪费 Prefill 算力。分离后可独立扩缩容、专用调度。</p>
+        <pre><code class="language-python">请求 → Prefill 节点（处理 prompt，生成 KV Cache）
+     → 传输 KV Cache → Decode 节点（逐 token 生成）
+     → 返回结果</code></pre>
+        <h3>挑战</h3>
+        <ul>
+          <li>KV Cache 跨节点传输有网络开销。</li>
+          <li>调度复杂度增加，需全局请求路由。</li>
+          <li>代表方案：Mooncake、DistServe、NVIDIA NIM 等。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Prefill 计算密集、Decode 访存密集，混在一起互相干扰；分离部署可针对性扩缩容，提升整体吞吐，但需解决 KV Cache 跨节点传输问题。</p>
+      </section>
+
+<section id="gpu-inference-service">
+        <h2>有没有搭过 GPU 推理服务？没搭过怎么回答？</h2>
+        <p>面试官想考察<strong>工程落地能力</strong>。没亲手搭过也可以从架构认知、技术选型和排查思路作答，关键是展现体系化理解。</p>
+        <h3>搭过的可这样讲</h3>
+        <ol>
+          <li><strong>选型</strong>：模型（Qwen/LLaMA）、推理框架（vLLM/TGI）、GPU 规格。</li>
+          <li><strong>部署</strong>：Docker + vLLM OpenAI API，配置 TP 数、max_model_len、量化方式。</li>
+          <li><strong>网关</strong>：Nginx/自研网关做鉴权、限流、负载均衡到多实例。</li>
+          <li><strong>监控</strong>：TTFT、TPOT、GPU 利用率、KV Cache 命中率、队列长度。</li>
+          <li><strong>踩坑</strong>：OOM（调 max_num_seqs）、首 token 慢（Prefill 优化）、并发上不去（PagedAttention batch 配置）。</li>
+        </ol>
+        <h3>没搭过怎么回答</h3>
+        <pre><code class="language-python">「我没有在生产环境完整搭过，但了解整体架构：
+  应用层 → API 网关（鉴权/限流）
+         → 推理服务（vLLM，OpenAI 兼容接口）
+         → GPU 集群（TP 并行，Continuous Batching）
+  关注 TTFT/TPOT 指标，KV Cache 显存管理，
+  以及 RAG 场景下 Prefill 长度对延迟的影响。
+  如果负责落地，我会先用 vLLM + Docker 做单机验证，
+  再压测确定 GPU 规格和副本数。」</code></pre>
+        <p><strong>要点：</strong>诚实 + 架构清晰 + 知道关键指标和工具名，比编造经验更可信。</p>
+      </section>
+
+<section id="rag-llm-slow-debug">
+        <h2>RAG 系统里 LLM 推理慢怎么排查？</h2>
+        <p>RAG 链路 = 检索 + 重排 + LLM 生成，LLM 往往是<strong>最大延迟来源</strong>。需拆分各环节定位瓶颈。</p>
+        <h3>排查步骤</h3>
+        <ol>
+          <li><strong>拆分耗时</strong>：埋点记录检索、重排、Prefill、Decode、总延迟各多少。</li>
+          <li><strong>看 LLM 指标</strong>：TTFT 高 → Prefill 慢（prompt 太长）；TPOT 高 → Decode 慢或 GPU 负载高。</li>
+          <li><strong>检查 prompt 长度</strong>：RAG 注入大量 chunk 导致 Prefill 膨胀，是常见原因。</li>
+          <li><strong>看 GPU 监控</strong>：利用率低 → batch 太小或调度问题；利用率高但慢 → 模型太大或 TP 不足。</li>
+          <li><strong>看并发与队列</strong>：请求排队 → 需扩容实例或限流。</li>
+        </ol>
+        <h3>常见原因与优化</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>原因</th>
+              <th>优化</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>RAG context 过长</td><td>减少 top_k、压缩 chunk、摘要后再注入</td></tr>
+            <tr><td>Prefill 慢</td><td>FlashAttention、缩短 system prompt</td></tr>
+            <tr><td>Decode 步数多</td><td>限制 max_tokens、优化 prompt 让回答更简洁</td></tr>
+            <tr><td>GPU 资源不足</td><td>量化（INT4/AWQ）、加卡、TP 并行、多副本</td></tr>
+            <tr><td>单实例瓶颈</td><td>vLLM Continuous Batching、水平扩容 + 负载均衡</td></tr>
+            <tr><td>冷启动</td><td>模型预热、保持最小副本在线</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>先拆检索和 LLM 耗时；LLM 慢看 TTFT（Prefill/prompt 长度）和 TPOT（Decode/GPU 负载）；RAG 场景优先减 context 长度，再考虑量化、扩容和 batch 调度优化。</p>
+      </section>
+
 <section id="inference-acceleration">
         <h2>大模型推理加速是什么？</h2>
         <p>大模型推理加速指在<strong>不改变或轻微影响模型效果</strong>的前提下，降低单次生成延迟、提高吞吐（QPS/TPS），并减少显存与算力成本。</p>
@@ -92,12 +472,6 @@ INT4 量化后 ≈ 4GB，延迟通常可接受</code></pre>
           <li><strong>llama.cpp / Ollama</strong>：CPU/边缘侧轻量推理</li>
         </ul>
         <p>面试要点：推理加速 ≠ 换更大模型；从 <span class="em-warn">Attention、KV Cache、Batch 调度、量化、并行</span> 五个维度回答即可。</p>
-      </section>
-
-<section id="vLLM-mean">
-        <h2>vLLM是什么？</h2>
-        <p>vLLM 是一个大模型推理服务框架，主要目标是<span class="em-warn">提高推理吞吐和显存利用率</span>。它比较核心的点是 PagedAttention，可以更高效地管理 KV Cache，提升高并发请求下的显存利用率。</p>
-        <p></p>
       </section>
 
 <section id="sft-finetuning">
@@ -169,7 +543,7 @@ RLHF / DPO（可选）
         <p>大模型微调（Fine-tuning）是在<strong>预训练基座模型</strong>上，用特定任务或领域的数据继续训练，使模型适应下游场景——而非从零训练。</p>
         <p>预训练让模型「懂语言、有知识」；微调让模型「会做事、符合业务要求」。</p>
         <h3>在大模型训练链路中的位置</h3>
-        <pre><code>预训练（Pre-training）     海量无标注文本，学语言与通用知识
+        <pre><code class="language-python">预训练（Pre-training）     海量无标注文本，学语言与通用知识
     ↓
 微调（Fine-tuning）        用标注数据适配任务 / 领域 / 风格
     ├── 全参微调（Full Fine-tuning）
@@ -230,7 +604,7 @@ RLHF / DPO（可选）
         <h3>为什么需要 RLHF？</h3>
         <p>SFT 只用单一标准答案训练，难以覆盖「多种回答都合理但优劣不同」的场景，也无法有效抑制有害、幻觉、啰嗦等输出。RLHF 引入<strong>人类偏好排序</strong>，让模型学习「更好 vs 更差」。</p>
         <h3>经典三阶段流程</h3>
-        <pre><code>阶段 1：SFT（监督微调）
+        <pre><code class="language-python">阶段 1：SFT（监督微调）
   用 instruction-output 数据，得到会对话的基础模型
 
 阶段 2：训练奖励模型（Reward Model, RM）
@@ -264,7 +638,7 @@ RLHF / DPO（可选）
         </ul>
         <h3>RLHF 的替代：DPO</h3>
         <p>DPO（Direct Preference Optimization）跳过显式奖励模型和 PPO，直接用偏好对（chosen vs rejected）优化策略，<strong>更简单、更稳定</strong>，效果接近 RLHF，近年被广泛采用。</p>
-        <pre><code>RLHF：SFT → 训 RM → PPO 强化学习（三模型、复杂）
+        <pre><code class="language-python">RLHF：SFT → 训 RM → PPO 强化学习（三模型、复杂）
 DPO：  SFT → 直接偏好优化（两阶段、轻量化）</code></pre>
         <p><strong>面试回答：</strong>RLHF 用人类偏好训练奖励模型，再以强化学习（PPO）让模型输出更符合人类期望；目的是安全对齐，与 SFT 的任务适配互补。企业应用通常直接用已对齐的 API 模型，无需自训 RLHF。</p>
       </section>
