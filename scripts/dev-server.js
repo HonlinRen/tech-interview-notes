@@ -18,7 +18,8 @@ const ALLOWED_FILES = new Set([
   "architecture.html",
   "observability.html",
   "security.html",
-  "llm.html"
+  "llm.html",
+  "leetcode.html"
 ]);
 
 const CATEGORY_TO_FILE = {
@@ -34,7 +35,8 @@ const CATEGORY_TO_FILE = {
   architecture: "architecture.html",
   observability: "observability.html",
   security: "security.html",
-  llm: "llm.html"
+  llm: "llm.html",
+  leetcode: "leetcode.html"
 };
 
 function stripHtml(text) {

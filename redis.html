@@ -38,10 +38,12 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
           <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
       </div>
@@ -389,22 +391,6 @@ else:
         </ul>
       </section>
 
-<section id="hash-object">
-        <h2>Redis Hash 存对象什么时候更合适？</h2>
-        <p>对象字段较多且需要部分更新时，Hash 比整段 JSON String 更省带宽、支持 <code>HGET/HSET</code> 单字段操作。</p>
-        <p>字段少、整体读写为主时，String 存 JSON 更简单。</p>
-      </section>
-
-<section id="leaderboard">
-        <h2>Redis 如何实现排行榜？</h2>
-        <p>使用 ZSet，member 为用户/商品 ID，score 为分数。支持 <code>ZREVRANGE</code> 取 TopN、<code>ZRANK</code> 查名次、<code>ZINCRBY</code> 加分。</p>
-      </section>
-
-<section id="zset-skiplist">
-        <h2>Redis 有序集合为什么使用跳表？</h2>
-        <p>跳表在平均 O(log N) 时间内支持范围查询和排名，实现比红黑树简单，且与 Redis 的 ziplist 等紧凑编码配合良好。</p>
-      </section>
-
 <section id="redis-tx-no-rollback">
         <h2>Redis 事务为什么不支持回滚？</h2>
         <p>Redis 追求高性能和简单语义，命令错误在入队时不会阻止执行；运行时错误不会回滚已执行的命令。复杂原子性应使用 Lua 脚本。</p>
@@ -429,24 +415,9 @@ else:
         </table>
       </section>
 
-<section id="sds">
-        <h2>Redis String 的 SDS 是什么？</h2>
-        <p>SDS（Simple Dynamic String）是 Redis 自定义字符串结构，记录 len、free，支持 O(1) 取长度、二进制安全、预分配减少扩容。</p>
-      </section>
-
-<section id="hash-scenarios">
-        <h2>Redis Hash 适合什么场景？</h2>
-        <p>对象属性存储、购物车、用户信息字段级更新。小 Hash 用 ziplist 紧凑存储，大 Hash 转 hashtable。</p>
-      </section>
-
 <section id="zset-structure">
         <h2>Redis ZSet 底层结构是什么？</h2>
         <p>元素少时用 ziplist；元素多时使用跳表（按 score 排序）+ 哈希表（member → score）双结构，兼顾范围查询与 O(1) 单点查找。</p>
-      </section>
-
-<section id="skiplist">
-        <h2>Redis 跳表是什么？</h2>
-        <p>多层有序链表，通过随机层高实现近似平衡，支持 O(log N) 插入、删除、范围查询，实现比平衡树更简单。</p>
       </section>
 
 <section id="big-hot-key">

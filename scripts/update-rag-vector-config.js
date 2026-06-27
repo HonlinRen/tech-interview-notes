@@ -27,8 +27,8 @@ htmlFiles.forEach((file) => {
     return;
   }
   content = content.replace(
-    /(<button class="filter-btn[^"]*" type="button" data-filter="ai" data-page="ai\.html">AI Agent \/ RAG<\/button>\n)/,
-    "$1          " + FILTER_BTN
+    /(<button class="filter-btn[^"]*" type="button" data-filter="ai" data-page="ai\.html">AI Agent \/ RAG<\/button>\r?\n\s*)(<button class="filter-btn[^"]*" type="button" data-filter="llm")/,
+    "$1" + FILTER_BTN + "$2"
   );
   fs.writeFileSync(filePath, content);
   console.log("Updated filter bar:", file);

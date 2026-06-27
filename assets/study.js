@@ -527,6 +527,7 @@
         "wrapper-cache": "java",
         "wsgi-asgi": "python",
         "llm-pandas-numpy-role": "python",
+        "lc-15-3sum": "leetcode",
         "llm-pandas-agent-tool": "python",
         "llm-matplotlib-visualization": "python",
         "xss-csrf": "security",
@@ -541,7 +542,7 @@
         "zset-structure": "redis"
       };
 
-      const categoryOrder = ["python", "java", "spring", "mysql", "redis", "rocketmq", "docker-k8s", "ai", "rag-vector", "llm", "architecture", "observability", "security"];
+      const categoryOrder = ["python", "java", "spring", "mysql", "redis", "rocketmq", "docker-k8s", "ai", "rag-vector", "llm", "architecture", "observability", "security", "leetcode"];
 
             const categoryPages = {
         "python": "python.html",
@@ -556,7 +557,8 @@
         "llm": "llm.html",
         "architecture": "architecture.html",
         "observability": "observability.html",
-        "security": "security.html"
+        "security": "security.html",
+        "leetcode": "leetcode.html"
       };
 
 const categoryLabels = {
@@ -572,7 +574,8 @@ const categoryLabels = {
         llm: "大模型 / 推理与微调",
         architecture: "网关 / 架构",
         observability: "可观测性",
-        security: "安全 / 鉴权"
+        security: "安全 / 鉴权",
+        leetcode: "算法 LeetCode"
       };
 
       // 学习状态 v2：按「分类:题目id」存储，避免跨专题串数据。

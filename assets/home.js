@@ -17,7 +17,8 @@
     llm: "llm.html",
     architecture: "architecture.html",
     observability: "observability.html",
-    security: "security.html"
+    security: "security.html",
+    leetcode: "leetcode.html"
   };
 
   const statsEl = document.getElementById("homeStats");

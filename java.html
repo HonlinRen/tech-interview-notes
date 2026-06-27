@@ -43,6 +43,7 @@
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
       </div>
@@ -1709,6 +1710,7 @@ CompletableFuture.supplyAsync(() -&gt; fetch())
           </thead>
           <tbody>
             <tr><td>NIO 多路复用</td><td>少量线程管理大量连接，降低线程成本。</td></tr>
+            <tr><td>Channel</td><td>客户端和服务端建立了一个连接，Netty 里就是一个 Channel</td></tr>
             <tr><td>EventLoop</td><td>Channel 绑定固定线程，减少锁竞争和线程切换。</td></tr>
             <tr><td>ByteBuf</td><td>读写指针分离，支持池化、直接内存、切片和组合。</td></tr>
             <tr><td>Pipeline</td><td>编解码、业务处理、异常处理可以拆成可组合 Handler。</td></tr>
@@ -1716,36 +1718,6 @@ CompletableFuture.supplyAsync(() -&gt; fetch())
           </tbody>
         </table>
         <p>但 Netty 性能高不代表业务一定快。耗时业务、阻塞数据库调用、慢下游服务仍然要放到业务线程池或异步链路中处理，不能阻塞 EventLoop。</p>
-      </section>
-
-<section id="netty-eventloop">
-        <h2>Netty 的 EventLoop 是什么？</h2>
-        <p>EventLoop 是 Netty 的事件循环，一个 EventLoop 通常绑定一个线程，负责处理注册在其上的多个 Channel 的 IO 事件和任务队列。</p>
-        <ul>
-          <li>同一个 Channel 的 IO 事件通常在同一个 EventLoop 线程中执行，减少并发同步成本。</li>
-          <li>耗时业务不应直接阻塞 EventLoop，否则会影响该线程负责的所有连接。</li>
-          <li>耗时任务应提交到业务线程池，再把结果写回 Channel。</li>
-        </ul>
-      </section>
-
-<section id="netty-bytebuf">
-        <h2>Netty 的 ByteBuf 相比 ByteBuffer 有什么优势？</h2>
-        <p>ByteBuf 是 Netty 提供的字节缓冲区，相比 JDK ByteBuffer 更适合网络编程。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>优势</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>读写指针分离</td><td>有 <code>readerIndex</code> 和 <code>writerIndex</code>，读写不需要频繁 <code>flip()</code>。</td></tr>
-            <tr><td>内存形态丰富</td><td>支持堆内存、直接内存、池化、切片、组合缓冲区。</td></tr>
-            <tr><td>池化能力</td><td>减少频繁分配和回收，降低 GC 压力。</td></tr>
-            <tr><td>引用计数</td><td>可以减少复制，但必须正确 <code>release()</code>。</td></tr>
-          </tbody>
-        </table>
-        <p>ByteBuf 的风险也很明确：池化和引用计数提升性能的同时，也要求开发者严格管理生命周期，否则容易出现直接内存泄漏。</p>
       </section>
 
 <section id="child-thread-exception-main">

@@ -440,9 +440,12 @@
     .filter-btn[data-filter="rocketmq"] { --filter-color: #ea580c; }
     .filter-btn[data-filter="docker-k8s"] { --filter-color: #0284c7; }
     .filter-btn[data-filter="ai"] { --filter-color: #7c3aed; }
+    .filter-btn[data-filter="rag-vector"] { --filter-color: #2563eb; }
+    .filter-btn[data-filter="llm"] { --filter-color: #0891b2; }
     .filter-btn[data-filter="architecture"] { --filter-color: #0f766e; }
     .filter-btn[data-filter="observability"] { --filter-color: #4f46e5; }
     .filter-btn[data-filter="security"] { --filter-color: #b45309; }
+    .filter-btn[data-filter="leetcode"] { --filter-color: #c026d3; }
 
     .tool-btn:hover,
     .filter-btn:hover {

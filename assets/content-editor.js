@@ -13,7 +13,8 @@
     llm: "llm.html",
     architecture: "architecture.html",
     observability: "observability.html",
-    security: "security.html"
+    security: "security.html",
+    leetcode: "leetcode.html"
   };
   const CODE_LANGUAGES = [
     { value: "", label: "无高亮" },
@@ -480,7 +481,8 @@
       llm: "python",
       architecture: "bash",
       observability: "bash",
-      security: "java"
+      security: "java",
+      leetcode: "python"
     };
     return map[category] || "";
   }
