@@ -38,7 +38,8 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
-          <button class="filter-btn active" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+                    <button class="filter-btn active" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
@@ -372,29 +373,6 @@ block 可不连续存放，按需分配/回收
           <li>代表方案：Mooncake、DistServe、NVIDIA NIM 等。</li>
         </ul>
         <p><strong>面试回答：</strong>Prefill 计算密集、Decode 访存密集，混在一起互相干扰；分离部署可针对性扩缩容，提升整体吞吐，但需解决 KV Cache 跨节点传输问题。</p>
-      </section>
-
-<section id="gpu-inference-service">
-        <h2>有没有搭过 GPU 推理服务？没搭过怎么回答？</h2>
-        <p>面试官想考察<strong>工程落地能力</strong>。没亲手搭过也可以从架构认知、技术选型和排查思路作答，关键是展现体系化理解。</p>
-        <h3>搭过的可这样讲</h3>
-        <ol>
-          <li><strong>选型</strong>：模型（Qwen/LLaMA）、推理框架（vLLM/TGI）、GPU 规格。</li>
-          <li><strong>部署</strong>：Docker + vLLM OpenAI API，配置 TP 数、max_model_len、量化方式。</li>
-          <li><strong>网关</strong>：Nginx/自研网关做鉴权、限流、负载均衡到多实例。</li>
-          <li><strong>监控</strong>：TTFT、TPOT、GPU 利用率、KV Cache 命中率、队列长度。</li>
-          <li><strong>踩坑</strong>：OOM（调 max_num_seqs）、首 token 慢（Prefill 优化）、并发上不去（PagedAttention batch 配置）。</li>
-        </ol>
-        <h3>没搭过怎么回答</h3>
-        <pre><code class="language-python">「我没有在生产环境完整搭过，但了解整体架构：
-  应用层 → API 网关（鉴权/限流）
-         → 推理服务（vLLM，OpenAI 兼容接口）
-         → GPU 集群（TP 并行，Continuous Batching）
-  关注 TTFT/TPOT 指标，KV Cache 显存管理，
-  以及 RAG 场景下 Prefill 长度对延迟的影响。
-  如果负责落地，我会先用 vLLM + Docker 做单机验证，
-  再压测确定 GPU 规格和副本数。」</code></pre>
-        <p><strong>要点：</strong>诚实 + 架构清晰 + 知道关键指标和工具名，比编造经验更可信。</p>
       </section>
 
 <section id="rag-llm-slow-debug">

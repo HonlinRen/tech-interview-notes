@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <title>RAG 向量检索 / 数据工程 高频问题整理</title>
+  <link rel="stylesheet" href="assets/highlight-theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
+</head>
+<body data-category="rag-vector">
+  <div class="layout">
+    <aside>
+      <a class="home-link" href="index.html">返回首页</a>
+<div id="categoryStats" class="category-stats"></div>
+      <details class="toc-group active" data-filter="rag-vector" open>
+        <summary>RAG 向量检索</summary>
+      </details>
+    </aside>
+
+    <main>
+      <div class="study-tools" aria-label="学习工具">
+        <div class="tool-row">
+          <div class="search-wrap">
+            <input id="searchInput" class="search-box" type="search" placeholder="当前主题搜索关键词" autocomplete="off">
+            <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
+          </div>
+          <button id="compactBtn" class="tool-btn" type="button">核心速览</button>
+          <button id="darkBtn" class="tool-btn" type="button">深色模式</button>
+        </div>
+        <div class="tool-row" id="filterBar">
+          <button class="filter-btn" type="button" data-filter="python" data-page="python.html">Python</button>
+          <button class="filter-btn" type="button" data-filter="java" data-page="java.html">Java / JVM</button>
+          <button class="filter-btn" type="button" data-filter="spring" data-page="spring.html">Spring Boot</button>
+          <button class="filter-btn" type="button" data-filter="mysql" data-page="mysql.html">MySQL</button>
+          <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
+          <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
+          <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn active" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
+          <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
+          <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <span id="studyStats" class="study-stats"></span>
+        </div>
+      </div>
+
+      <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
+
+<section id="chunk-design">
+        <h2>Chunk 设计为什么重要？</h2>
+        <p>Chunk 是检索的最小语义单元，直接影响召回率和生成质量。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Chunk 大小</th>
+              <th>优点</th>
+              <th>缺点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>太大</td><td>上下文完整</td><td>噪声多、占 Token、语义不聚焦</td></tr>
+            <tr><td>太小</td><td>检索精准</td><td>语义断裂、丢失跨段关系</td></tr>
+          </tbody>
+        </table>
+        <h3>最佳实践</h3>
+        <ul>
+          <li>按结构切：标题、段落、表格、代码块。</li>
+          <li>保留标题路径（breadcrumb）作为 metadata。</li>
+          <li>设置 10%–20% overlap，避免边界截断。</li>
+          <li>常见大小 256–512 Token，按文档类型 A/B 调优。</li>
+        </ul>
+      </section>
+
+<section id="metadata">
+        <h2>Metadata 有什么作用？</h2>
+        <p>Metadata 描述每个 Chunk 的来源与属性，是过滤、溯源和权限控制的基础。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>示例字段</th>
+              <th>用途</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>来源</td><td>doc_id、url、page、section</td><td>引用溯源</td></tr>
+            <tr><td>权限</td><td>tenant_id、dept、acl</td><td>检索前过滤</td></tr>
+            <tr><td>版本</td><td>version、effective_date</td><td>冲突消解</td></tr>
+            <tr><td>技术</td><td>embedding_model、chunk_rule</td><td>重建索引</td></tr>
+          </tbody>
+        </table>
+        <p>多租户场景下，<code>tenant_id</code> 必须在检索层强制过滤，不能仅靠 Prompt 约束。</p>
+      </section>
+
+<section id="vector-retrieval">
+        <h2>向量检索的基本原理是什么？</h2>
+        <p>Embedding 模型将文本映射到高维向量空间，语义相近的文本向量距离更近。</p>
+        <pre><code class="language-python">文档 -&gt; Embedding -&gt; 向量库
+查询 -&gt; Embedding -&gt; ANN 搜索 -&gt; TopK 相似片段</code></pre>
+        <h3>优势与局限</h3>
+        <ul>
+          <li>优势：语义相似、同义词、跨语言。</li>
+          <li>局限：精确编号、SKU、专有名词弱；需 Hybrid Search 补充。</li>
+        </ul>
+      </section>
+
+<section id="topk-recall">
+        <h2>TopK 和召回率是什么？</h2>
+        <p><strong>TopK</strong>：检索返回相似度最高的 K 个 Chunk。<strong>召回率（Recall）</strong>：含正确答案的文档是否被检索到。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>参数</th>
+              <th>K 太小</th>
+              <th>K 太大</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>召回</td><td>漏掉正确答案</td><td>召回率高</td></tr>
+            <tr><td>成本</td><td>Rerank/生成 Token 少</td><td>噪声多、延迟高</td></tr>
+          </tbody>
+        </table>
+        <p>典型策略：向量召回 K=50–100，Rerank 后取 Top5–10 进上下文。用离线评测集调 recall@K。</p>
+      </section>
+
+<section id="query-rewrite">
+        <h2>Query Rewrite 解决什么问题？</h2>
+        <p>用户原始问题往往不适合直接检索：口语化、省略指代、复合问题。</p>
+        <h3>常见改写策略</h3>
+        <ul>
+          <li>指代消解：「它多少钱」→「XX 产品多少钱」。</li>
+          <li>关键词提取：补充领域术语。</li>
+          <li>问题拆分：复合问题拆成多个子查询。</li>
+          <li>HyDE：生成假设性答案再检索。</li>
+        </ul>
+        <p>多轮对话需结合 <code>history</code> 或摘要后再改写，否则检索命中率低。</p>
+      </section>
+
+<section id="rag-hyde">
+        <h2>RAG HyDE 是什么？</h2>
+        <p>HyDE（Hypothetical Document Embeddings，<strong>假设性文档嵌入</strong>）是一种 RAG 检索增强策略：不直接用用户问题去向量检索，而是先让 LLM 根据问题<strong>生成一篇「假想的答案文档」</strong>，再对这篇假设文档做 Embedding 去检索真实文档。</p>
+        <pre><code class="language-python">普通 RAG：  用户问题 → Embedding → 向量库 TopK
+HyDE RAG：  用户问题 → LLM 生成假设文档 → Embedding → 向量库 TopK → 生成最终答案</code></pre>
+        <h3>为什么需要 HyDE？</h3>
+        <p>向量检索的核心是「Query 与 Document 在 Embedding 空间足够接近」。但用户问题往往是<strong>短句、口语化</strong>，而知识库 Chunk 是<strong>长段落、陈述式</strong>，两者在向量空间中分布不对称，导致直接检索命中率低。</p>
+        <p>HyDE 的思路：让 LLM 先把问题「翻译」成一段看起来像知识库文档的文字，再用这段文字去检索，缩小 Query-Doc 的语义鸿沟。</p>
+        <h3>流程示例</h3>
+        <pre><code class="language-python">用户问题：「Redis 持久化 RDB 和 AOF 怎么选？」
+
+LLM 生成假设文档（不要求事实正确，只求风格接近知识库）：
+  「Redis 提供 RDB 和 AOF 两种持久化机制。RDB 通过快照方式...
+   AOF 记录每条写命令... 选择时需考虑数据安全与恢复速度...」
+
+对假设文档 Embedding → 检索真实 Chunk → 将真实资料交给 LLM 生成最终答案</code></pre>
+        <h3>与普通检索对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>直接 Query 检索</th>
+              <th>HyDE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Embedding 对象</td><td>用户原始问题</td><td>LLM 生成的假设文档</td></tr>
+            <tr><td>语义匹配</td><td>短问句 vs 长文档，易失配</td><td>文档 vs 文档，更接近</td></tr>
+            <tr><td>额外成本</td><td>无</td><td>多一次 LLM 调用 + 延迟</td></tr>
+            <tr><td>风险</td><td>检索词不精准</td><td>假设文档可能幻觉，带偏检索方向</td></tr>
+          </tbody>
+        </table>
+        <h3>适用场景</h3>
+        <ul>
+          <li>问题抽象、复杂，与文档表述风格差异大（如「怎么选型」「优缺点对比」）。</li>
+          <li>零样本 / 少样本场景，没有足够 Query 改写规则或训练数据。</li>
+          <li>知识库以长段落技术文档为主，Chunk 风格统一。</li>
+        </ul>
+        <h3>不适用场景</h3>
+        <ul>
+          <li>精确匹配类查询（订单号、SKU、错误码）→ 直接用 BM25 或原 Query 更准。</li>
+          <li>对延迟敏感的高 QPS 接口 → 多一次 LLM 调用成本不可忽视。</li>
+          <li>领域知识 LLM 不熟悉 → 假设文档质量差，反而降低召回。</li>
+        </ul>
+        <h3>落地建议</h3>
+        <ul>
+          <li>假设文档<strong>不需要事实正确</strong>，Prompt 中强调「风格像知识库段落即可」。</li>
+          <li>可与 Hybrid Search 组合：HyDE 向量召回 + BM25 关键词召回，再 Rerank 融合。</li>
+          <li>对假设文档做缓存（相同/相似问题复用），降低重复 LLM 开销。</li>
+        </ul>
+        <p><strong>面试回答：</strong>HyDE 用 LLM 生成假想答案文档再做向量检索，解决 Query 与 Document 语义不对称问题；适合抽象问答，不适合精确查找，需权衡延迟与幻觉风险。</p>
+      </section>
+
+<section id="rerank">
+        <h2>Rerank 是什么？</h2>
+        <p>Rerank（重排）对初步召回的 TopN 候选用更精确模型重新打分排序。</p>
+        <pre><code class="language-python">Bi-Encoder 召回 Top100 -&gt; Cross-Encoder Rerank -&gt; Top5 进 Prompt</code></pre>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>模型</th>
+              <th>特点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>召回</td><td>Bi-Encoder</td><td>快，可离线建索引</td></tr>
+            <tr><td>重排</td><td>Cross-Encoder</td><td>准，需在线逐对计算</td></tr>
+          </tbody>
+        </table>
+        <p>只对 TopN（50–100）重排，平衡精度与延迟。</p>
+      </section>
+
+<section id="embedding-selection">
+        <h2>Embedding 模型如何选型？</h2>
+        <h3>选型维度</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>语言</td><td>中文场景选 bge-m3、text-embedding-v3 等</td></tr>
+            <tr><td>维度</td><td>向量维度越高，通常表达能力更强，但成本也更高。</td></tr>
+            <tr><td>最大长度</td><td>不同模型支持的文本长度不同</td></tr>
+            <tr><td>检索效果</td><td>召回率 正确答案排序靠前等</td></tr>
+          </tbody>
+        </table>
+        <p>用 MTEB/C-MTEB 榜单 + 自有评测集 recall@K 做最终决策；切换模型需全量重建索引。</p>
+      </section>
+
+<section id="vector-dimensions">
+        <h2>向量维度对检索效果和成本有什么影响？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th>效果</th>
+              <th>成本</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>低维（256–384）</td><td>语义表达弱</td><td>存储小、检索快</td></tr>
+            <tr><td>中维（768–1024）</td><td>平衡较好</td><td>主流选择</td></tr>
+            <tr><td>高维（1536+）</td><td>细粒度语义好</td><td>内存/延迟增加</td></tr>
+          </tbody>
+        </table>
+        <p>维度由 Embedding 模型决定，不可随意更改。百万级文档下，1536 维 vs 768 维存储差约 2 倍。</p>
+      </section>
+
+<section id="similarity-metrics">
+        <h2>余弦相似度、欧氏距离、点积有什么区别？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>度量</th>
+              <th>公式特点</th>
+              <th>适用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>余弦相似度</td><td>只看方向，不看模长</td><td>文本 Embedding 最常用</td></tr>
+            <tr><td>欧氏距离</td><td>看绝对距离</td><td>未归一化向量</td></tr>
+            <tr><td>点积</td><td>方向 + 模长</td><td>归一化后等价余弦</td></tr>
+          </tbody>
+        </table>
+        <p>大多数 Embedding 模型输出已 L2 归一化，余弦与点积排序一致。选型时与向量库默认度量对齐。</p>
+      </section>
+
+<section id="vector-vs-bm25">
+        <h2>向量检索和 BM25 区别是什么？</h2>
+        <p>向量检索（Dense Retrieval）和 BM25（Sparse Retrieval）是 RAG 中最常见的两种召回方式，<strong>匹配逻辑不同</strong>，生产环境通常组合使用（Hybrid Search）。</p>
+        <h3>核心对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>BM25</th>
+              <th>向量召回</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>本质</td><td>关键词 / 词项匹配</td><td>语义相似度匹配</td></tr>
+            <tr><td>擅长</td><td>精确词、型号、错误码、字段名</td><td>同义表达、自然语言语义</td></tr>
+            <tr><td>不擅长</td><td>同义词、改写表达</td><td>数字、编号、精确匹配</td></tr>
+            <tr><td>例子</td><td>E01、A100、v1.2.3</td><td>「无法启动」≈「开机失败」</td></tr>
+          </tbody>
+        </table>
+        <h3>工作原理简述</h3>
+        <pre><code class="language-python">BM25：Query 分词 → 倒排索引查词频/逆文档频率 → 算 BM25 分数 → TopK
+向量：Query Embedding → ANN 近邻搜索（余弦/点积）→ TopK</code></pre>
+        <p><strong>面试回答：</strong>BM25 做词项精确匹配，适合错误码、型号；向量检索做语义相似，适合同义改写。两者互补，生产 RAG 常用 Hybrid Search 融合后再 Rerank。</p>
+      </section>
+
+<section id="bm25-vs-keyword">
+        <h2>BM25 和普通关键词匹配有什么区别？</h2>
+        <p>普通关键词匹配（如 SQL <code>LIKE</code>、简单 contains）往往是<strong>二元命中</strong>：文档包含关键词就返回，不考虑相关程度排序。</p>
+        <p>BM25（Best Matching 25）是经典的<strong>概率检索模型</strong>，为每个文档计算相关性分数并排序，是 Elasticsearch、Lucene 等搜索引擎的默认排序算法之一。</p>
+        <h3>BM25 考虑的三个因素</h3>
+        <ul>
+          <li><strong>词频（TF）</strong>：词在文档中出现越多，一般越相关（但有饱和上限，不会无限加分）。</li>
+          <li><strong>逆文档频率（IDF）</strong>：词越稀有（全库越少文档含该词），权重越高；「的、是」等常见词权重低。</li>
+          <li><strong>文档长度归一化</strong>：文档太长会被适当惩罚，避免长文档仅仅因为词多而排名靠前。</li>
+        </ul>
+        <pre><code class="language-python">普通关键词匹配：
+  Query = "Redis 持久化"
+  → 文档含 "Redis" AND "持久化" → 命中（无分数或固定分）
+
+BM25：
+  Query = "Redis 持久化"
+  → 分别算 "Redis"、"持久化" 的 TF-IDF 贡献
+  → 短且两词都高频出现的文档排更前
+  → 返回按 BM25 分数排序的 TopK</code></pre>
+        <h3>对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>普通关键词匹配</th>
+              <th>BM25</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>排序</td><td>通常无相关性排序，或按时间/ID</td><td>按相关性分数排序</td></tr>
+            <tr><td>词频</td><td>不考虑出现次数</td><td>考虑 TF，但有饱和</td></tr>
+            <tr><td>稀有词</td><td>与普通词同等对待</td><td>IDF 加权，稀有词更重要</td></tr>
+            <tr><td>文档长度</td><td>长文档易误命中</td><td>长度惩罚，更公平</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>普通匹配是「包含即命中」；BM25 进一步算相关性分数，综合词频、词稀有度和文档长度，返回排序后的 TopK，检索质量明显更好。</p>
+      </section>
+
+<section id="hybrid-search">
+        <h2>Hybrid Search 混合检索是什么？为什么要结合向量检索和 BM25？</h2>
+        <p>Hybrid Search 融合<strong>稠密检索</strong>（语义）和<strong>稀疏检索</strong>（关键词），互补各自弱点。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>检索方式</th>
+              <th>擅长</th>
+              <th>弱项</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>向量（Dense）</td><td>语义相似、同义词</td><td>精确编号、SKU</td></tr>
+            <tr><td>BM25（Sparse）</td><td>精确关键词、专有名词</td><td>语义理解弱</td></tr>
+          </tbody>
+        </table>
+        <h3>融合方式</h3>
+        <ul>
+          <li><strong>RRF（Reciprocal Rank Fusion）</strong>：按排名倒数加权融合，不依赖分数尺度，最常用。</li>
+          <li><strong>加权分数</strong>：向量分 × α + BM25 分 × (1-α)，需归一化。</li>
+          <li>融合后通常再经 Cross-Encoder Rerank 精排 TopN 进 LLM 上下文。</li>
+        </ul>
+        <p><strong>面试回答：</strong>向量补语义、BM25 补精确词，Hybrid Search 用 RRF 或加权融合双路召回，是生产 RAG 的标配方案。</p>
+      </section>
+
+<section id="pdf-table-rag">
+        <h2>RAG 中如何处理表格、图片、PDF 复杂版面？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>处理方式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PDF 复杂版面</td><td>Unstructured、MinerU、<span class="em-warn">LayoutLM </span>做版面分析</td></tr>
+            <tr><td>表格</td><td>转 Markdown/HTML 或按行切片，保留表头 metadata</td></tr>
+            <tr><td>图片</td><td>OCR + 多模态 Embedding 或 VLM 描述后入库</td></tr>
+          </tbody>
+        </table>
+        <p>表格切忌纯文本乱序提取；保留行列结构才能正确回答「第 3 行销售额」类问题。</p>
+      </section>
+
+<section id="rag-image-handling">
+        <h2>RAG 方案中图片是怎么处理的？</h2>
+        <p>图片无法直接做文本 Embedding，RAG 处理图片的核心是<strong>把视觉信息转成可检索、可进 Prompt 的表示</strong>。生产环境通常组合多种路径，而非单一方案。</p>
+        <pre><code class="language-python">PDF/Word 中的图片
+  ├── 路径 A：OCR 提取图中文字 → 文本 Chunk → 文本 Embedding
+  ├── 路径 B：VLM 生成图片描述/Caption → 文本 Chunk → 文本 Embedding
+  └── 路径 C：多模态 Embedding（CLIP 等）→ 图文统一向量空间检索</code></pre>
+        <h3>三条主流路径</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>路径</th>
+              <th>做法</th>
+              <th>优点</th>
+              <th>局限</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>OCR</td><td>PaddleOCR / Tesseract 提取图中文字</td><td>成本低，适合截图、扫描件、含大量文字的图片</td><td>纯视觉图表（流程图、架构图）效果差</td></tr>
+            <tr><td>VLM 描述</td><td>GPT-4V / Qwen-VL 生成结构化 Caption</td><td>能理解图表语义、流程关系</td><td>多一次模型调用，描述可能遗漏细节</td></tr>
+            <tr><td>多模态 Embedding</td><td>CLIP / SigLIP / BGE-VL 直接编码图片</td><td>支持「以图搜图」「图文混合检索」</td><td>需专用向量库，文本问答召回未必最优</td></tr>
+          </tbody>
+        </table>
+        <h3>离线入库流程</h3>
+        <ol>
+          <li><strong>版面分析</strong>：MinerU / Unstructured 识别 PDF 中图片区域，记录 page、bbox、figure_id。</li>
+          <li><strong>图片存储</strong>：原图存对象存储（S3/OSS），Chunk metadata 存 <code>image_url</code>、<code>figure_caption</code>、<code>page_num</code>。</li>
+          <li><strong>内容提取</strong>：文字型图片走 OCR；图表/架构图走 VLM 生成描述（Prompt 要求输出：标题、关键元素、数据趋势）。</li>
+          <li><strong>索引</strong>：描述文本 + OCR 文本合并为 Chunk 做文本 Embedding；高价值图片额外存多模态向量。</li>
+          <li><strong>关联</strong>：图片 Chunk 与相邻段落 Chunk 共享 <code>doc_id</code>、<code>section_path</code>，检索时可一并召回。</li>
+        </ol>
+        <h3>在线问答怎么处理？</h3>
+        <ul>
+          <li><strong>纯文本 Query</strong>：走文本向量检索，命中图片描述 Chunk 后进 Prompt；必要时把原图 URL 交给多模态 LLM 二次理解。</li>
+          <li><strong>用户上传图片 Query</strong>：多模态 LLM 直接理解 + 多模态向量检索知识库相似图/描述。</li>
+          <li><strong>混合 Prompt</strong>：检索到的文本 Chunk + 图片 URL 一起送入 GPT-4V / Qwen-VL，让模型「看图说话」。</li>
+        </ul>
+        <h3>生产落地建议</h3>
+        <ul>
+          <li>架构图、流程图、数据图表：<strong>优先 VLM 描述 + OCR 补充</strong>，描述 Prompt 要求结构化（节点、箭头、数值）。</li>
+          <li>截图类文档（PPT、工单）：OCR 为主，成本低。</li>
+          <li>回答需展示原图时，metadata 保留 <code>image_url</code>，前端渲染引用卡片。</li>
+          <li>评测：准备含图表的 QA 对，单独测 image recall@K，避免被纯文本指标掩盖。</li>
+        </ul>
+        <p><strong>面试回答：</strong>图片 RAG 本质是视觉→可检索表示：OCR 提文字、VLM 生成描述、或多模态 Embedding 统一检索；离线存原图+描述 Chunk，在线文本 Query 检描述、复杂场景用多模态 LLM 看图；按图片类型选路径，图表类优先 VLM。</p>
+      </section>
+
+<section id="image-text-vector-same-db">
+        <h2>图片向量和文字向量适合放到同一个向量数据库吗？</h2>
+        <p>关键不在「能不能用同一个向量库产品」，而在<strong>向量是否来自同一语义空间、同一维度、同一距离度量</strong>。混放不可比的向量会导致检索结果无意义。</p>
+        <h3>三种常见情况</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>情况</th>
+              <th>能否同一 Collection</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>文本 Embedding + 图片描述/OCR 文本 Embedding</td><td>✅ 可以</td><td>同一文本模型（如 bge-m3）编码，维度一致，Query 也是文本</td></tr>
+            <tr><td>多模态统一模型（CLIP / BGE-VL）</td><td>✅ 可以</td><td>图文映射到<strong>同一向量空间</strong>，支持以文搜图、以图搜文</td></tr>
+            <tr><td>文本模型向量 + 独立图片模型向量</td><td>❌ 不应混搜</td><td>维度、分布、语义空间不同，余弦相似度没有可比性</td></tr>
+          </tbody>
+        </table>
+        <h3>生产推荐架构</h3>
+        <pre><code class="language-python"># 方案 A（最常见）：主索引全是「可检索文本」
+图片 → OCR / VLM Caption → 文本 Chunk → 文本 Embedding → text_collection
+
+# 方案 B：多模态统一索引（以图搜图、图文互检）
+图片 → CLIP Image Encoder  ─┐
+文本 → CLIP Text Encoder   ─┴→ 同一 multimodal_collection（同维度、同模型）
+
+# 方案 C：同一向量库实例，多 Collection 隔离
+Milvus / Qdrant:
+  ├── collection_text      # bge-large, dim=1024
+  └── collection_image     # clip-vit, dim=512
+在线按 Query 类型路由，或双路召回后 RRF 融合</code></pre>
+        <h3>同一 Collection 的前提条件</h3>
+        <ul>
+          <li><strong>相同 Embedding 模型版本</strong>：换模型必须全量 re-index，不可与旧向量混用。</li>
+          <li><strong>相同维度</strong>：如都是 768 或 1024，索引结构才能共用。</li>
+          <li><strong>相同归一化与距离度量</strong>：L2 归一化后一般用余弦/内积，全库一致。</li>
+          <li><strong>metadata 标 modality</strong>：<code>type=text|image|caption</code>，检索时可过滤或加权。</li>
+        </ul>
+        <h3>为什么不建议硬混？</h3>
+        <ul>
+          <li>文本 BGE 与图片 CLIP 向量<strong>数值相近不代表语义相关</strong>，TopK 会被某一模态「霸榜」。</li>
+          <li>图片向量维度和文本不同，多数向量库<strong>一个 Collection 只支持一种 schema</strong>。</li>
+          <li>纯文本问答场景，图片描述已进文本索引即可；单独图片向量索引 ROI 低。</li>
+        </ul>
+        <h3>选型建议</h3>
+        <ul>
+          <li><strong>文档问答为主</strong>：图片转 Caption/OCR → 文本向量，单文本索引最简单。</li>
+          <li><strong>以图搜图 / 电商识图</strong>：多模态统一模型 + 独立 multimodal 索引。</li>
+          <li><strong>两者都要</strong>：双 Collection 或 Hybrid 双路召回，metadata 关联同一 <code>doc_id</code>。</li>
+        </ul>
+        <p><strong>面试回答：</strong>同一向量库实例可以，同一 Collection 要看向量是否同空间同维度；文本+Caption 用同一文本模型可混放；CLIP 等多模态模型图文可统一索引；不同模型（BGE+CLIP）不能混搜，应分 Collection 或把图片先转文本再入文本索引。</p>
+      </section>
+
+<section id="incremental-update">
+        <h2>RAG 如何做增量更新？</h2>
+        <h3>增量策略</h3>
+        <ol>
+          <li>文档变更检测：Webhook / 定时扫描 diff。</li>
+          <li>按 doc_id 删除旧 Chunk（软删除标记 <code>is_deleted=true</code>）。</li>
+          <li>重新解析、切片、Embedding 新内容。</li>
+          <li>写入向量库，更新 metadata 版本号。</li>
+        </ol>
+        <p>避免全量重建；Embedding 模型变更时才需全量 re-index。用消息队列异步处理，保证最终一致。</p>
+      </section>
+
+<section id="version-conflict">
+        <h2>RAG 如何处理文档版本冲突？</h2>
+        <h3>策略</h3>
+        <ul>
+          <li>metadata 存 <code>version</code>、<code>effective_date</code>、<code>is_latest</code>。</li>
+          <li>同 doc_id 多版本共存，旧版本软删除而非物理删除。</li>
+          <li>生成时 Prompt 要求「以最新版本为准」。</li>
+        </ul>
+        <p>审计场景可保留历史版本供溯源，但默认检索只返回最新有效版。</p>
+      </section>
+
+<section id="citations">
+        <h2>RAG 如何设计引用和溯源？</h2>
+        <h3>设计要点</h3>
+        <ul>
+          <li>每个 Chunk 带 <code>doc_id</code>、<code>page</code>、<code>section</code>、<code>url</code>。</li>
+          <li>生成时要求标注 <code>[1][2]</code> 引用编号，映射到来源列表。</li>
+          <li>前端展示可点击跳转原文。</li>
+        </ul>
+        <pre><code class="language-python">上下文格式:
+[1] 来源: 员工手册 v3.2 第5页
+内容: 年假天数为...
+
+回答: 根据规定，年假为15天 [1]。</code></pre>
+        <p>日志记录每次检索命中和最终引用，支持审计回放。</p>
+      </section>
+
+<section id="recall-troubleshooting">
+        <h2>RAG 检索召回不准如何排查？</h2>
+        <h3>排查顺序</h3>
+        <ol>
+          <li>确认问题：是检索没命中还是生成没用好？</li>
+          <li>查 Embedding：模型是否与索引一致？</li>
+          <li>查 Chunk：切片是否截断关键信息？</li>
+          <li>查 Query：是否需要 Rewrite？</li>
+          <li>查 TopK / 过滤：K 太小？权限误过滤？</li>
+          <li>查 Hybrid：是否缺 BM25 补关键词？</li>
+          <li>加 Rerank 对比前后 recall@K。</li>
+        </ol>
+        <p>用离线评测集定位：retrieve 准但 answer 差 → 生成/Prompt 问题；retrieve 就不准 → 索引/切片问题。</p>
+      </section>
+
+<section id="chunk-overlap">
+        <h2>Chunk overlap 如何设置？</h2>
+        <p>Overlap 是相邻 Chunk 之间的重叠 Token 数，防止关键信息被切在边界上。</p>
+        <ul>
+          <li>常见：Chunk 512 Token，overlap 50–100（10%–20%）。</li>
+          <li>技术文档、法律条文：overlap 可更大。</li>
+          <li>overlap 过大：冗余存储、检索重复命中。</li>
+        </ul>
+        <p>用评测集对比 overlap=0 vs 10% vs 20% 的 recall@K 选最优值。</p>
+      </section>
+
+<section id="chunk-parent-child">
+        <h2>RAG 中 Chunk 父子块关联方案怎么设计？</h2>
+        <p>父子块（Parent-Child / Small-to-Big）解决 RAG 经典矛盾：<strong>小块检索准、大块上下文全</strong>。思路是用<strong>小子块做向量索引</strong>提高召回精度，命中后<strong>回溯父块</strong>交给 LLM 生成，避免答案缺背景。</p>
+        <pre><code class="language-python">离线：文档 → 切父块（800–1500 Token）→ 再切子块（128–256 Token）
+      子块 Embedding 入向量库，metadata 存 parent_id / child_index / doc_id
+在线：Query → 检索 TopK 子块 → 按 parent_id 去重 → 取对应父块进 Prompt</code></pre>
+        <h3>为什么要父子分离？</h3>
+        <ul>
+          <li>单一大块：Embedding 语义被稀释，TopK 命中率低。</li>
+          <li>单一小块：召回精准但缺前后文，LLM 容易断章取义。</li>
+          <li>父子关联：检索用「针」，生成用「线」，兼顾精度与完整性。</li>
+        </ul>
+        <h3>数据模型设计</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>层级</th>
+              <th>典型大小</th>
+              <th>是否 Embedding</th>
+              <th>关键 metadata</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>父块 Parent</td><td>800–1500 Token</td><td>可选（二次召回）</td><td>parent_id, doc_id, section_path, version</td></tr>
+            <tr><td>子块 Child</td><td>128–256 Token</td><td>是（主检索单元）</td><td>parent_id, child_index, doc_id, char_offset</td></tr>
+          </tbody>
+        </table>
+        <h3>在线检索流程</h3>
+        <ol>
+          <li>向量检索 TopK 子块（如 K=20）。</li>
+          <li>按 <code>parent_id</code> 去重，保留每个父块最高分子块。</li>
+          <li>从文档存储 / KV / 关系库加载父块原文（向量库只存子块向量 + metadata）。</li>
+          <li>可选 Rerank：对「Query + 父块摘要」精排，取 Top3–5 父块进 Prompt。</li>
+          <li>生成时引用子块命中位置，溯源到父块 doc_id + section。</li>
+        </ol>
+        <h3>常见实现模式</h3>
+        <ul>
+          <li><strong>双索引</strong>：子块向量库 + 父块对象存储（S3/MinIO/ES），通过 parent_id 关联。</li>
+          <li><strong>单索引 + 冗余</strong>：子块 metadata 内嵌父块全文（适合父块不大、QPS 低的场景）。</li>
+          <li><strong>多级块</strong>：Document → Section → Paragraph 三层，复杂手册/法规常用。</li>
+          <li><strong>LangChain ParentDocumentRetriever</strong>：框架内置 child_splitter + parent_splitter + docstore 模式。</li>
+        </ul>
+        <h3>落地注意点</h3>
+        <ul>
+          <li>父块更新时必须<strong>级联重建</strong>其下所有子块向量，按 doc_id 批量软删再写入。</li>
+          <li>同一父块多个子块命中时，合并为一条上下文，避免 Token 浪费。</li>
+          <li>表格/代码块尽量<strong>不切进子块中间</strong>，按结构边界切，父块保留完整结构。</li>
+          <li>评测时分别看 child recall@K 和 parent 级 answer 质量，定位瓶颈在检索还是上下文组装。</li>
+        </ul>
+        <p><strong>面试回答：</strong>父子块用小子块做精准向量检索、父块提供完整上下文；metadata 用 parent_id 关联，在线检索后去重回溯父块再生成；适合长文档和技术手册，注意级联更新与结构边界切分。</p>
+      </section>
+
+<section id="vector-db-selection">
+        <h2>向量数据库选型看哪些指标？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>规模</td><td>百万 vs 亿级向量</td></tr>
+            <tr><td>延迟</td><td>P99 查询 ms 级要求</td></tr>
+            <tr><td>Hybrid</td><td>是否原生支持 BM25 + 向量</td></tr>
+            <tr><td>过滤</td><td>metadata 过滤性能</td></tr>
+            <tr><td>运维</td><td>自托管 vs 云服务、K8s 支持</td></tr>
+            <tr><td>成本</td><td>内存、存储、API 费用</td></tr>
+          </tbody>
+        </table>
+        <p>常见：Milvus、Qdrant、Weaviate、pgvector、Elasticsearch kNN。小规模 pgvector 够用；大规模专用向量库。</p>
+      </section>
+
+<section id="hnsw-vs-ivf">
+        <h2>HNSW 和 IVF 有什么区别？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>索引</th>
+              <th>原理</th>
+              <th>特点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>HNSW</td><td>分层导航小世界图</td><td>召回高、查询快；内存占用大</td></tr>
+            <tr><td>IVF</td><td>聚类分桶，搜候选桶</td><td>适合大规模；依赖 nprobe 调参</td></tr>
+          </tbody>
+        </table>
+        <p>百万级以下 HNSW 常用；亿级可 IVF+PQ 压缩。无绝对最优，需 benchmark recall-latency 曲线。</p>
+      </section>
+
+<section id="dense-vs-sparse">
+        <h2>Dense Retrieval 和 Sparse Retrieval 有什么区别？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>表示</th>
+              <th>方法</th>
+              <th>擅长</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Dense</td><td>低维稠密向量</td><td>Embedding + ANN</td><td>语义相似</td></tr>
+            <tr><td>Sparse</td><td>高维稀疏向量</td><td>BM25、SPLADE</td><td>精确关键词</td></tr>
+          </tbody>
+        </table>
+        <p>生产 RAG 推荐 Hybrid：Dense 召回语义，Sparse 补精确匹配，RRF 融合。</p>
+      </section>
+
+<section id="bi-encoder-cross-encoder">
+        <h2>Bi-Encoder 和 Cross-Encoder 有什么区别？</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>编码方式</th>
+              <th>速度</th>
+              <th>精度</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Bi-Encoder</td><td>query/doc 分别编码</td><td>快，可离线建索引</td><td>中</td></tr>
+            <tr><td>Cross-Encoder</td><td>query+doc 拼接编码</td><td>慢，需在线计算</td><td>高</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-python">Bi-Encoder 召回 Top100 -&gt; Cross-Encoder Rerank -&gt; Top5</code></pre>
+      </section>
+</main>
+  </div>
+  <script src="assets/highlight.min.js"></script>
+  <script src="assets/study-legacy-map.js"></script>
+  <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
+</body>
+</html>

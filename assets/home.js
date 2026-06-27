@@ -13,6 +13,7 @@
     rocketmq: "rocketmq.html",
     "docker-k8s": "docker-k8s.html",
     ai: "ai.html",
+    "rag-vector": "rag-vector.html",
     llm: "llm.html",
     architecture: "architecture.html",
     observability: "observability.html",

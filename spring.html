@@ -38,7 +38,8 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
-          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
@@ -395,41 +396,6 @@ server:
           <li>检查自定义 starter 和自动配置注册方式。</li>
           <li>回归 Web、参数校验、安全框架等关键链路。</li>
         </ul>
-      </section>
-
-<section id="javax-to-jakarta">
-        <h2>javax 到 jakarta 是什么变化？</h2>
-        <p>Java EE 移交 Eclipse 基金会后更名为 Jakarta EE，很多规范包名从 <code>javax.*</code> 改为 <code>jakarta.*</code>。Spring Boot 3 全面基于 Jakarta 命名空间。</p>
-        <h3>常见迁移示例</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>旧包名</th>
-              <th>新包名</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>javax.servlet.*</code></td><td><code>jakarta.servlet.*</code></td></tr>
-            <tr><td><code>javax.persistence.*</code></td><td><code>jakarta.persistence.*</code></td></tr>
-            <tr><td><code>javax.validation.*</code></td><td><code>jakarta.validation.*</code></td></tr>
-            <tr><td><code>javax.annotation.*</code></td><td><code>jakarta.annotation.*</code></td></tr>
-          </tbody>
-        </table>
-        <p>这不只是文本替换，还涉及 Servlet、Validation、Persistence 等依赖版本兼容。如果中间件库仍依赖旧 <code>javax</code> API，升级时可能出现编译失败或运行时冲突。</p>
-      </section>
-
-<section id="auto-config-imports">
-        <h2>AutoConfiguration.imports 是什么？</h2>
-        <p>Spring Boot 2.7 引入、Spring Boot 3 推荐使用 <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code> 来声明自动配置类，替代旧的 <code>spring.factories</code> 方式。</p>
-        <h3>文件示例</h3>
-        <pre><code class="language-java">com.example.autoconfigure.DemoAutoConfiguration
-com.example.autoconfigure.RedisExtraAutoConfiguration</code></pre>
-        <p>每一行写一个自动配置类的全限定名。相比 <code>spring.factories</code>，这种方式更聚焦、可读性更好，也更符合新版本自动配置加载机制。</p>
-        <h3>旧方式对比</h3>
-        <pre><code class="language-java"># META-INF/spring.factories（旧）
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.example.DemoAutoConfiguration</code></pre>
-        <p>自定义 starter 在 Spring Boot 3 及以上应优先使用 <code>AutoConfiguration.imports</code>。</p>
       </section>
 
 <section id="tx-propagation">
@@ -813,10 +779,42 @@ spring:
 
 <section id="feign-underlying">
         <h2>Feign 底层是什么？</h2>
+        <p>Feign 底层可以理解为：</p>
+        <p><strong>一个声明式 HTTP 客户端框架</strong></p>
+        <p>在 Spring Cloud 里，常见链路是：</p>
+        <pre><code class="language-java">你调用 Feign 接口方法
+        ↓
+JDK 动态代理拦截
+        ↓
+解析接口方法上的注解
+        ↓
+构造 HTTP 请求
+        ↓
+经过负载均衡器选择服务实例（去注册中心获取 user-service 实例列表）
+        ↓
+底层 HTTP Client 发请求
+        ↓
+拿到响应
+        ↓
+Decoder 反序列化成 Java 对象</code></pre>
       </section>
 
 <section id="feign-vs-rpc">
         <h2>Feign 和 RPC 区别？</h2>
+        <p><span class="em-warn">Feign 调用</span>看起来像本地方法调用，但底层通常还是 <mark>HTTP + JSON</mark>；</p>
+        <p><span class="em-warn">RPC </span>（<strong>Remote Procedure Call</strong>）<strong>远程过程调用</strong>Dubbo、gRPC 这类 RPC 框架更强调像调用本地方法一样调用远程服务，底层可能使用<strong> TCP、HTTP/2、二进制协议</strong></p>
+        <pre><code class="language-java">// RPC调用过程
+动态代理
+    ↓
+序列化请求参数
+    ↓
+网络传输
+    ↓
+服务端反序列化
+    ↓
+调用真实方法
+    ↓
+返回结果</code></pre>
       </section>
 </main>
   </div>

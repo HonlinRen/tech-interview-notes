@@ -38,7 +38,8 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
-          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn active" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
@@ -680,10 +681,6 @@ inhibit_rules:
   【故障】2024-06-15 14:00~14:45 订单服务 P99 超时，影响 12% 用户
   【根因】DB 连接池 max=20 过小，促销流量下耗尽，pending 线程堆积
   【改进】1. 连接池 max 调为 50  2. 加 pending 告警  3. 大促前压测纳入 CI</code></pre>
-      </section>
-
-<section id="otel-sdk-exporter-collector">
-        <h2>OpenTelemetry 用的什么 SDK / exporter / collector？</h2>
       </section>
 </main>
   </div>

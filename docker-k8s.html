@@ -48,13 +48,6 @@
 
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
-<section id="docker-intro">
-        <h2>Docker 是什么？解决了什么问题？</h2>
-        <p>Docker 是一种容器化技术，可以把应用程序、运行环境、依赖库一起打包成镜像，然后在不同机器上以容器方式运行。</p>
-        <p>它主要解决环境不一致、部署复杂、服务隔离和快速扩缩容等问题。</p>
-        <p><strong>面试回答：</strong>Docker 让应用和运行环境一起交付，避免「我本地可以运行，线上不行」的问题。</p>
-      </section>
-
 <section id="image-vs-container">
         <h2>镜像 Image 和容器 Container 有什么区别？</h2>
         <pre><code class="language-bash">镜像：静态模板，类似安装包。
@@ -87,7 +80,6 @@ CMD [&quot;java&quot;, &quot;-jar&quot;, &quot;app.jar&quot;]</code></pre>
 宿主机 ── docker0 网桥 ──┬── 容器 A（172.18.0.2）
                         └── 容器 B（172.18.0.3）
                              同一自定义网络内可用容器名 / 服务名互访</code></pre>
-
         <h3>四种网络模式</h3>
         <table>
           <thead>
@@ -104,25 +96,29 @@ CMD [&quot;java&quot;, &quot;-jar&quot;, &quot;app.jar&quot;]</code></pre>
             <tr><td>container</td><td>共享另一个容器的网络命名空间</td><td>Sidecar、网络代理伴生容器</td></tr>
           </tbody>
         </table>
-
         <h3>容器间互访的三种做法</h3>
         <ol>
           <li><strong>自定义 bridge 网络（推荐）</strong>：同一网络内容器可通过<strong>容器名 DNS</strong> 互访，无需记 IP。
+            
             <pre><code class="language-bash">docker network create app-net
 docker run -d --name redis --network app-net redis:7
 docker run -d --name api  --network app-net my-api
 # api 容器内直接访问 redis:6379</code></pre>
+            
           </li>
           <li><strong>端口映射（-p）</strong>：把容器端口暴露到宿主机，适合<strong>容器 ↔ 宿主机 / 外部</strong>访问，不是容器间首选。
+            
             <pre><code class="language-bash">docker run -d -p 8080:8080 --name api my-api
 curl http://localhost:8080/health</code></pre>
+            
           </li>
           <li><strong>Compose 服务名</strong>：同一 <code>docker-compose.yml</code> 下的服务自动加入同一网络，用<strong>服务名当主机名</strong>。
+            
             <pre><code class="language-bash"># compose 中 api 访问 mysql:3306、redis:6379
 DATABASE_URL=mysql://root:pwd@mysql:3306/demo</code></pre>
+            
           </li>
         </ol>
-
         <h3>面试要点</h3>
         <ul>
           <li>默认 bridge 下，不同 <code>docker run</code> 启动的容器<strong>不能</strong>直接用容器名解析，需加入同一 user-defined network。</li>
@@ -139,7 +135,6 @@ DATABASE_URL=mysql://root:pwd@mysql:3306/demo</code></pre>
     ├── Volume（Docker 管理，推荐）
     ├── Bind Mount（挂载宿主机目录）
     └── tmpfs（内存，重启即丢）</code></pre>
-
         <h3>三种挂载方式对比</h3>
         <table>
           <thead>
@@ -156,7 +151,6 @@ DATABASE_URL=mysql://root:pwd@mysql:3306/demo</code></pre>
             <tr><td><strong>tmpfs</strong></td><td>内存</td><td>极快、不落盘</td><td>仅适合临时缓存、密钥</td></tr>
           </tbody>
         </table>
-
         <h3>常用命令与示例</h3>
         <pre><code class="language-bash"># 命名 Volume（推荐）
 docker volume create mysql-data
@@ -171,7 +165,6 @@ docker run -d -v /data/mysql:/var/lib/mysql mysql:8
 # 查看 Volume
 docker volume ls
 docker volume inspect mysql-data</code></pre>
-
         <h3>Compose 中声明持久化</h3>
         <pre><code class="language-yaml">services:
   mysql:
@@ -181,7 +174,6 @@ docker volume inspect mysql-data</code></pre>
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # 只读绑定
 volumes:
   mysql-data:   # 顶层声明，Compose 自动创建</code></pre>
-
         <h3>最佳实践</h3>
         <ul>
           <li>生产用<strong>命名 Volume</strong>，不要把数据库文件直接 bind 到随机目录。</li>
@@ -201,7 +193,6 @@ volumes:
     ├── networks：自定义网络
     ├── volumes：持久化卷
     └── 一条命令：docker compose up -d</code></pre>
-
         <h3>解决什么问题？</h3>
         <table>
           <thead>
@@ -219,7 +210,6 @@ volumes:
             <tr><td>适用场景</td><td>临时单容器测试</td><td>本地开发、集成测试、小规模部署</td></tr>
           </tbody>
         </table>
-
         <h3>典型 compose 文件结构</h3>
         <pre><code class="language-yaml">services:
   api:
@@ -241,7 +231,6 @@ volumes:
       - mysql-data:/var/lib/mysql
 volumes:
   mysql-data:</code></pre>
-
         <h3>常用命令</h3>
         <pre><code class="language-bash">docker compose up -d          # 后台启动全部服务
 docker compose ps             # 查看状态
@@ -249,7 +238,6 @@ docker compose logs -f api      # 跟踪某服务日志
 docker compose exec api sh    # 进入容器
 docker compose down           # 停止并删除容器（-v 同时删卷）
 docker compose up -d --build    # 重新构建镜像后启动</code></pre>
-
         <h3>与 K8s 的关系</h3>
         <ul>
           <li>Compose 适合<strong>单机、开发测试</strong>；生产多节点、弹性扩缩、滚动发布用 K8s。</li>

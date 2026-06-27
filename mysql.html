@@ -38,7 +38,8 @@
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
-          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
@@ -449,27 +450,6 @@ SELECT * FROM t WHERE id = 20 FOR UPDATE;
           </tbody>
         </table>
         <p>执行器通过统一接口调用引擎，因此同一套 Server 可以对接不同存储引擎，但实际生产几乎都用 InnoDB。</p>
-      </section>
-
-<section id="query-cache-removed">
-        <h2>MySQL 查询缓存为什么被移除？</h2>
-        <p>查询缓存（Query Cache）在 MySQL 8.0 中被彻底移除。它曾尝试缓存 SELECT 结果，但实践中弊大于利。</p>
-        <h3>失效原因</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>问题</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>命中率低</td><td>OLTP 场景 SQL 模板多、参数变化大，缓存很难命中</td></tr>
-            <tr><td>失效成本高</td><td>表有任何写操作，该表相关缓存全部失效</td></tr>
-            <tr><td>锁竞争</td><td>高并发下访问 Query Cache 需要全局锁，反而拖慢性能</td></tr>
-            <tr><td>维护复杂</td><td>内存管理、碎片、一致性边界难以做好</td></tr>
-          </tbody>
-        </table>
-        <p>现代替代方案：应用层缓存（Redis）、InnoDB Buffer Pool 缓存数据页、合理的索引与 SQL 优化，而不是缓存 SQL 结果本身。</p>
       </section>
 
 <section id="auto-increment-gap">
@@ -1173,10 +1153,104 @@ SELECT * FROM performance_schema.data_locks;  -- 8.0+</code></pre>
 
 <section id="explain-fields-to-check">
         <h2>MySQL explain 看哪些字段？</h2>
+        <p><code>EXPLAIN</code> 用于查看 SQL 执行计划。面试和排障时按<strong>是否走索引 → 扫描多少行 → 是否有额外开销</strong>的顺序看字段，MySQL 8.0+ 可用 <code>EXPLAIN ANALYZE</code> 看真实耗时。</p>
+        <h3>必看字段</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>字段</th>
+              <th>含义</th>
+              <th>关注点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>执行顺序标识</td><td>多表 JOIN 时 id 相同表示同一层，数字大先执行</td></tr>
+            <tr><td><code>select_type</code></td><td>查询类型</td><td>SIMPLE 简单；PRIMARY 外层；SUBQUERY/DERIVED 子查询需警惕</td></tr>
+            <tr><td><code>table</code></td><td>访问的表 / 派生表</td><td>确认是否扫了意料之外的表</td></tr>
+            <tr><td><code>type</code></td><td>访问类型</td><td>优劣：system &gt; const &gt; eq_ref &gt; ref &gt; range &gt; index &gt; ALL；<code>ALL</code> 全表扫要优化</td></tr>
+            <tr><td><code>possible_keys</code></td><td>可能用到的索引</td><td>为 NULL 说明没有合适索引候选</td></tr>
+            <tr><td><code>key</code></td><td>实际使用的索引</td><td><code>NULL</code> 未走索引；与预期索引不一致要查原因</td></tr>
+            <tr><td><code>key_len</code></td><td>索引使用长度</td><td>联合索引可判断用了几个列（左前缀）</td></tr>
+            <tr><td><code>ref</code></td><td>与索引比较的列/常量</td><td>eq_ref/ref 时看关联条件是否命中</td></tr>
+            <tr><td><code>rows</code></td><td>估算扫描行数</td><td>越小越好，但是估计值，大表可能偏差大</td></tr>
+            <tr><td><code>filtered</code></td><td>按条件过滤后剩余比例</td><td>低说明索引过滤效果好（8.0 前无此列）</td></tr>
+            <tr><td><code>Extra</code></td><td>额外信息</td><td>见下表</td></tr>
+          </tbody>
+        </table>
+        <h3>Extra 常见值</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Extra</th>
+              <th>含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Using index</code></td><td>覆盖索引，无需回表，性能好</td></tr>
+            <tr><td><code>Using where</code></td><td>存储引擎返回后在 Server 层过滤</td></tr>
+            <tr><td><code>Using index condition</code></td><td>索引条件下推 ICP</td></tr>
+            <tr><td><code>Using filesort</code></td><td>额外排序，大数据量需优化 ORDER BY / 索引</td></tr>
+            <tr><td><code>Using temporary</code></td><td>建临时表，GROUP BY / DISTINCT 需关注</td></tr>
+            <tr><td><code>Using join buffer</code></td><td>JOIN 未走索引，用缓冲块嵌套循环</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-sql">EXPLAIN SELECT * FROM orders WHERE user_id = 100 AND status = 1;
+-- 看 type 是否 ref/range，key 是否命中 (user_id, status)
+-- rows 是否可控，Extra 是否出现 filesort/temporary
+
+EXPLAIN ANALYZE SELECT ...;  -- 8.0.18+ 看实际执行时间和行数</code></pre>
+        <p><strong>面试回答：</strong>重点看 type（避免 ALL）、key（是否走索引）、rows（扫描量）、Extra（filesort/temporary 坏、Using index 好）；联合索引看 key_len 判断左前缀；最终以 EXPLAIN ANALYZE 和慢日志验证。</p>
       </section>
 
 <section id="index-creation-evaluation">
         <h2>索引创建怎么评估？</h2>
+        <p>加索引不是「有查询就加」，要评估<strong>查询收益、写入成本、存储空间、维护复杂度</strong>，用执行计划和线上指标验证后再上线。</p>
+        <h3>评估流程</h3>
+        <ol>
+          <li><strong>找慢 SQL</strong>：慢日志、APM、<code>performance_schema</code> 定位高频 / 高耗时查询。</li>
+          <li><strong>EXPLAIN 现状</strong>：type=ALL、key=NULL、rows 巨大 → 候选加索引。</li>
+          <li><strong>分析 WHERE / ORDER BY / JOIN</strong>：等值条件放联合索引前列，范围查询放后面；排序字段考虑覆盖索引。</li>
+          <li><strong>评估选择性</strong>：高选择性列（如 user_id）适合索引；低选择性（性别、状态只有 2 值）单独索引收益低。</li>
+          <li><strong>加索引后对比</strong>：<code>EXPLAIN</code> / <code>EXPLAIN ANALYZE</code> 对比 type、rows、耗时。</li>
+          <li><strong>观察线上</strong>：慢查询数量、P99 延迟、写 QPS、磁盘空间、缓冲池命中率。</li>
+        </ol>
+        <h3>收益 vs 成本</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>收益</th>
+              <th>成本</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>减少扫描行数，降低读延迟</td><td>每次 INSERT/UPDATE/DELETE 需维护索引</td></tr>
+            <tr><td>覆盖索引避免回表</td><td>占用额外磁盘与内存（缓冲池）</td></tr>
+            <tr><td>加速 JOIN 和 ORDER BY</td><td>过多索引让优化器选型困难、写放大</td></tr>
+          </tbody>
+        </table>
+        <h3>设计原则</h3>
+        <ul>
+          <li><strong>联合索引优于多个单列</strong>：遵循最左前缀，一个索引覆盖多种查询模式。</li>
+          <li><strong>覆盖索引</strong>：查询列都在索引中，Extra 出现 <code>Using index</code>。</li>
+          <li><strong>避免冗余索引</strong>：(a,b) 已存在则 (a) 通常冗余。</li>
+          <li><strong>大表在线 DDL</strong>：用 <code>ALGORITHM=INPLACE, LOCK=NONE</code>（视版本和工具），低峰期执行，关注主从延迟。</li>
+          <li><strong>前缀索引</strong>：长字符串（URL）可用前缀，但无法用覆盖索引完整列。</li>
+        </ul>
+        <pre><code class="language-sql">-- 加索引前
+EXPLAIN SELECT id, amount FROM orders WHERE user_id=1 AND create_time &gt; '2024-01-01';
+
+-- 评估后创建联合索引
+CREATE INDEX idx_user_time ON orders(user_id, create_time);
+
+-- 加索引后验证：type=range, key=idx_user_time, Extra 无 filesort</code></pre>
+        <h3>不该加索引的情况</h3>
+        <ul>
+          <li>小表全表扫更快（优化器可能忽略索引）。</li>
+          <li>写多读少且查询已够快。</li>
+          <li>列区分度极低且无组合条件。</li>
+          <li>已有索引能满足，避免「每个条件各加一个索引」。</li>
+        </ul>
+        <p><strong>面试回答：</strong>从慢 SQL + EXPLAIN 入手，看 type/key/rows；评估列选择性、联合索引左前缀和覆盖索引；加后 EXPLAIN ANALYZE 对比；权衡读收益与写成本、磁盘和 DDL 风险；避免冗余和低选择性单列索引。</p>
       </section>
 </main>
   </div>
