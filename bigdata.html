@@ -108,6 +108,90 @@ BI 报表 / 搜索 / 推荐 / 监控告警</code></pre>
         <p>日志/业务数据经 Kafka 接入 → Flink/Spark 清洗聚合 → 写入 ES 供检索；原始明细仍可落 Hive/HDFS 做离线分析。ES 负责<strong>在线查询</strong>，离线仓负责<strong>全量历史</strong>。</p>
         <p><strong>面试回答：</strong>ES 是分布式搜索分析引擎，倒排索引 + 分片扩展，适合日志和全文检索。大数据流程：Kafka 采集 → HDFS/Hive 存储 → Spark/Flink 计算 → ES/ClickHouse 服务 → BI/搜索应用；ES 通常放在服务层做近实时检索。</p>
       </section>
+
+<section id="hive-cold-hot-storage">
+        <h2>Hive 数据库数据冷热分离存储怎么做？</h2>
+        <p>Hive 本身不直接管理物理存储介质，冷热分离是在 <strong>HDFS / 对象存储 + Hive 分区表</strong> 之上，按数据访问频率把<strong>热数据放高性能存储、冷数据放低成本存储</strong>，兼顾查询性能与存储成本。</p>
+        <h3>热数据 vs 冷数据</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>特征</th>
+              <th>存储倾向</th>
+              <th>典型场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>热数据</strong></td><td>近 7～30 天、查询频繁、延迟敏感</td><td>SSD / 标准 HDFS 三副本、高 IO 节点</td><td>日报表、实时分析补数、Ad-hoc 查询</td></tr>
+            <tr><td><strong>温数据</strong></td><td>1～6 个月、偶尔查询</td><td>普通 HDD、可适度压缩</td><td>月度汇总、审计抽查</td></tr>
+            <tr><td><strong>冷数据</strong></td><td>半年以上、极少访问、合规归档</td><td>纠删码（EC）、对象存储 OSS/S3、归档目录</td><td>历史明细留存、监管审计</td></tr>
+          </tbody>
+        </table>
+        <h3>常见实现方案</h3>
+        <h4>1. 按时间分区 + 目录分级（最常用）</h4>
+        <p>Hive 表按 <code>dt</code> / <code>month</code> 分区，不同生命周期对应不同 HDFS 路径或存储策略。</p>
+        <pre><code class="language-sql">-- 热数据：近 30 天分区，标准 HDFS 路径
+CREATE TABLE ods_order_hot (
+  order_id STRING,
+  amount   DECIMAL(10,2)
+)
+PARTITIONED BY (dt STRING)
+LOCATION 'hdfs://ns/hot/warehouse/ods_order';
+
+-- 冷数据：历史分区，外部表指向归档路径
+CREATE EXTERNAL TABLE ods_order_cold (
+  order_id STRING,
+  amount   DECIMAL(10,2)
+)
+PARTITIONED BY (dt STRING)
+LOCATION 'hdfs://ns/cold/archive/ods_order';</code></pre>
+        <p>定时任务（Shell / Airflow / DolphinScheduler）将超过阈值的 partition 目录 <strong>DistCp</strong> 到冷存储，再 <code>ALTER TABLE ... ADD PARTITION</code> 挂载到冷表，或统一视图 <code>UNION ALL</code> 对外透明。</p>
+        <h4>2. HDFS 存储策略（Storage Policy）</h4>
+        <p>Hadoop 支持目录级存储策略，配合 <strong>CacheMover / Mover</strong> 自动迁移块到合适介质：</p>
+        <table>
+          <thead>
+            <tr>
+              <th>策略</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>LAZY_PERSIST</code></td><td>内存 + 单副本磁盘，极热临时数据</td></tr>
+            <tr><td><code>ALL_SSD / ONE_SSD</code></td><td>SSD 加速，适合高频扫描分区</td></tr>
+            <tr><td><code>HOT</code></td><td>默认三副本，热数据</td></tr>
+            <tr><td><code>WARM</code></td><td>单副本 + 纠删码，温数据</td></tr>
+            <tr><td><code>COLD</code></td><td>纠删码，冷数据，省空间</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-bash"># 冷数据目录启用 EC + COLD 策略
+hdfs storagepolicies -setStoragePolicy -path /cold/archive -policy COLD
+hdfs ec -enablePolicy -policy RS-6-3-1024k -path /cold/archive</code></pre>
+        <h4>3. 对象存储承接冷层</h4>
+        <p>冷数据 DistCp 到 <strong>OSS / S3</strong>，Hive 用 External Table 或 <strong>Hive on OSS</strong> 挂载；计算用 Presto/Spark 按需拉取，接受更高延迟换更低存储单价。</p>
+        <h4>4. 表格式与压缩</h4>
+        <ul>
+          <li>热层：<strong>ORC / Parquet</strong> + Snappy/ZSTD，列存加速扫描。</li>
+          <li>冷层：更高压缩比（ZSTD level 高）、合并小文件，减少元数据与清单成本。</li>
+          <li><strong>Iceberg / Hudi</strong> 可配置 snapshot 过期、orphan file 清理，辅助生命周期管理。</li>
+        </ul>
+        <h3>落地流程示例</h3>
+        <pre><code class="language-bash">T+1 写入热路径  /hot/warehouse/db/tbl/dt=2026-03-27
+     ↓ 每日调度
+30 天后 DistCp → /cold/archive/db/tbl/dt=2026-02-27
+     ↓
+删除热路径分区 + 冷表 ADD PARTITION
+     ↓
+180 天后可选：转 OSS 归档 / 降 EC 副本 / 仅保留聚合宽表</code></pre>
+        <h3>注意事项</h3>
+        <ul>
+          <li><strong>小文件</strong>：冷热迁移前合并小文件，否则 NameNode 压力和冷层查询性能都差。</li>
+          <li><strong>跨层查询</strong>：用视图或联邦查询（Presto catalog）统一热冷表，避免业务改 SQL。</li>
+          <li><strong>元数据</strong>：分区数量爆炸时考虑按月二级分区或 Iceberg 隐藏分区。</li>
+          <li><strong>SLA</strong>：冷数据查询延迟高，需在架构上区分在线报表 vs 离线归档。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Hive 冷热分离靠「时间分区 + 不同存储介质/路径」实现：热数据近 30 天放 HDFS 标准盘或 SSD，按 dt 分区高频查；冷数据 DistCp 到 EC 目录或 OSS，External Table 挂载。配合 HDFS Storage Policy（HOT/WARM/COLD）和定时调度做生命周期迁移。核心是降存储成本，同时保证热查询性能；注意小文件合并和跨层统一视图。</p>
+      </section>
 </main>
   </div>
   <script src="assets/highlight.min.js"></script>

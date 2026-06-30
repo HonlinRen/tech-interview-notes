@@ -141,6 +141,7 @@
         "dubbo-expose-reference": "architecture",
         "embedded-tomcat": "spring",
         "elasticsearch-bigdata-flow": "bigdata",
+        "hive-cold-hot-storage": "bigdata",
         "embedding-selection": "rag-vector",
         "encryption-algorithms": "security",
         "enterprise-rag": "ai",
