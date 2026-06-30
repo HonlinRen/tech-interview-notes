@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <title>大数据 高频问题整理</title>
+  <link rel="stylesheet" href="assets/highlight-theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
+</head>
+<body data-category="bigdata">
+  <div class="layout">
+    <aside>
+      <a class="home-link" href="index.html">返回首页</a>
+<div id="categoryStats" class="category-stats"></div>
+      <details class="toc-group active" data-filter="bigdata" open>
+        <summary>大数据</summary>
+      </details>
+    </aside>
+
+    <main>
+      <div class="study-tools" aria-label="学习工具">
+        <div class="tool-row">
+          <div class="search-wrap">
+            <input id="searchInput" class="search-box" type="search" placeholder="当前主题搜索关键词" autocomplete="off">
+            <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
+          </div>
+          <button id="compactBtn" class="tool-btn" type="button">核心速览</button>
+          <button id="darkBtn" class="tool-btn" type="button">深色模式</button>
+        </div>
+        <div class="tool-row" id="filterBar">
+          <button class="filter-btn" type="button" data-filter="python" data-page="python.html">Python</button>
+          <button class="filter-btn" type="button" data-filter="java" data-page="java.html">Java / JVM</button>
+          <button class="filter-btn" type="button" data-filter="spring" data-page="spring.html">Spring Boot</button>
+          <button class="filter-btn" type="button" data-filter="mysql" data-page="mysql.html">MySQL</button>
+          <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
+          <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
+          <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
+          <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
+          <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn active" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
+          <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
+          <span id="studyStats" class="study-stats"></span>
+        </div>
+      </div>
+
+      <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
+
+<section id="elasticsearch-bigdata-flow">
+        <h2>Elasticsearch 是什么？大数据常见流程是什么？</h2>
+        <h3>Elasticsearch 是什么</h3>
+        <p>Elasticsearch（ES）是基于 Apache Lucene 的<strong>分布式搜索与分析引擎</strong>，擅长全文检索、日志分析、聚合统计和近实时查询，常用于 ELK 栈中的检索层。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>概念</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Index</td><td>逻辑索引，类似数据库</td></tr>
+            <tr><td>Document</td><td>JSON 文档，类似一行记录</td></tr>
+            <tr><td>Shard</td><td>分片，数据水平拆分，支持扩展</td></tr>
+            <tr><td>Inverted Index</td><td>倒排索引，按词项快速定位文档</td></tr>
+          </tbody>
+        </table>
+        <ul>
+          <li><strong>适用</strong>：日志检索（ELK）、商品搜索、监控指标分析、RAG 混合检索中的 BM25 层。</li>
+          <li><strong>特点</strong>：近实时（NRT）、分布式、REST API、聚合能力强；不适合强事务、复杂 JOIN。</li>
+        </ul>
+        <h3>大数据常见流程</h3>
+        <p>典型链路是<strong>采集 → 存储 → 计算 → 服务 → 应用</strong>，各层解耦、可独立扩展。</p>
+        <pre><code class="language-bash">数据源（业务库 / 日志 / 埋点 / IoT）
+  ↓ 采集
+Kafka / Flume / Canal / Debezium
+  ↓ 存储
+HDFS / 对象存储 / Hive / Iceberg
+  ↓ 计算
+Spark / Flink（批处理 + 流处理）
+  ↓ 服务层
+Elasticsearch / ClickHouse / MySQL / Redis
+  ↓ 应用
+BI 报表 / 搜索 / 推荐 / 监控告警</code></pre>
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>常见组件</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>采集</td><td>Kafka、Flume、Logstash</td><td>高吞吐接入、削峰、解耦</td></tr>
+            <tr><td>存储</td><td>HDFS、Hive、Iceberg</td><td>低成本存海量原始/明细数据</td></tr>
+            <tr><td>计算</td><td>Spark（批）、Flink（流）</td><td>ETL、聚合、实时指标、宽表构建</td></tr>
+            <tr><td>服务</td><td>Elasticsearch、ClickHouse</td><td>低延迟检索与分析查询</td></tr>
+            <tr><td>应用</td><td>Kibana、Grafana、自研 API</td><td>可视化、搜索、业务决策</td></tr>
+          </tbody>
+        </table>
+        <h3>ES 在大数据链路中的位置</h3>
+        <p>日志/业务数据经 Kafka 接入 → Flink/Spark 清洗聚合 → 写入 ES 供检索；原始明细仍可落 Hive/HDFS 做离线分析。ES 负责<strong>在线查询</strong>，离线仓负责<strong>全量历史</strong>。</p>
+        <p><strong>面试回答：</strong>ES 是分布式搜索分析引擎，倒排索引 + 分片扩展，适合日志和全文检索。大数据流程：Kafka 采集 → HDFS/Hive 存储 → Spark/Flink 计算 → ES/ClickHouse 服务 → BI/搜索应用；ES 通常放在服务层做近实时检索。</p>
+      </section>
+</main>
+  </div>
+  <script src="assets/highlight.min.js"></script>
+  <script src="assets/study-legacy-map.js"></script>
+  <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
+</body>
+</html>

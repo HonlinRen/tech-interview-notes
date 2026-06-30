@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
-                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+                    <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -386,7 +389,6 @@ SELECT * FROM t WHERE id = 20 FOR UPDATE;
             <tr><td>事务</td><td>支持 ACID</td><td>不支持</td></tr>
             <tr><td>锁粒度</td><td>行级锁</td><td>表级锁</td></tr>
             <tr><td>崩溃恢复</td><td>redo log 保证</td><td>易损坏，恢复能力弱</td></tr>
-            <tr><td>外键</td><td>支持</td><td>不支持</td></tr>
             <tr><td>MVCC</td><td>支持</td><td>不支持</td></tr>
           </tbody>
         </table>
@@ -421,36 +423,77 @@ SELECT * FROM t WHERE id = 20 FOR UPDATE;
         <p><strong>注意：</strong>MySQL 8.0 已移除查询缓存；优化器只负责选路，真正的数据存取发生在存储引擎层。</p>
       </section>
 
-<section id="server-storage-layer">
-        <h2>MySQL Server 层和存储引擎层如何分工？</h2>
+<section id="mysql-layer-and-logs">
+        <h2>MySQL Server 层与存储引擎如何分工？</h2>
+        <p>理解 InnoDB 事务与崩溃恢复，需要同时掌握三层：<strong>Server 层与存储引擎的分工</strong>、<strong>三种日志各自职责</strong>、<strong>redo 与 binlog 的两阶段提交</strong>。</p>
+        <h3>1. Server 层 vs 存储引擎层</h3>
         <p>MySQL 采用<strong>插件式存储引擎架构</strong>：Server 层负责 SQL 处理与通用能力，存储引擎层负责数据的物理组织与读写。</p>
-        <h3>Server 层</h3>
-        <ul>
-          <li>连接器、解析器、优化器、执行器。</li>
-          <li>跨引擎能力：存储过程、视图、触发器、权限、binlog（Server 层日志）。</li>
-          <li>与客户端通信、字符集转换、SQL 模式校验。</li>
-        </ul>
-        <h3>存储引擎层</h3>
-        <ul>
-          <li>InnoDB：B+Tree 索引、Buffer Pool、redo/undo log、行锁、MVCC。</li>
-          <li>MyISAM：堆表 + 索引文件，无事务。</li>
-          <li>Memory：数据存内存，重启丢失。</li>
-        </ul>
         <table>
           <thead>
             <tr>
-              <th>能力</th>
-              <th>所在层</th>
+              <th>层级</th>
+              <th>职责</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>SQL 解析与优化</td><td>Server 层</td></tr>
-            <tr><td>binlog</td><td>Server 层</td></tr>
-            <tr><td>redo log / undo log</td><td>InnoDB 引擎层</td></tr>
-            <tr><td>索引结构与数据页</td><td>存储引擎层</td></tr>
+            <tr><td><strong>Server 层</strong></td><td>连接器、解析器、优化器、执行器；存储过程/视图/触发器/权限；<strong>binlog</strong>；与客户端通信</td></tr>
+            <tr><td><strong>存储引擎层</strong></td><td>InnoDB：B+Tree、Buffer Pool、<strong>redo/undo log</strong>、行锁、MVCC；MyISAM/Memory 等</td></tr>
           </tbody>
         </table>
-        <p>执行器通过统一接口调用引擎，因此同一套 Server 可以对接不同存储引擎，但实际生产几乎都用 InnoDB。</p>
+        <pre><code class="language-sql">客户端
+-&gt; Server 层（解析、优化、执行器）
+-&gt; 存储引擎层（InnoDB 读写数据页）</code></pre>
+        <p>执行器通过统一接口调用引擎，因此同一套 Server 可对接不同存储引擎；生产环境几乎都用 InnoDB。</p>
+        <h3>2. 三种日志分别做什么</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>日志</th>
+              <th>所在层</th>
+              <th>作用</th>
+              <th>特点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>binlog</strong></td><td>Server 层</td><td>归档日志，<strong>主从复制、基于时间点恢复</strong></td><td>逻辑日志，追加写</td></tr>
+            <tr><td><strong>redo log</strong></td><td>InnoDB</td><td>重做日志，保证<strong>事务持久性</strong>，崩溃后恢复已提交修改</td><td>物理/物理逻辑日志，循环写（WAL）</td></tr>
+            <tr><td><strong>undo log</strong></td><td>InnoDB</td><td>回滚日志，<strong>事务回滚</strong> + MVCC 多版本可见性</td><td>保存旧值，purge 线程异步清理</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-sql">更新一行数据的日志协作：
+1. 写 undo log（保存旧值，供回滚和 MVCC）
+2. 更新 Buffer Pool 中的数据页
+3. 写 redo log
+4. 写 binlog
+5. redo log commit（两阶段提交）</code></pre>
+        <p><strong>WAL 原则（Write-Ahead Logging）：</strong>先写日志，再写数据页。崩溃后通过 redo 重做、undo 撤销。</p>
+        <h3>3. redo 与 binlog 的两阶段提交（2PC）</h3>
+        <p>redo log 属于 InnoDB 引擎层，binlog 属于 Server 层，两者分属不同模块。若只写其中一个就 crash，会导致<strong>主库数据与 binlog 不一致</strong>，从库回放 binlog 时丢事务或重复。两阶段提交保证二者逻辑一致。</p>
+        <pre><code class="language-sql">1. Prepare：InnoDB 写 redo log，状态标记为 prepare
+2. 写 binlog 到磁盘
+3. Commit：InnoDB 将 redo log 标记为 commit</code></pre>
+        <h3>4. 崩溃恢复如何判断</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>崩溃时机</th>
+              <th>恢复行为</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>redo prepare 后、binlog 写完前</td><td>无 binlog 对应记录，事务<strong>回滚</strong></td></tr>
+            <tr><td>binlog 写完、redo commit 前</td><td>binlog 已有记录（通过 XID 关联），事务<strong>提交</strong></td></tr>
+            <tr><td>redo commit 后</td><td>事务已完整提交，redo 重做保障数据页恢复</td></tr>
+          </tbody>
+        </table>
+        <p>MySQL 启动时 InnoDB 自动执行 crash recovery：扫描 redo log → 对比 binlog XID → 应提交的用 redo 重做 → 应回滚的用 undo 撤销。</p>
+        <h3>5. 可靠性配置</h3>
+        <ul>
+          <li><code>innodb_flush_log_at_trx_commit=1</code>：每次事务 redo log 刷盘，持久性最高。</li>
+          <li><code>sync_binlog=1</code>：每次事务 binlog 刷盘，主从一致最可靠。</li>
+          <li>设为 2 或 0 可换性能，但 crash 可能丢失最近 1 秒事务。</li>
+        </ul>
+        <p><strong>面试回答：</strong>Server 层管 SQL 解析优化和 binlog，InnoDB 管数据页和 redo/undo。binlog 用于复制和归档，redo 保证崩溃后已提交事务不丢，undo 支持回滚和 MVCC。redo 与 binlog 分属两层，靠两阶段提交（prepare → 写 binlog → commit）保证一致；崩溃恢复时对比 XID 决定提交还是回滚。</p>
       </section>
 
 <section id="auto-increment-gap">
@@ -469,109 +512,6 @@ INSERT INTO t VALUES (NULL, 'a');  -- 假设分配到 id=10
 ROLLBACK;
 INSERT INTO t VALUES (NULL, 'b');  -- 下一条可能是 id=11，10 不会被复用</code></pre>
         <p>自增主键的价值在于<strong>单调递增、插入性能好、B+Tree 页分裂少</strong>，而不是业务编号连续性。需要连续业务号应单独设计发号器或序列表。</p>
-      </section>
-
-<section id="implicit-conversion">
-        <h2>MySQL 隐式类型转换为什么可能导致索引失效？</h2>
-        <p>当 WHERE 条件两侧类型不一致时，MySQL 可能对列做隐式类型转换，导致<strong>对索引列使用函数</strong>，从而无法走索引。</p>
-        <pre><code class="language-sql">-- phone 是 VARCHAR，建了索引
-SELECT * FROM user WHERE phone = 13800138000;
--- 数字常量会触发 phone 列转换为数字，索引失效
-
--- 正确写法
-SELECT * FROM user WHERE phone = '13800138000';</code></pre>
-        <h3>常见场景</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>场景</th>
-              <th>结果</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>字符串列与数字比较</td><td>对列做 CAST，索引失效</td></tr>
-            <tr><td>对索引列使用函数</td><td><code>WHERE DATE(create_time) = '2024-01-01'</code> 失效</td></tr>
-            <tr><td>字符集/排序规则不一致</td><td>JOIN 或比较时可能隐式转换</td></tr>
-          </tbody>
-        </table>
-        <p>排查方法：看 <code>EXPLAIN</code> 的 <code>type=ALL</code>，或 <code>SHOW WARNINGS</code> 中的 <code>convert</code> 提示。原则是<strong>让常量适配列类型，而不是让列适配常量</strong>。</p>
-      </section>
-
-<section id="charset-collation">
-        <h2>MySQL 字符集和排序规则是什么？</h2>
-        <p><strong>字符集（Character Set）</strong>决定字符如何编码存储；<strong>排序规则（Collation）</strong>决定字符比较、排序和索引顺序。</p>
-        <h3>层级</h3>
-        <pre><code class="language-sql">server 默认字符集
-  -&gt; database 字符集
-    -&gt; table 字符集
-      -&gt; column 字符集</code></pre>
-        <table>
-          <thead>
-            <tr>
-              <th>概念</th>
-              <th>示例</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>字符集</td><td><code>utf8mb4</code></td><td>支持完整 Unicode，包括 emoji</td></tr>
-            <tr><td>排序规则</td><td><code>utf8mb4_general_ci</code></td><td><code>_ci</code> 表示不区分大小写</td></tr>
-            <tr><td>排序规则</td><td><code>utf8mb4_bin</code></td><td>按二进制比较，区分大小写</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-sql">SHOW VARIABLES LIKE 'character%';
-SHOW FULL COLUMNS FROM user;</code></pre>
-        <p>不同字符集或排序规则的列 JOIN/比较时会隐式转换，可能导致索引失效或结果异常。建表时应统一使用 <code>utf8mb4</code>。</p>
-      </section>
-
-<section id="utf8-vs-utf8mb4">
-        <h2>utf8 和 utf8mb4 有什么区别？</h2>
-        <p>MySQL 中的 <code>utf8</code> 实际是<strong>阉割版 UTF-8</strong>，最多 3 字节，不支持 emoji 和部分生僻字；<code>utf8mb4</code> 是完整 4 字节 UTF-8。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>对比项</th>
-              <th>utf8</th>
-              <th>utf8mb4</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>最大字节</td><td>3 字节</td><td>4 字节</td></tr>
-            <tr><td>emoji</td><td>不支持</td><td>支持</td></tr>
-            <tr><td>存储空间</td><td>略小</td><td>略大（按最大字节计）</td></tr>
-            <tr><td>推荐程度</td><td>已过时</td><td>生产环境首选</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-sql">CREATE TABLE user (
-  id BIGINT PRIMARY KEY,
-  nickname VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-) DEFAULT CHARSET=utf8mb4;</code></pre>
-        <p>新项目应直接使用 <code>utf8mb4</code>。从 <code>utf8</code> 迁移时注意索引长度限制：VARCHAR(255) 在 utf8mb4 下可能超过 767 字节索引上限，需缩短字段或启用前缀索引/大索引页。</p>
-      </section>
-
-<section id="datetime-timestamp">
-        <h2>MySQL 时间类型 DATETIME 和 TIMESTAMP 有什么区别？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>对比项</th>
-              <th>DATETIME</th>
-              <th>TIMESTAMP</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>存储范围</td><td>1000-01-01 ~ 9999-12-31</td><td>1970-01-01 ~ 2038-01-19（32 位限制）</td></tr>
-            <tr><td>时区</td><td>存什么读什么，不受时区影响</td><td>存储 UTC，显示时按 session 时区转换</td></tr>
-            <tr><td>存储空间</td><td>8 字节</td><td>4 字节</td></tr>
-            <tr><td>自动更新</td><td>需手动或触发器</td><td>支持 DEFAULT CURRENT_TIMESTAMP / ON UPDATE</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-sql">CREATE TABLE log (
-  id BIGINT PRIMARY KEY,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);</code></pre>
-        <p>业务时间戳（如订单创建时间）推荐 <code>DATETIME</code> 或 <code>BIGINT</code> 毫秒时间戳，避免 2038 年问题。跨时区场景若用 TIMESTAMP，需确保连接 session 时区配置一致。</p>
       </section>
 
 <section id="sql-optimization">
@@ -709,32 +649,6 @@ orders_hist  -- 冷数据，归档到对象存储 / ClickHouse</code></pre>
         <p>MySQL 5.7+ 支持基于 GTID 的并行复制；MySQL 8.0 的 <code>replica_parallel_type=LOGICAL_CLOCK</code> 可提升回放并行度。</p>
       </section>
 
-<section id="capacity-planning">
-        <h2>数据库如何做容量规划？</h2>
-        <p>容量规划目标是：在业务增长下，数据库在性能、存储、高可用和成本之间取得平衡，并提前触发扩容或分库分表。</p>
-        <h3>评估维度</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>维度</th>
-              <th>指标</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>存储</td><td>单表行数、数据增长率、索引占比、磁盘使用率</td></tr>
-            <tr><td>性能</td><td>QPS/TPS、慢 SQL 比例、P99 延迟</td></tr>
-            <tr><td>连接</td><td>活跃连接数、连接池使用率、Threads_running</td></tr>
-            <tr><td>复制</td><td>主从延迟、binlog 增长速率</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-sql">规划步骤：
-1. 基准测试（sysbench）得单机上限
-2. 按业务峰值 QPS × 安全系数（1.5~3）
-3. 估算 6~12 个月数据量
-4. 设定告警阈值：磁盘 70%、CPU 60%、延迟 P99
-5. 提前规划读写分离 / 分库分表 / 归档</code></pre>
-      </section>
-
 <section id="connection-pool-full">
         <h2>数据库连接池满了怎么办？</h2>
         <p>连接池满通常表现为应用报错 <code>Could not get JDBC Connection</code>、HikariCP <code>Connection is not available, request timed out</code>，或 MySQL 侧 <code>Too many connections</code>。本质是<strong>连接被占满且长时间未归还</strong>，新请求拿不到连接。</p>
@@ -769,35 +683,6 @@ spring.datasource.hikari.connection-timeout: 3000
 spring.datasource.hikari.max-lifetime: 1800000
 spring.datasource.hikari.leak-detection-threshold: 60000</code></pre>
         <p><strong>面试回答：</strong>先区分是应用池满还是 MySQL 连接打满；用 PROCESSLIST 和连接池监控定位慢 SQL、锁等待或泄漏。短期可限流、临时扩容连接池；长期优化 SQL/事务、修复泄漏、合理设置池大小与超时，并保证连接总数不超过数据库上限。</p>
-      </section>
-
-<section id="field-design">
-        <h2>数据库字段设计有哪些规范？</h2>
-        <h3>通用规范</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>规范</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>主键</td><td>优先 BIGINT 自增或雪花 ID，避免 UUID 随机插入</td></tr>
-            <tr><td>字段类型</td><td>用最小够用的类型，金额用 DECIMAL 不用 FLOAT</td></tr>
-            <tr><td>非空</td><td>关键字段 NOT NULL + 默认值，避免 NULL 索引问题</td></tr>
-            <tr><td>字符集</td><td>统一 utf8mb4</td></tr>
-            <tr><td>命名</td><td>小写 + 下划线，见名知意，避免保留字</td></tr>
-            <tr><td>大字段</td><td>TEXT/BLOB 单独拆表，避免主表行过大</td></tr>
-            <tr><td>冗余</td><td>适度反范式换查询性能，需保证一致性</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-sql">-- 推荐
-amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00
-status TINYINT NOT NULL DEFAULT 0 COMMENT '0待支付 1已支付'
-
--- 避免
-amount FLOAT
-status VARCHAR(32)  -- 枚举用 TINYINT 更省空间</code></pre>
       </section>
 
 <section id="bplus-vs-btree">
@@ -881,34 +766,6 @@ WHERE create_time &gt;= '2024-06-01' AND create_time &lt; '2024-06-02'</code></p
         <p>是否走索引以 <code>EXPLAIN</code> 为准，规则是经验法则，优化器还会结合统计信息做 cost 估算。</p>
       </section>
 
-<section id="explain-fields">
-        <h2>EXPLAIN 中 type、key、rows、Extra 如何解读？</h2>
-        <p><code>EXPLAIN</code> 是查看 MySQL 执行计划最常用的工具，重点关注访问类型、索引使用和额外操作。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>字段</th>
-              <th>含义</th>
-              <th>关注点</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>type</code></td><td>访问类型</td><td>优劣：<code>system</code> &gt; <code>const</code> &gt; <code>eq_ref</code> &gt; <code>ref</code> &gt; <code>range</code> &gt; <code>index</code> &gt; <code>ALL</code></td></tr>
-            <tr><td><code>key</code></td><td><span class="em-warn">实际使用的索引</span></td><td><code>NULL</code> 表示未用索引</td></tr>
-            <tr><td><code>rows</code></td><td><span class="em-warn">估算扫描行数</span></td><td>越小通常越好，但是估算值</td></tr>
-            <tr><td><code>Extra</code></td><td>额外信息</td><td><code>Using index</code> 好；<code>Using filesort</code>、<code>Using temporary</code> 需关注</td></tr>
-          </tbody>
-        </table>
-        <h3>type 常见值</h3>
-        <ul>
-          <li><code>const</code>：主键或唯一索引等值，最多一行。</li>
-          <li><code>ref</code>：非唯一索引等值匹配。</li>
-          <li><code>range</code>：索引范围扫描。</li>
-          <li><code>ALL</code>：全表扫描，大数据量时需优化。</li>
-        </ul>
-        <p>执行计划只是估算，必要时结合慢日志、实际耗时、<code>EXPLAIN ANALYZE</code>（8.0.18+）和数据分布判断。</p>
-      </section>
-
 <section id="replication-principle">
         <h2>MySQL 主从复制原理是什么？</h2>
         <p>主从复制基于主库的 <strong>binlog</strong>，从库拉取并重放 binlog 事件，使从库数据与主库保持一致（最终一致）。</p>
@@ -932,54 +789,6 @@ WHERE create_time &gt;= '2024-06-01' AND create_time &lt; '2024-06-02'</code></p
         <p>现代架构常用 GTID 复制，便于 failover 和主从切换；读写分离、备份、高可用都依赖复制链路稳定。</p>
       </section>
 
-<section id="three-logs">
-        <h2>binlog、redo log、undo log 分别有什么作用？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>日志</th>
-              <th>层级</th>
-              <th>作用</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>binlog</td><td>Server 层</td><td>归档日志，<strong>主从复制、基于时间点的恢复</strong></td></tr>
-            <tr><td>redo log</td><td>InnoDB</td><td>重做日志，保证<strong>事务持久性</strong>，崩溃恢复已提交事务</td></tr>
-            <tr><td>undo log</td><td>InnoDB</td><td>回滚日志，<strong>事务回滚</strong> + MVCC 多版本</td></tr>
-          </tbody>
-        </table>
-        <h3>协作关系</h3>
-        <pre><code class="language-sql">更新一行：
-1. 写 undo log（保存旧值，供回滚和 MVCC）
-2. 更新 Buffer Pool 中的数据页
-3. 写 redo log（prepare 或 commit 阶段）
-4. 写 binlog
-5. redo log commit（两阶段提交）</code></pre>
-        <p>redo 是物理/物理逻辑日志，循环写；binlog 是逻辑日志，追加写。undo 在 MVCC 可见性判断后由 purge 线程清理。</p>
-      </section>
-
-<section id="two-phase-commit">
-        <h2>redo log 和 binlog 的两阶段提交是什么？</h2>
-        <p>InnoDB 引擎日志（redo）与 Server 层日志（binlog）分属两层，两阶段提交（2PC）用于保证二者<strong>逻辑一致</strong>，避免崩溃后主从数据不一致。</p>
-        <pre><code class="language-sql">1. Prepare：InnoDB 写 redo log，状态为 prepare
-2. 写 binlog
-3. Commit：InnoDB 将 redo log 标记为 commit</code></pre>
-        <h3>崩溃恢复</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>崩溃时机</th>
-              <th>恢复行为</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>redo prepare 后、binlog 写完前</td><td>无 binlog，事务回滚</td></tr>
-            <tr><td>binlog 写完、redo commit 前</td><td>有 binlog，事务提交（通过 XID 关联）</td></tr>
-          </tbody>
-        </table>
-        <p>这样无论 crash 在哪个阶段，恢复后主库与 binlog 都能保持一致，从库回放 binlog 也不会丢事务。</p>
-      </section>
-
 <section id="crash-recovery">
         <h2>MySQL 如何保证崩溃恢复？</h2>
         <p>崩溃恢复依赖 <strong>redo log + undo log + 两阶段提交</strong>，启动时 InnoDB 自动执行 crash recovery。</p>
@@ -996,10 +805,10 @@ WHERE create_time &gt;= '2024-06-01' AND create_time &lt; '2024-06-02'</code></p
         <p><code>innodb_flush_log_at_trx_commit=1</code> 与 <code>sync_binlog=1</code> 配合可保证每次事务提交都刷盘，可靠性最高；设为 2 或 0 可换性能但 crash 可能丢最近事务。</p>
       </section>
 
-<section id="sharding-when">
-        <h2>分库分表适合什么场景？</h2>
-        <p>分库分表是解决单库单表<strong>容量或性能瓶颈</strong>的架构手段，不应作为项目初期默认方案。</p>
-        <h3>适合时机</h3>
+<section id="sharding">
+        <h2>分库分表：如何拆分？</h2>
+        <p>分库分表是解决单库单表<strong>容量或性能瓶颈</strong>的架构手段，不应作为项目初期默认方案。一旦拆分，还需同步解决<strong>拆分方式、全局 ID、跨分片分页</strong>三类问题。</p>
+        <h3>1. 适合什么场景</h3>
         <table>
           <thead>
             <tr>
@@ -1008,23 +817,15 @@ WHERE create_time &gt;= '2024-06-01' AND create_time &lt; '2024-06-02'</code></p
             </tr>
           </thead>
           <tbody>
-            <tr><td>单表过大</td><td>行数亿级、索引 B+Tree 深度增加、DDL 耗时小时级</td></tr>
+            <tr><td>单表过大</td><td>行数亿级、B+Tree 深度增加、DDL 耗时小时级</td></tr>
             <tr><td>写入瓶颈</td><td>单主库 TPS 到顶，垂直扩容无效</td></tr>
             <tr><td>存储瓶颈</td><td>磁盘/备份/恢复窗口不可接受</td></tr>
             <tr><td>热点集中</td><td>单行/单分片过热，需打散</td></tr>
           </tbody>
         </table>
-        <h3>不适合</h3>
-        <ul>
-          <li>数据量小、QPS 低，索引优化和读写分离即可。</li>
-          <li>复杂跨分片 JOIN/事务多，改造成本极高。</li>
-          <li>团队缺乏分片治理经验，运维风险大。</li>
-        </ul>
-        <p>优先顺序：SQL/索引优化 → 缓存 → 读写分离 → 垂直拆分 → 水平分库分表。</p>
-      </section>
-
-<section id="horizontal-vertical-sharding">
-        <h2>水平分表和垂直分表有什么区别？</h2>
+        <p><strong>不适合：</strong>数据量小、QPS 低（索引优化 + 读写分离即可）；复杂跨分片 JOIN/事务多；团队缺乏分片治理经验。</p>
+        <p>演进顺序：SQL/索引优化 → 缓存 → 读写分离 → 垂直拆分 → 水平分库分表。</p>
+        <h3>2. 水平拆分 vs 垂直拆分</h3>
         <table>
           <thead>
             <tr>
@@ -1046,12 +847,9 @@ user(id, name, phone) + user_ext(id, avatar_blob, bio)
 水平分表：
 orders_0, orders_1, ... orders_15
 路由：shard = user_id % 16</code></pre>
-        <p>垂直拆分改动相对小；水平拆分需解决路由、全局 ID、跨分片查询和扩容迁移。</p>
-      </section>
-
-<section id="global-id">
-        <h2>分库分表后的全局 ID 如何设计？</h2>
-        <p>分库分表后不能使用单库自增 ID，需要<strong>全局唯一、趋势递增</strong>的 ID 方案。</p>
+        <p>垂直拆分改动小；水平拆分需额外解决路由、全局 ID、跨分片查询和扩容迁移。</p>
+        <h3>3. 全局 ID 如何设计</h3>
+        <p>分库分表后不能使用单库自增 ID，需要<strong>全局唯一、趋势递增</strong>的主键，保证 B+Tree 插入性能。</p>
         <table>
           <thead>
             <tr>
@@ -1064,18 +862,16 @@ orders_0, orders_1, ... orders_15
             <tr><td>雪花算法（Snowflake）</td><td>本地生成、高性能、趋势递增</td><td>依赖时钟、机器 ID 分配</td></tr>
             <tr><td>号段模式（Leaf）</td><td>批量取号、DB 压力小</td><td>需号段服务、扩容需规划</td></tr>
             <tr><td>Redis INCR</td><td>实现简单</td><td>依赖 Redis 高可用</td></tr>
-            <tr><td>UUID</td><td>绝对唯一</td><td>无序、字符串占空间、索引性能差</td></tr>
+            <tr><td>UUID</td><td>绝对唯一</td><td>无序、占空间、索引性能差</td></tr>
           </tbody>
         </table>
         <pre><code class="language-sql">雪花 ID 结构（64 bit）：
 0 | 41 bit 时间戳 | 10 bit 机器 ID | 12 bit 序列号</code></pre>
-        <p>生产推荐雪花或号段；避免 UUID v4 做主键。若用雪花，需处理时钟回拨和多机房 workerId 分配。</p>
-      </section>
-
-<section id="sharding-pagination">
-        <h2>分库分表后的分页查询如何处理？</h2>
-        <p>分片后 <code>LIMIT offset, size</code> 需在<strong>每个分片</strong>执行，再在中间件层归并排序，成本极高。</p>
-        <h3>方案</h3>
+        <p>生产推荐<strong>雪花或号段</strong>；避免 UUID v4 做主键。雪花需处理时钟回拨和多机房 workerId 分配。</p>
+        <h3>4. 分页查询如何处理</h3>
+        <p>分片后 <code>LIMIT offset, size</code> 需在<strong>每个分片</strong>执行，中间件归并排序，深分页成本极高：</p>
+        <pre><code class="language-sql">跨分片 ORDER BY create_time LIMIT 10000, 20 的代价：
+每个分片取 10020 条 -&gt; 中间件归并 16×10020 条 -&gt; 排序 -&gt; 取 20 条</code></pre>
         <table>
           <thead>
             <tr>
@@ -1086,13 +882,12 @@ orders_0, orders_1, ... orders_15
           <tbody>
             <tr><td>游标分页</td><td><code>WHERE id &gt; last_id LIMIT n</code>，避免大 offset</td></tr>
             <tr><td>禁止全局深分页</td><td>产品上限「只能翻到第 N 页」</td></tr>
-            <tr><td>异构索引表</td><td>ES/ClickHouse 存排序字段，查 id 再回表</td></tr>
+            <tr><td>异构索引表</td><td>ES / ClickHouse 存排序字段，查 id 再回表</td></tr>
             <tr><td>分片内分页</td><td>按 user_id 分片时，用户只看自己的数据，无需跨片</td></tr>
           </tbody>
         </table>
-        <pre><code class="language-sql">跨分片 ORDER BY create_time LIMIT 10000, 20 的代价：
-每个分片取 10020 条 -&gt; 中间件归并 16×10020 条 -&gt; 排序 -&gt; 取 20 条</code></pre>
-        <p>设计分片键时尽量让高频查询落在单分片内，避免全局排序分页。</p>
+        <p>设计分片键时尽量让高频查询落在<strong>单分片内</strong>，从架构上避免全局排序分页。</p>
+        <p><strong>面试回答：</strong>分库分表是单库扛不住容量/写入时的最后手段，优先索引和读写分离。垂直按列/业务拆，水平按行拆并需解决路由与扩容。全局 ID 用雪花或号段，不用 UUID 主键。分页优先游标/分片内查询，跨片深分页用 ES 或产品限页，核心是选对分片键减少跨片。</p>
       </section>
 
 <section id="connection-pool">

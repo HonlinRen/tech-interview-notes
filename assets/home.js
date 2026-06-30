@@ -14,10 +14,13 @@
     "docker-k8s": "docker-k8s.html",
     ai: "ai.html",
     "rag-vector": "rag-vector.html",
+    langchain: "langchain.html",
     llm: "llm.html",
     architecture: "architecture.html",
     observability: "observability.html",
     security: "security.html",
+    frontend: "frontend.html",
+    bigdata: "bigdata.html",
     leetcode: "leetcode.html"
   };
 

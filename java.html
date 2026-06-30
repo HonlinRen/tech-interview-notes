@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
-                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+                    <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -184,6 +187,62 @@ private final Condition notFull = lock.newCondition();  // 队列未满</code></
           <li>需要多个条件队列，例如生产者消费者中“队列非空”和“队列未满”分别唤醒时，用 <code>ReentrantLock</code> 更合适。</li>
           <li>使用 <code>ReentrantLock</code> 必须在 <code>finally</code> 中释放锁，否则异常路径容易死锁。</li>
         </ul>
+      </section>
+
+<section id="static-vs-dynamic-proxy">
+        <h2>动态代理和静态代理有什么区别？</h2>
+        <p>两者都属于<strong>代理模式</strong>：调用方访问代理对象而非目标对象，在调用前后插入增强逻辑。核心区别在于<strong>代理类何时、如何产生</strong>。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>静态代理</th>
+              <th>动态代理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>生成时机</td><td><strong>编译期</strong>，开发者手写代理类</td><td><strong>运行期</strong>，JVM 动态生成代理类/子类</td></tr>
+            <tr><td>代码量</td><td>每个目标类通常对应一个代理类，类膨胀</td><td>一套通用机制代理任意目标，适合框架</td></tr>
+            <tr><td>灵活性</td><td>增强逻辑写死在代理类中，改一处要改多个类</td><td>通过 <code>InvocationHandler</code> / 拦截器统一配置</td></tr>
+            <tr><td>实现方式</td><td>代理类实现同一接口，持有目标对象并委托调用</td><td>JDK <code>Proxy</code>（基于接口）或 CGLIB（基于继承）</td></tr>
+            <tr><td>典型场景</td><td>简单、固定的增强，学习和理解代理模式</td><td>AOP、事务、RPC、MyBatis Mapper、Spring 切面</td></tr>
+          </tbody>
+        </table>
+        <h3>静态代理示例</h3>
+        <pre><code class="language-java">interface OrderService {
+    void createOrder();
+}
+
+class OrderServiceImpl implements OrderService {
+    public void createOrder() { /* 业务逻辑 */ }
+}
+
+// 手写代理类：编译期已存在
+class OrderServiceProxy implements OrderService {
+    private final OrderService target;
+    OrderServiceProxy(OrderService target) { this.target = target; }
+
+    public void createOrder() {
+        System.out.println(&quot;before&quot;);
+        target.createOrder();
+        System.out.println(&quot;after&quot;);
+    }
+}</code></pre>
+        <h3>动态代理示例（JDK）</h3>
+        <pre><code class="language-java">OrderService target = new OrderServiceImpl();
+OrderService proxy = (OrderService) Proxy.newProxyInstance(
+    target.getClass().getClassLoader(),
+    target.getClass().getInterfaces(),
+    (p, method, args) -&gt; {
+        System.out.println(&quot;before&quot;);
+        Object result = method.invoke(target, args);
+        System.out.println(&quot;after&quot;);
+        return result;
+    }
+);
+proxy.createOrder(); // 运行时生成代理类，无需为每个 Service 手写代理</code></pre>
+        <p><strong>小结：</strong>静态代理直观但扩展性差；动态代理把「何时增强、增强什么」抽象到运行时，是 Spring AOP、MyBatis 等框架的底层基础。详见本题后「Java 动态代理是什么」一题中的 JDK vs CGLIB 对比。</p>
+        <p><strong>面试回答：</strong>静态代理编译期手写代理类，一个目标一个代理，简单但类多、不灵活；动态代理运行期通过 JDK Proxy 或 CGLIB 生成，一套机制代理多个目标，适合框架做 AOP/事务。Spring 有接口用 JDK 动态代理，无接口用 CGLIB。</p>
       </section>
 
 <section id="proxy">
@@ -867,16 +926,6 @@ Map（独立接口，不继承 Collection）
         </ul>
       </section>
 
-<section id="linkedhashmap-order">
-        <h2>LinkedHashMap 如何保证插入顺序？</h2>
-        <p>LinkedHashMap 在 HashMap 的哈希表结构基础上，额外维护一条双向链表，用来记录插入顺序或访问顺序。</p>
-        <ul>
-          <li>默认按插入顺序遍历。</li>
-          <li>构造时开启 accessOrder 后，可以按访问顺序维护，适合实现 LRU 缓存。</li>
-          <li>它比 HashMap 多维护链表指针，内存开销略高。</li>
-        </ul>
-      </section>
-
 <section id="treemap-vs-hashmap">
         <h2>TreeMap 和 HashMap 有什么区别？</h2>
         <p>HashMap 基于哈希表，关注快速查找；TreeMap 基于红黑树，关注 key 的有序性。</p>
@@ -884,36 +933,6 @@ Map（独立接口，不继承 Collection）
           <li>HashMap 平均 put/get 是 O(1)，不保证遍历顺序。</li>
           <li>TreeMap put/get/remove 是 O(log n)，会按 key 的自然顺序或 Comparator 排序。</li>
           <li>需要范围查询、排序遍历、最近 key 查询时 TreeMap 更合适。</li>
-        </ul>
-      </section>
-
-<section id="priorityqueue">
-        <h2>PriorityQueue 底层原理是什么？</h2>
-        <p>PriorityQueue 是优先队列，底层通常是二叉堆。出队时返回优先级最高或最低的元素，具体顺序由自然排序或 Comparator 决定。</p>
-        <ul>
-          <li>插入和删除堆顶通常是 O(log n)。</li>
-          <li>获取堆顶是 O(1)，但遍历结果不保证整体有序。</li>
-          <li>适合 TopK、任务优先级调度、合并有序流等场景。</li>
-        </ul>
-      </section>
-
-<section id="blocking-queue-compare">
-        <h2>ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？</h2>
-        <p>ArrayBlockingQueue 基于数组，是有界阻塞队列；LinkedBlockingQueue 基于链表，可以指定容量，不指定时容量非常大。</p>
-        <ul>
-          <li>ArrayBlockingQueue 内存连续、容量固定，生产消费共用一把锁。</li>
-          <li>LinkedBlockingQueue 链表节点动态创建，put/take 通常使用不同锁，吞吐可能更好。</li>
-          <li>线程池中使用无界 LinkedBlockingQueue 容易造成任务堆积和内存风险。</li>
-        </ul>
-      </section>
-
-<section id="iterator-remove">
-        <h2>Iterator 删除元素为什么比 for 循环更安全？</h2>
-        <p>Iterator 的 remove 方法会同步更新迭代器内部状态，避免集合结构修改计数和迭代器期望计数不一致。</p>
-        <ul>
-          <li>增强 for 本质也是迭代器，循环中直接调用集合 remove 容易触发 ConcurrentModificationException。</li>
-          <li>使用 iterator.remove() 删除的是当前迭代到的元素，状态可控。</li>
-          <li>并发集合有自己的弱一致迭代语义，不能和普通集合混用理解。</li>
         </ul>
       </section>
 
@@ -1100,16 +1119,6 @@ Future&lt;?&gt; f = executor.submit(() -&gt; log.info(&quot;done&quot;));</code>
         <p><mark>需要结果或异常传播选 Callable，纯异步副作用选 Runnable。</mark></p>
       </section>
 
-<section id="future-completablefuture">
-        <h2>Future 和 CompletableFuture 有什么区别？</h2>
-        <p>Future 表示异步计算结果，但组合能力弱；CompletableFuture 在 Future 基础上提供回调、编排、组合和异常处理能力。</p>
-        <ul>
-          <li>Future 主要通过 get 阻塞等待结果。</li>
-          <li>CompletableFuture 支持 thenApply、thenCompose、thenCombine、exceptionally 等链式操作。</li>
-          <li>复杂异步流程、并行聚合、回调编排更适合 CompletableFuture。</li>
-        </ul>
-      </section>
-
 <section id="optimistic-pessimistic-lock">
         <h2>乐观锁和悲观锁有什么区别？</h2>
         <p>悲观锁和乐观锁是<strong>并发冲突处理策略</strong>，不是具体锁实现。</p>
@@ -1218,36 +1227,6 @@ Node head, tail;                 // CLH 等待队列
         <p><strong>面试回答：</strong>AQS 用 volatile state + CAS 表示同步状态，失败线程入 CLH 队列并 park；支持独占/共享两种模式；ReentrantLock、Semaphore、CountDownLatch、读写锁都基于它，子类实现 tryAcquire/tryRelease 等模板方法即可。</p>
       </section>
 
-<section id="read-write-lock">
-        <h2>ReentrantReadWriteLock 适合什么场景？</h2>
-        <p>ReentrantReadWriteLock 是读写锁，允许多个读线程并发访问，但写线程需要独占访问。</p>
-        <ul>
-          <li>适合读多写少、读操作耗时明显、共享数据结构需要一致保护的场景。</li>
-          <li>读写锁不是所有场景都更快，写多或锁竞争复杂时开销可能更高。</li>
-          <li>写锁可以降级为读锁，但读锁不能直接升级为写锁。</li>
-        </ul>
-      </section>
-
-<section id="concurrent-containers">
-        <h2>并发容器有哪些？</h2>
-        <p>并发容器是为多线程访问设计的数据结构，常见有 ConcurrentHashMap、CopyOnWriteArrayList、BlockingQueue、ConcurrentLinkedQueue 等。</p>
-        <ul>
-          <li>ConcurrentHashMap 适合高并发 key-value 读写。</li>
-          <li>CopyOnWriteArrayList 适合读多写少的监听器列表、配置快照。</li>
-          <li>BlockingQueue 适合生产者消费者和线程池任务队列。</li>
-        </ul>
-      </section>
-
-<section id="forkjoinpool">
-        <h2>ForkJoinPool 适合什么场景？</h2>
-        <p>ForkJoinPool 适合把大任务拆成多个小任务并行执行，再合并结果。它使用工作窃取算法提高线程利用率。</p>
-        <ul>
-          <li>典型场景包括递归计算、分治任务、并行流。</li>
-          <li>任务应尽量 CPU 密集且可拆分，避免在 ForkJoin 任务中长时间阻塞 IO。</li>
-          <li>Java parallelStream 默认使用公共 ForkJoinPool，阻塞任务可能影响其它并行流。</li>
-        </ul>
-      </section>
-
 <section id="executors-why-not">
         <h2>线程池为什么不建议使用 Executors 快捷方法？</h2>
         <p><code>Executors</code> 提供的工厂方法看起来方便，但<strong>隐藏了队列类型、容量和线程上限</strong>，不符合《阿里巴巴 Java 开发手册》「线程池不允许使用 Executors 创建，应通过 ThreadPoolExecutor 方式」的规范，生产环境容易 OOM 或线程耗尽。</p>
@@ -1331,36 +1310,6 @@ try {
         <p><strong>面试回答：</strong>先 shutdown 拒新任务，awaitTermination 等待完成，超时再 shutdownNow 中断；捕获 InterruptedException 时也要 shutdownNow 并恢复中断标志；任务内要正确处理中断，Spring 停机钩子里做同样流程。</p>
       </section>
 
-<section id="metaspace-method-area">
-        <h2>方法区和永久代、元空间是什么关系？</h2>
-        <p>方法区是 JVM 规范中的运行时内存区域，用于存放类元数据、常量、静态变量等；永久代和元空间是 HotSpot 对方法区的具体实现。</p>
-        <ul>
-          <li>JDK 8 之前 HotSpot 使用永久代，受 JVM 堆相关参数影响。</li>
-          <li>JDK 8 起使用元空间，元数据主要分配在本地内存。</li>
-          <li>元空间仍可能 OOM，常见原因是动态生成大量类、类加载器泄漏。</li>
-        </ul>
-      </section>
-
-<section id="off-heap-memory">
-        <h2>堆外内存是什么？</h2>
-        <p>堆外内存是不在 Java 堆中的内存，通常通过 DirectByteBuffer、Unsafe、JNI 或本地库分配。</p>
-        <ul>
-          <li>Netty、NIO、数据库驱动、压缩加密库都可能使用堆外内存。</li>
-          <li>堆外内存减少某些 IO 拷贝，但不受普通堆 dump 直接展示。</li>
-          <li>需要关注 <code>-XX:MaxDirectMemorySize</code>、进程 RSS、Native Memory Tracking。</li>
-        </ul>
-      </section>
-
-<section id="direct-memory-risk">
-        <h2>直接内存有什么风险？</h2>
-        <p>直接内存主要通过 DirectByteBuffer 使用，适合减少 Java 堆和 native IO 之间的数据复制。</p>
-        <ul>
-          <li>它的释放依赖 Cleaner 或显式管理，释放不及时可能导致进程内存持续上涨。</li>
-          <li>直接内存 OOM 不一定体现在 Java heap 使用率高。</li>
-          <li>大量 direct buffer 分配释放会带来 native 内存压力和排查复杂度。</li>
-        </ul>
-      </section>
-
 <section id="stop-the-world">
         <h2>什么是 Stop The World？</h2>
         <p>Stop The World 指 JVM 暂停所有用户线程，让 GC 或某些 JVM 内部操作在安全点执行。</p>
@@ -1371,16 +1320,6 @@ try {
         </ul>
       </section>
 
-<section id="gc-collector-choice">
-        <h2>如何选择垃圾收集器？</h2>
-        <p>垃圾收集器选择取决于堆大小、延迟目标、吞吐目标、JDK 版本和服务类型。</p>
-        <ul>
-          <li>吞吐优先的批处理任务可考虑 Parallel GC。</li>
-          <li>通用服务端应用在 JDK 11/17 常用 G1，兼顾吞吐和可控停顿。</li>
-          <li>超低延迟、大堆场景可评估 ZGC 或 Shenandoah。</li>
-        </ul>
-      </section>
-
 <section id="g1-region">
         <h2>G1 的 Region 是什么？</h2>
         <p>G1 把 Java 堆划分为多个大小相等的 Region，不再固定划分连续的新生代和老年代区域。</p>
@@ -1388,16 +1327,6 @@ try {
           <li>Region 可以扮演 Eden、Survivor、Old、Humongous 等角色。</li>
           <li>G1 根据每个 Region 的垃圾比例和回收收益，优先回收价值最高的 Region。</li>
           <li>这种结构让 G1 能在目标停顿时间内做增量式回收。</li>
-        </ul>
-      </section>
-
-<section id="gc-types">
-        <h2>Minor GC、Major GC、Mixed GC、Full GC 分别是什么？</h2>
-        <p>Minor GC 通常回收年轻代；Major GC 常被用来表示老年代回收；Mixed GC 是 G1 中同时回收年轻代和部分老年代 Region；Full GC 会更彻底地回收整个堆，停顿通常更长。</p>
-        <ul>
-          <li>Minor GC 频繁通常说明对象分配速率高或年轻代过小。</li>
-          <li>Mixed GC 是 G1 控制老年代垃圾的主要方式。</li>
-          <li>Full GC 常与晋升失败、元空间不足、显式 System.gc 或内存压力有关。</li>
         </ul>
       </section>
 
@@ -1568,22 +1497,146 @@ jmap -dump:live,format=b,file=heap.hprof &lt;pid&gt;   # 导出堆快照</code><
 
 <section id="bio-nio-aio">
         <h2>BIO、NIO、AIO 有什么区别？</h2>
-        <p>BIO 是同步阻塞 IO，NIO 是同步非阻塞 IO，AIO 是异步 IO。三者的差异在于线程是否阻塞等待、是否由操作系统完成后通知。</p>
+        <p>Java IO 模型按<strong>线程与 IO 的交互方式</strong>分为 BIO、NIO、AIO 三种。理解它们需要先区分两个正交维度（详见下一题「同步、异步、阻塞、非阻塞」）：</p>
+        <ul>
+          <li><strong>阻塞 / 非阻塞</strong>：等待数据时线程是否挂起。</li>
+          <li><strong>同步 / 异步</strong>：IO 完成后由谁通知、由谁取结果。</li>
+        </ul>
+        <p>三者对应关系：<strong>BIO = 同步阻塞</strong>，<strong>NIO = 同步非阻塞</strong>，<strong>AIO = 异步非阻塞</strong>（Java 7+ 的 NIO.2 异步通道）。</p>
+
+        <h3>总览对比</h3>
         <table>
           <thead>
             <tr>
               <th>模型</th>
-              <th>特点</th>
-              <th>适用场景</th>
+              <th>全称 / 别名</th>
+              <th>IO 模式</th>
+              <th>线程模型</th>
+              <th>Java API</th>
+              <th>典型场景</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>BIO</td><td>同步阻塞，一个连接通常占用一个线程</td><td>连接数少、逻辑简单的服务</td></tr>
-            <tr><td>NIO</td><td>同步非阻塞，通过 Selector 管理多个连接</td><td>高并发网络连接、网关、RPC 框架</td></tr>
-            <tr><td>AIO</td><td>异步 IO，提交后由系统完成并通知</td><td>理论上适合异步文件/网络 IO，但 Java 服务端使用较少</td></tr>
+            <tr><td><strong>BIO</strong></td><td>Blocking IO</td><td>同步阻塞</td><td>一连接一线程（或线程池）</td><td><code>java.io</code>（Socket、ServerSocket）</td><td>连接数少、逻辑简单、开发快</td></tr>
+            <tr><td><strong>NIO</strong></td><td>Non-blocking IO / New IO</td><td>同步非阻塞</td><td>少量线程 + Selector 多路复用</td><td><code>java.nio</code>（Channel、Buffer、Selector）</td><td>高并发网关、RPC、Netty、Redis 客户端</td></tr>
+            <tr><td><strong>AIO</strong></td><td>Asynchronous IO / NIO.2</td><td>异步非阻塞</td><td>系统完成 IO 后回调通知</td><td><code>AsynchronousSocketChannel</code>、<code>CompletionHandler</code></td><td>异步文件 IO；网络服务端 Java 生态较少用</td></tr>
           </tbody>
         </table>
-        <p>面试里重点说 NIO：它不是让单个请求更快，而是让少量线程能管理大量连接，降低线程资源成本。</p>
+
+        <h3>BIO（同步阻塞 IO）</h3>
+        <p>调用 <code>read()</code> / <code>write()</code> 时，<strong>线程挂起</strong>直到内核把数据准备好；数据就绪后由<strong>当前线程自己</strong>把数据从内核缓冲区拷贝到用户空间——因此是「同步 + 阻塞」。</p>
+        <pre><code class="language-java">// 经典 BIO 服务端：每 accept 一个连接就 new Thread
+ServerSocket server = new ServerSocket(8080);
+while (true) {
+    Socket client = server.accept();          // 阻塞，直到有新连接
+    new Thread(() -&gt; {
+        InputStream in = client.getInputStream();
+        in.read(buf);                         // 阻塞，直到有数据可读
+        // 处理业务...
+    }).start();
+}</code></pre>
+        <ul>
+          <li><strong>优点</strong>：模型直观，代码线性易写易调试。</li>
+          <li><strong>缺点</strong>：连接数上升时线程数线性增长，线程栈内存 + 上下文切换成为瓶颈（C10K 问题）。</li>
+          <li><strong>改进</strong>：用线程池限制最大线程数，但本质仍是「一个连接占用一个处理线程等待 IO」。</li>
+        </ul>
+
+        <h3>NIO（同步非阻塞 IO）</h3>
+        <p>核心思想是 <strong>IO 多路复用（Multiplexing）</strong>：一个线程通过 <code>Selector</code> 同时监听多个 <code>Channel</code> 的就绪事件（连接、读、写），哪个 Channel 有数据就处理哪个，避免为每个连接单独阻塞等待。</p>
+        <p>底层依赖操作系统多路复用机制：Linux 上为 <code>epoll</code>，macOS/BSD 为 <code>kqueue</code>，Windows 为 <code>select/poll</code>。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>核心组件</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Channel</code></td><td>双向 IO 通道（如 <code>SocketChannel</code>），替代单向 Stream</td></tr>
+            <tr><td><code>Buffer</code></td><td>数据容器，Channel 读写都经过 Buffer；注意 flip/clear 切换读写模式</td></tr>
+            <tr><td><code>Selector</code></td><td>多路复用器，注册 Channel 的 OP_ACCEPT / OP_READ / OP_WRITE 事件并轮询就绪</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-java">Selector selector = Selector.open();
+ServerSocketChannel server = ServerSocketChannel.open();
+server.bind(new InetSocketAddress(8080));
+server.configureBlocking(false);
+server.register(selector, SelectionKey.OP_ACCEPT);
+
+while (true) {
+    selector.select();                        // 阻塞直到至少一个 Channel 就绪（可设 timeout）
+    Set&lt;SelectionKey&gt; keys = selector.selectedKeys();
+    for (SelectionKey key : keys) {
+        if (key.isAcceptable()) { /* accept 并注册 OP_READ */ }
+        if (key.isReadable())  { /* channel.read(buffer) 读数据 */ }
+    }
+    keys.clear();
+}</code></pre>
+        <ul>
+          <li><strong>为什么是「同步」</strong>：<code>select()</code> 返回后，仍要<strong>当前线程自己</strong>调用 <code>channel.read()</code> 把数据读出来，并非内核完成后主动回调。</li>
+          <li><strong>为什么是「非阻塞」</strong>：Channel 设为非阻塞模式后，<code>read()</code> 无数据时立即返回 0，线程不会挂死在单个连接上。</li>
+          <li><strong>典型架构</strong>：Reactor 模式——Netty 的 Boss/EventLoop 线程即 NIO + 多路复用的工程化实现。</li>
+          <li><strong>价值</strong>：不是让单次 IO 更快，而是让<strong>少量线程管理大量连接</strong>，降低线程资源成本。</li>
+        </ul>
+
+        <h3>AIO（异步 IO / NIO.2）</h3>
+        <p>应用发起 IO 请求后<strong>立即返回</strong>，由操作系统在内核完成数据读写，完成后通过 <code>CompletionHandler</code> 回调或 <code>Future</code> 通知应用——调用方线程不参与等待和数据拷贝过程，属于「异步 + 非阻塞」。</p>
+        <pre><code class="language-java">AsynchronousServerSocketChannel server =
+    AsynchronousServerSocketChannel.open().bind(new InetSocketAddress(8080));
+
+server.accept(null, new CompletionHandler&lt;AsynchronousSocketChannel, Void&gt;() {
+    @Override
+    public void completed(AsynchronousSocketChannel client, Void att) {
+        server.accept(null, this);            // 继续接受下一个连接
+        ByteBuffer buf = ByteBuffer.allocate(1024);
+        client.read(buf, buf, new CompletionHandler&lt;Integer, ByteBuffer&gt;() {
+            @Override
+            public void completed(Integer n, ByteBuffer attachment) {
+                // 内核读完后回调，attachment 中已有数据
+            }
+            @Override
+            public void failed(Throwable exc, ByteBuffer attachment) { /* ... */ }
+        });
+    }
+    @Override
+    public void failed(Throwable exc, Void att) { /* ... */ }
+});</code></pre>
+        <ul>
+          <li><strong>与 NIO 的本质区别</strong>：NIO 是应用轮询就绪事件后自己 read；AIO 是应用提交请求后<strong>内核做完再通知</strong>，无需 Selector 轮询。</li>
+          <li><strong>Linux 上的现实</strong>：JDK 在 Linux 上 AIO 网络 IO 底层常回退为 epoll + 线程池模拟，并非真正的内核级异步 IO（io_uring 等较新机制 Java 标准库支持有限）。因此<strong>Java 服务端高并发仍以 NIO/Netty 为主</strong>，AIO 在文件异步读写场景相对更常见。</li>
+          <li><strong>Windows</strong>：基于 IOCP，AIO 网络实现相对更成熟，但跨平台服务端框架很少以 AIO 为核心。</li>
+        </ul>
+
+        <h3>三种模型工作流程对比</h3>
+        <pre><code>BIO：
+  线程 --read()--&gt; [阻塞等待] --&gt; 内核有数据 --&gt; 线程读入 Buffer --&gt; 处理
+
+NIO：
+  线程 --select()--&gt; 多个 Channel 就绪 --&gt; 线程对就绪 Channel read() --&gt; 处理
+  （无数据时 read 立即返回，线程可处理其他 Channel）
+
+AIO：
+  线程 --read(回调)--&gt; 立即返回
+  内核完成 IO --&gt; 回调 CompletionHandler.completed() --&gt; 处理</code></pre>
+
+        <h3>选型建议</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>推荐</th>
+              <th>原因</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>内部工具、连接 &lt; 几百</td><td>BIO + 线程池</td><td>简单够用</td></tr>
+            <tr><td>高并发 TCP、网关、RPC、IM</td><td>NIO / Netty</td><td>成熟、跨平台、生态最好</td></tr>
+            <tr><td>大文件异步读写</td><td>AIO（<code>AsynchronousFileChannel</code>）</td><td>避免阻塞业务线程</td></tr>
+            <tr><td>新建 Java 网络服务</td><td>优先 Netty（封装 NIO）</td><td>直接写原生 NIO 易踩 Buffer/半包粘包等坑</td></tr>
+          </tbody>
+        </table>
+
+        <p><strong>面试回答：</strong>BIO 同步阻塞，一个连接一个线程，简单但并发差；NIO 同步非阻塞，用 Selector 多路复用，少量线程管大量连接，Netty 基于此；AIO 异步非阻塞，提交 IO 后内核完成再回调，Java 里网络 AIO 在 Linux 上实际用得少，高并发服务端选 NIO/Netty。关键区分：NIO 就绪后还要自己 read，AIO 是做完才通知。</p>
       </section>
 
 <section id="sync-async-block-nonblock">
@@ -1642,60 +1695,6 @@ int n = channel.read(buf);  // n==0 表示暂无数据
 CompletableFuture.supplyAsync(() -&gt; fetch())
     .thenAccept(result -&gt; handle(result));  // 不阻塞当前线程</code></pre>
         <p><strong>面试回答：</strong>同步/异步看结果谁通知——同步自己等/取，异步回调通知；阻塞/非阻塞看线程是否挂起；BIO=同步阻塞，NIO=同步非阻塞，AIO=异步；四者可组合，Future.get 是异步提交同步等待。</p>
-      </section>
-
-<section id="nio-components">
-        <h2>Java NIO 的 Channel、Buffer、Selector 分别是什么？</h2>
-        <p>Channel、Buffer、Selector 是 Java NIO 的核心组件。Channel 表示数据通道，Buffer 表示读写缓冲区，Selector 负责监听多个 Channel 的就绪事件。</p>
-        <ul>
-          <li>数据从 Channel 读入 Buffer，再从 Buffer 写入 Channel。</li>
-          <li>Selector 可以监听 accept、connect、read、write 等事件。</li>
-          <li>NIO 适合大量连接、每个连接活跃度不高的网络服务。</li>
-        </ul>
-      </section>
-
-<section id="io-multiplexing">
-        <h2>IO 多路复用是什么？</h2>
-        <p>IO 多路复用是用一个或少量线程同时监听多个连接的 IO 就绪事件，避免每个连接都占用一个阻塞线程。</p>
-        <ul>
-          <li>Linux 下常见实现有 select、poll、epoll。</li>
-          <li>Java NIO Selector 是多路复用思想在 Java 层的封装。</li>
-          <li>它提升的是连接管理能力，业务处理慢仍然需要线程池或异步化配合。</li>
-        </ul>
-      </section>
-
-<section id="reactor-model">
-        <h2>Reactor 模型是什么？</h2>
-        <p>Reactor 模型是一种事件驱动网络模型，由事件多路复用器监听 IO 事件，再分发给对应 Handler 处理。</p>
-        <pre><code class="language-java">Selector 监听 IO 事件
--&gt; 事件就绪
--&gt; 分发给 Handler
--&gt; Handler 处理读写、编解码或业务任务</code></pre>
-        <ul>
-          <li>单 Reactor 单线程模型简单，但 IO 和业务都在一个线程中，容易被慢任务阻塞。</li>
-          <li>单 Reactor 多线程会把业务处理交给工作线程池。</li>
-          <li>主从 Reactor 模型通常由 boss 线程处理连接，worker 线程处理读写事件，Netty 就是典型实现。</li>
-        </ul>
-      </section>
-
-<section id="zero-copy">
-        <h2>零拷贝是什么？</h2>
-        <p>零拷贝是减少数据在内核态和用户态之间复制次数的技术总称，常用于文件传输和网络发送。</p>
-        <ul>
-          <li>传统 IO 往往需要磁盘到内核缓冲区、内核到用户缓冲区、用户到 socket 缓冲区等多次复制。</li>
-          <li><code>sendfile</code>、<code>mmap</code>、DirectBuffer 都能在不同层面减少复制。</li>
-          <li>Kafka、Netty、文件服务器等高吞吐场景经常利用零拷贝降低 CPU 消耗。</li>
-        </ul>
-      </section>
-
-<section id="io-patterns">
-        <h2>Java 中有哪些常见 IO 设计模式？</h2>
-        <p>Java IO 中常见设计模式包括装饰器模式、适配器模式和组合式封装。</p>
-        <ul>
-          <li>InputStream/OutputStream 的各种包装类体现装饰器模式，例如 BufferedInputStream 增强缓冲能力。</li>
-          <li>Reader/Writer 处理字符流，InputStream/OutputStream 处理字节流，转换流体现字节到字符的适配。</li>
-          <li>这种设计让功能可以按需叠加，但类层级较多，使用时要区分字节、字符、缓冲、对象序列化等职责。</li>
-        </ul>
       </section>
 
 <section id="netty-performance">

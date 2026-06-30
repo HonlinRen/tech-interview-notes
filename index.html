@@ -9,72 +9,187 @@
 </head>
 <body>
   <main style="width: min(1120px, 100%); margin: 0 auto; padding: 28px;">
-    <section class="home-hero">
+    <section class="home-section" aria-label="面试知识点整理">
+      <div class="home-hero home-hero-study">
       <div class="home-hero-head">
-        <h1>面试知识点整理</h1>
+        <div class="home-hero-title-wrap">
+          <span class="home-section-label">学习专栏</span>
+          <h1>面试知识点整理</h1>
+        </div>
         <div id="homeStats" class="home-stats" aria-live="polite">
           <span class="home-stat home-stat-muted">统计加载中…</span>
         </div>
       </div>
-      <p>按主题拆分后的学习入口。学习状态仍使用浏览器 localStorage 保存，各主题页可独立搜索、折叠和标记已学习。</p>
-    </section>
-    <section class="home-grid" aria-label="主题入口">
-        <a class="home-card" href="python.html">
+      <p>按主题拆分后的学习入口。学习状态仍使用浏览器 localStorage 保存，各主题页可独立搜索、折叠和标记已学习。重点学习章节：AI应用\RAG向量搜索\LangChain\LangGraph</p>
+      </div>
+      <section class="home-topic-list" aria-label="主题入口">
+        <a class="home-card home-card-row tone-sky" href="python.html">
           <h2>Python</h2>
           <p>GIL、协程、GC、装饰器、Pydantic、WSGI/ASGI</p>
         </a>
-        <a class="home-card" href="java.html">
+        <a class="home-card home-card-row tone-amber" href="java.html">
           <h2>Java / JVM</h2>
           <p>Java 基础、集合、并发、JVM、IO/NIO</p>
         </a>
-        <a class="home-card" href="spring.html">
+        <a class="home-card home-card-row tone-green" href="spring.html">
           <h2>Spring Boot</h2>
           <p>AOP、事务、自动配置、Bean 生命周期、MyBatis</p>
         </a>
-        <a class="home-card" href="mysql.html">
+        <a class="home-card home-card-row tone-blue" href="mysql.html">
           <h2>MySQL</h2>
           <p>索引、事务、锁、MVCC、慢查询、InnoDB</p>
         </a>
-        <a class="home-card" href="redis.html">
+        <a class="home-card home-card-row tone-red" href="redis.html">
           <h2>Redis</h2>
           <p>持久化、缓存问题、分布式锁、限流、内存淘汰</p>
         </a>
-        <a class="home-card" href="rocketmq.html">
+        <a class="home-card home-card-row tone-purple" href="rocketmq.html">
           <h2>RocketMQ</h2>
           <p>核心组件、消息可靠性、顺序消息、事务消息</p>
         </a>
-        <a class="home-card" href="docker-k8s.html">
+        <a class="home-card home-card-row tone-cyan" href="docker-k8s.html">
           <h2>Docker / K8S</h2>
           <p>镜像、容器、Pod、Service、Deployment</p>
         </a>
-        <a class="home-card" href="ai.html">
-          <h2>AI Agent / RAG</h2>
-          <p>Agent、MCP、LangGraph、Prompt、评测与生产落地</p>
+        <a class="home-card home-card-row tone-indigo" href="ai.html">
+          <h2>AI应用</h2>
+          <p>Agent、MCP、Prompt、评测与生产落地</p>
         </a>
-        <a class="home-card" href="rag-vector.html">
+        <a class="home-card home-card-row tone-teal" href="rag-vector.html">
           <h2>RAG 向量检索</h2>
           <p>Chunk、Embedding、向量库、Hybrid、Rerank、数据清洗</p>
         </a>
-        <a class="home-card" href="llm.html">
+        <a class="home-card home-card-row tone-violet" href="langchain.html">
+          <h2>LangChain / LangGraph</h2>
+          <p>Chain、Agent、LCEL、Node、Edge、State、Checkpointer</p>
+        </a>
+        <a class="home-card home-card-row tone-pink" href="llm.html">
           <h2>大模型 / 推理与微调</h2>
           <p>推理加速、KV Cache、量化、SFT、LoRA</p>
         </a>
-        <a class="home-card" href="architecture.html">
+        <a class="home-card home-card-row tone-slate" href="architecture.html">
           <h2>网关 / 架构</h2>
           <p>网关、高可用、限流、幂等、分布式与系统设计</p>
         </a>
-        <a class="home-card" href="observability.html">
+        <a class="home-card home-card-row tone-emerald" href="observability.html">
           <h2>可观测性</h2>
           <p>日志、指标、链路追踪、告警、排障</p>
         </a>
-        <a class="home-card" href="security.html">
+        <a class="home-card home-card-row tone-rose" href="security.html">
           <h2>安全 / 鉴权</h2>
           <p>认证授权、JWT、OAuth2、SQL 注入、XSS/CSRF</p>
         </a>
-        <a class="home-card" href="leetcode.html">
+        <a class="home-card home-card-row tone-yellow" href="leetcode.html">
           <h2>算法 LeetCode</h2>
           <p>经典题目整理，链接直达力扣</p>
         </a>
+        <a class="home-card home-card-row tone-sky" href="frontend.html">
+          <h2>前端</h2>
+          <p>React、组件化、Hooks、常见 UI 模式</p>
+        </a>
+        <a class="home-card home-card-row tone-orange" href="bigdata.html">
+          <h2>大数据</h2>
+          <p>Elasticsearch、采集存储计算、ELK 链路</p>
+        </a>
+      </section>
+    </section>
+
+    <section class="home-section" aria-label="项目实战指南">
+      <div class="home-hero home-hero-project">
+        <div class="home-hero-head">
+          <div class="home-hero-title-wrap">
+            <span class="home-section-label">实战专栏</span>
+            <h1>项目实战指南</h1>
+          </div>
+        </div>
+        <p>真实项目拆解与实战参考，便于面试时结合项目经历讲解架构与落地细节。</p>
+      </div>
+      <section class="home-grid" aria-label="项目入口">
+        <article class="home-project-card">
+          <div class="home-project-head">
+            <div class="home-project-title-group">
+              <h2>agent-platform</h2>
+              <p class="home-project-desc">全栈 Agent 平台 Monorepo：React 前端 + Spring Cloud Gateway + FastAPI / LangGraph RAG 后端。</p>
+            </div>
+            <a class="home-project-link-inline" href="https://github.com/HonlinRen/agent-platform" target="_blank" rel="noopener noreferrer">GitHub 仓库 ↗</a>
+          </div>
+
+          <div class="project-mindmap" role="img" aria-label="agent-platform 三模块架构：agent-web、agent-gateway、agent-rag">
+            <div class="mindmap-root-wrap">
+              <div class="mindmap-root">agent-platform</div>
+              <div class="mindmap-root-line"></div>
+            </div>
+
+            <div class="mindmap-branches">
+              <div class="mindmap-module mindmap-web">
+                <div class="mindmap-module-head">
+                  <span class="mindmap-module-name">agent-web</span>
+                  <span class="mindmap-port">:5173</span>
+                </div>
+                <div class="mindmap-stack">React 19 · Vite · TypeScript</div>
+                <ul class="mindmap-leaves">
+                  <li>聊天 UI</li>
+                  <li>会话管理</li>
+                  <li>SSE 流式</li>
+                  <li>管理看板</li>
+                </ul>
+              </div>
+
+              <div class="mindmap-flow" aria-hidden="true">
+                <span class="mindmap-flow-line"></span>
+                <span class="mindmap-flow-arrow">→</span>
+              </div>
+
+              <div class="mindmap-module mindmap-gateway">
+                <div class="mindmap-module-head">
+                  <span class="mindmap-module-name">agent-gateway</span>
+                  <span class="mindmap-port">:8080</span>
+                </div>
+                <div class="mindmap-stack">Spring Boot 4 · Cloud Gateway</div>
+                <ul class="mindmap-leaves">
+                  <li>JWT 租户</li>
+                  <li>RPM / TPM 限流</li>
+                  <li>路由代理</li>
+                  <li>Actuator 可观测</li>
+                </ul>
+                <div class="mindmap-deps">
+                  <span class="mindmap-dep">Redis</span>
+                </div>
+              </div>
+
+              <div class="mindmap-flow" aria-hidden="true">
+                <span class="mindmap-flow-line"></span>
+                <span class="mindmap-flow-arrow">→</span>
+              </div>
+
+              <div class="mindmap-module mindmap-rag">
+                <div class="mindmap-module-head">
+                  <span class="mindmap-module-name">agent-rag</span>
+                  <span class="mindmap-port">:8081</span>
+                </div>
+                <div class="mindmap-stack">FastAPI · LangGraph · Chroma</div>
+                <ul class="mindmap-leaves">
+                  <li>RAG 检索</li>
+                  <li>重排序 Rerank</li>
+                  <li>Tool Calling</li>
+                  <li>对话持久化</li>
+                </ul>
+                <div class="mindmap-deps">
+                  <span class="mindmap-dep">Chroma</span>
+                  <span class="mindmap-dep">MySQL</span>
+                  <span class="mindmap-dep">DashScope</span>
+                  <span class="mindmap-dep">Redis</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mindmap-legend">
+              <span>请求链路</span>
+              <span class="mindmap-legend-path">Browser → web → gateway → rag</span>
+            </div>
+          </div>
+        </article>
+      </section>
     </section>
   </main>
   <script src="assets/study-legacy-map.js"></script>

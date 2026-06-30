@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>AI Agent / RAG 高频问题整理</title>
+  <title>AI应用 高频问题整理</title>
   <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/editor.css">
@@ -15,7 +15,7 @@
       <a class="home-link" href="index.html">返回首页</a>
 <div id="categoryStats" class="category-stats"></div>
       <details class="toc-group active" data-filter="ai" open>
-        <summary>AI Agent / RAG</summary>
+        <summary>AI应用</summary>
       </details>
     </aside>
 
@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn active" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn active" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
-                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+                    <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -84,10 +87,31 @@
         <p>增量更新、软删除、版本管理、权限隔离、质量评估、可观测性。</p>
       </section>
 
-<section id="what-is-mcp">
-        <h2>MCP是什么？</h2>
-        <p>MCP 全称是 <strong>Model Context Protocol，模型上下文协议</strong>。</p>
-        <p>MCP 是 AI Agent 连接外部工具、数据库、文件系统、业务系统的一套标准协议。</p>
+<section id="rag-open-source-frameworks">
+        <h2>RAG 搭建有哪些开源框架？</h2>
+        <p>常见有两类：<strong>代码框架</strong>灵活定制，<strong>低代码平台</strong>快速上线。面试提 1–2 个即可。</p>
+        <h3>LangChain</h3>
+        <p>Python / JS 生态最流行的 LLM 应用框架，RAG 链路组件齐全：Document Loader → Text Splitter → Embedding → VectorStore → Retriever → Prompt → LLM，用 LCEL 管道串联。</p>
+        <ul>
+          <li><strong>适合</strong>：需要深度定制检索策略、Agent 编排、与企业系统集成的团队。</li>
+          <li><strong>特点</strong>：生态大、组件多、灵活度高；生产需自行补评测、权限、运维。</li>
+        </ul>
+        <pre><code class="language-python"># LangChain RAG 最小链路
+loader | splitter | vectorstore
+retriever | prompt | llm | parser</code></pre>
+        <h3>Dify</h3>
+        <p>开源 LLM 应用平台，<strong>知识库 RAG 开箱即用</strong>：上传文档 → 自动切片 / Embedding → 对话应用，可视化配置，支持自托管。</p>
+        <ul>
+          <li><strong>适合</strong>：PoC、企业内部知识库问答、产品/运营也能参与配置。</li>
+          <li><strong>特点</strong>：低代码、上线快；复杂逻辑和深度集成不如 LangChain 灵活。</li>
+        </ul>
+        <p><strong>面试回答：</strong>常见 LangChain（代码灵活，组件化搭 RAG）和 Dify（低代码，知识库开箱即用）。选型：要定制用 LangChain，要快速验证用 Dify。</p>
+      </section>
+
+<section id="mcp-and-tool-calling">
+        <h2>MCP 与 Tool Calling 有什么区别？</h2>
+        <p>MCP 全称 <strong>Model Context Protocol（模型上下文协议）</strong>，是 AI Agent 连接外部工具、数据库、文件系统、业务系统的<strong>标准化协议</strong>。Tool Calling 则是 LLM API 提供的<strong>模型调用工具的能力</strong>。两者层次不同、互补而非替代。</p>
+        <h3>MCP 是什么</h3>
         <pre><code class="language-python">AI 应用 / Agent
   └── MCP Client
           ↓
@@ -95,7 +119,8 @@
           ├── Tool：执行动作
           ├── Resource：读取资源
           └── Prompt：提供提示词模板</code></pre>
-        <p>注册一个新的 MCP 服务，通常要给调用方提供：</p>
+        <p>Client 通过 MCP 协议连接 Server，发现可用工具并调用；Server 负责把业务能力（查库、读文件、调 API）以统一格式暴露出来。</p>
+        <p>注册一个 MCP 服务通常需提供：</p>
         <table>
           <thead>
             <tr>
@@ -108,14 +133,9 @@
             <tr><td>能力清单</td><td>tools、resources、prompts</td></tr>
             <tr><td>参数规范</td><td>每个 tool 的入参 schema、出参格式</td></tr>
             <tr><td>权限信息</td><td>鉴权方式、工具权限、读写范围</td></tr>
-            <tr><td>运行约束</td><td>超时、限流、最大结果数、错误码</td></tr>
-            <tr><td>示例文档</td><td>配置示例、调用示例、典型返回结果</td></tr>
           </tbody>
         </table>
-      </section>
-
-<section id="tool-calling-mcp">
-        <h2>Tool Calling 和 MCP 区别？</h2>
+        <h3>与 Tool Calling 的区别</h3>
         <table>
           <thead>
             <tr>
@@ -127,17 +147,23 @@
           <tbody>
             <tr><td>定位</td><td>LLM 选择并调用工具的能力</td><td>工具/数据源的标准化暴露协议</td></tr>
             <tr><td>层次</td><td>模型 API 层</td><td>应用基础设施层</td></tr>
-            <tr><td>关注点</td><td>模型如何决策调用哪个工具</td><td>工具如何注册、鉴权、治理、复用</td></tr>
+            <tr><td>关注点</td><td>模型如何决策调用哪个工具、填什么参数</td><td>工具如何注册、鉴权、治理、跨应用复用</td></tr>
+            <tr><td>类比</td><td>「模型会调工具」</td><td>「工具以统一协议对外服务」</td></tr>
           </tbody>
         </table>
-        <p>Tool Calling 是「模型会调工具」；MCP 是「工具以统一协议对外服务」，两者互补。</p>
+        <pre><code class="language-python">典型协作链路：
+用户提问 → LLM Tool Calling 决策（选 search_docs）
+         → MCP Client 转发 tools/call
+         → MCP Server 执行真实查询
+         → 结果回传 LLM → 生成答案</code></pre>
+        <p><strong>面试回答：</strong>MCP 是连接 Agent 与外部系统的标准协议，定义 Client/Server 如何发现 Tool、读 Resource；Tool Calling 是模型 API 能力，决定「调哪个工具、参数是什么」。一句话：Tool Calling 管决策，MCP 管工具基础设施，两者配合使用。</p>
       </section>
 
-<section id="MCP-Registry">
-        <h2>MCP Server 怎么注册和鉴权？</h2>
-        <p>MCP Server 不由中心注册表统一登记，而是由 <strong>Client 在本地配置中声明</strong>，启动时按配置拉起或连接 Server，完成握手后纳入可用工具池。</p>
-        <p><strong>stdio = standard input / standard output，标准输入输出。</strong></p>
-        <h3>注册方式</h3>
+<section id="mcp-implementation">
+        <h2>MCP 如何通信与工具 Schema 定义？</h2>
+        <p>MCP 落地涉及三件事：<strong>Client 如何连接 Server（注册与鉴权）</strong>、<strong>双方如何通信</strong>、<strong>工具参数如何描述（Schema）</strong>。</p>
+        <h3>1. Server 注册与鉴权</h3>
+        <p>MCP 没有中心注册表，由 <strong>Client 在本地配置中声明</strong> Server，启动时拉起或连接，握手后纳入可用工具池。</p>
         <table>
           <thead>
             <tr>
@@ -147,11 +173,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>本地 stdio</td><td><code>command</code> + <code>args</code> + <code>env</code></td><td>本机工作 Cursor / Claude Code拉起子进程</td></tr>
+            <tr><td>本地 stdio</td><td><code>command</code> + <code>args</code> + <code>env</code></td><td>Cursor / Claude Desktop 拉起子进程</td></tr>
             <tr><td>远程 HTTP</td><td><code>url</code> + 鉴权头 / OAuth</td><td>团队共享、企业级工具服务</td></tr>
           </tbody>
         </table>
-        <pre><code class="language-json">// Cursor: .cursor/mcp.json 示例
+        <pre><code class="language-json">// .cursor/mcp.json 示例
 {
   &quot;mcpServers&quot;: {
     &quot;filesystem&quot;: {
@@ -165,20 +191,14 @@
     }
   }
 }</code></pre>
-        <h3>鉴权机制</h3>
         <ul>
-          <li><strong>本地 stdio</strong>：依赖 OS 进程隔离，通常不单独鉴权；敏感凭据放 <code>env</code>，由 Server 进程读取。</li>
-          <li><strong>API Key / Bearer Token</strong>：远程 Server 在 HTTP Header 或环境变量中校验。</li>
-          <li><strong>OAuth 2.0</strong>：远程 MCP 按规范走临时 授权码 + PKCE，Client 拿 access token 后带在请求头访问。</li>
-          <li><strong>权限治理</strong>：Client 侧控制启用哪些 Server；Server 侧按 scope / 白名单限制可调工具与资源。</li>
+          <li><strong>本地 stdio</strong>：依赖 OS 进程隔离；敏感凭据放 <code>env</code>。</li>
+          <li><strong>远程</strong>：Bearer Token / API Key / OAuth 2.0（授权码 + PKCE）。</li>
+          <li><strong>权限治理</strong>：Client 控制启用哪些 Server；Server 按 scope 限制可调工具。</li>
         </ul>
-        <p>连接建立后 Client 发 <code>initialize</code>，双方交换 capabilities，再拉取 <code>tools/list</code> 完成「注册」。</p>
-      </section>
-
-<section id="Model-Context-Protocol">
-        <h2>MCP Client 和 Server 通信方式是什么？</h2>
-        <p>统一用 <strong>JSON-RPC 2.0</strong> 传消息（说什么），经不同 <strong>Transport</strong> 送达（怎么传）。</p>
-        <p>消息分三类：带 <code>id</code> 的 Request/Response（要回复）和无 <code>id</code> 的 Notification（不回复）。</p>
+        <p>连接后 Client 发 <code>initialize</code> 交换 capabilities，再 <code>tools/list</code> 发现工具，完成「注册」。</p>
+        <h3>2. Client 与 Server 通信</h3>
+        <p>消息层统一 <strong>JSON-RPC 2.0</strong>（说什么），传输层选 <strong>Transport</strong>（怎么传）。</p>
         <table>
           <thead>
             <tr>
@@ -188,314 +208,176 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td><strong>stdio</strong></td><td>Client 启动子进程，<code>stdin</code>/<code>stdout</code> 一行一条 JSON</td><td>本地，Cursor / Claude Desktop 最常见</td></tr>
-            <tr><td><strong>Streamable HTTP</strong></td><td>向单一 MCP 端点发 HTTP POST，响应为 JSON 或 SSE 流</td><td>远程共享，支持 Bearer / OAuth 鉴权</td></tr>
+            <tr><td><strong>stdio</strong></td><td>子进程 <code>stdin</code>/<code>stdout</code>，一行一条 JSON</td><td>本地 IDE 最常见</td></tr>
+            <tr><td><strong>Streamable HTTP</strong></td><td>HTTP POST，响应 JSON 或 SSE 流</td><td>远程共享，支持 Bearer / OAuth</td></tr>
           </tbody>
         </table>
-        <h3>典型流程</h3>
-        <pre><code class="language-json">initialize → initialized → tools/list（发现工具）
-→ 模型 Tool Calling 决策 → tools/call（执行）→ 结果回传模型</code></pre>
-        <pre><code class="language-json">{
-    &quot;jsonrpc&quot;: &quot;2.0&quot;,
-    &quot;id&quot;: 2,
-    &quot;method&quot;: &quot;tools/call&quot;,
-    &quot;params&quot;: {
-        &quot;name&quot;: &quot;search_docs&quot;,
-        &quot;arguments&quot;: {
-            &quot;query&quot;: &quot;MCP 鉴权&quot;,
-            &quot;top_k&quot;: 5
-        }
-    }
-}</code></pre>
-        <p>消息层使用 JSON-RPC 2.0；传输层可以走本地 stdio，也可以走远程 Streamable HTTP</p>
-      </section>
+        <pre><code class="language-json">典型流程：
+initialize → initialized → tools/list → tools/call → 结果回传
 
-<section id="MCP-schema">
-        <h2>MCP工具 schema 怎么定义？</h2>
-        <p>MCP 工具在 Server 中声明 <code>name</code>、<code>description</code>、<code>inputSchema</code> 三要素；<code>inputSchema</code> 为标准 <strong>JSON Schema</strong>，描述参数类型、必填项与约束，经 <code>tools/list</code> 暴露给 Client，再转成模型可用的 Tool 定义。</p>
-        <pre><code class="language-python">// Server 侧工具定义（逻辑结构）
+// tools/call 请求示例
 {
+  &quot;jsonrpc&quot;: &quot;2.0&quot;,
+  &quot;id&quot;: 2,
+  &quot;method&quot;: &quot;tools/call&quot;,
+  &quot;params&quot;: {
+    &quot;name&quot;: &quot;search_docs&quot;,
+    &quot;arguments&quot;: { &quot;query&quot;: &quot;MCP 鉴权&quot;, &quot;top_k&quot;: 5 }
+  }
+}</code></pre>
+        <h3>3. 工具 Schema 定义</h3>
+        <p>Server 声明 <code>name</code>、<code>description</code>、<code>inputSchema</code>；<code>inputSchema</code> 为标准 <strong>JSON Schema</strong>，经 <code>tools/list</code> 暴露，Client 转成模型 Tool 定义。</p>
+        <pre><code class="language-json">{
   &quot;name&quot;: &quot;search_docs&quot;,
   &quot;description&quot;: &quot;搜索企业知识库文档&quot;,
   &quot;inputSchema&quot;: {
     &quot;type&quot;: &quot;object&quot;,
     &quot;properties&quot;: {
-      &quot;query&quot;: {
-        &quot;type&quot;: &quot;string&quot;,
-        &quot;description&quot;: &quot;搜索关键词&quot;
-      },
-      &quot;top_k&quot;: {
-        &quot;type&quot;: &quot;integer&quot;,
-        &quot;minimum&quot;: 1,
-        &quot;maximum&quot;: 20,
-        &quot;default&quot;: 5,
-        &quot;description&quot;: &quot;返回条数&quot;
-      },
-      &quot;category&quot;: {
-        &quot;type&quot;: &quot;string&quot;,
-        &quot;enum&quot;: [&quot;tech&quot;, &quot;hr&quot;, &quot;finance&quot;],
-        &quot;description&quot;: &quot;文档分类&quot;
-      }
+      &quot;query&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;搜索关键词&quot; },
+      &quot;top_k&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 1, &quot;maximum&quot;: 20, &quot;default&quot;: 5 },
+      &quot;category&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;tech&quot;, &quot;hr&quot;, &quot;finance&quot;] }
     },
     &quot;required&quot;: [&quot;query&quot;]
   }
 }</code></pre>
-        <h3>与 Function Calling 的对应关系</h3>
         <table>
           <thead>
             <tr>
               <th>MCP 字段</th>
               <th>模型 Tool 字段</th>
-              <th>说明</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td><code>name</code></td><td><code>name</code></td><td>工具唯一标识</td></tr>
-            <tr><td><code>description</code></td><td><code>description</code></td><td>供模型理解用途</td></tr>
-            <tr><td><code>inputSchema</code></td><td><code>parameters</code></td><td>均为 JSON Schema，语义一致</td></tr>
+            <tr><td><code>name</code></td><td><code>name</code></td></tr>
+            <tr><td><code>description</code></td><td><code>description</code></td></tr>
+            <tr><td><code>inputSchema</code></td><td><code>parameters</code></td></tr>
           </tbody>
         </table>
-        <p>写好 schema 的关键：<code>description</code> 写清业务语义；<code>required</code> 标必填；用 <code>enum</code> / <code>minimum</code> 约束取值；Server 执行前再做一次 schema 校验，防止模型幻觉参数。</p>
+        <p>写好 schema：<code>description</code> 写清语义；<code>required</code> 标必填；<code>enum</code> / <code>minimum</code> 约束取值；Server 执行前再做 schema 校验，防模型幻觉参数。</p>
+        <p><strong>面试回答：</strong>MCP Server 由 Client 本地配置注册（stdio 或远程 HTTP），鉴权靠 env / Bearer / OAuth。通信用 JSON-RPC 2.0，传输走 stdio 或 Streamable HTTP。工具用 name + description + inputSchema（JSON Schema）描述，与 Function Calling 的 parameters 一一对应；流程是 initialize → tools/list → tools/call。</p>
       </section>
 
 <section id="reduce-hallucination">
         <h2>如何减少大模型幻觉？</h2>
+        <p>幻觉（Hallucination）指模型生成<strong>看似合理但无事实依据</strong>的内容——编造数据、虚构引用、张冠李戴。无法彻底消除，但可通过「给依据、限发挥、做校验、能拒答」系统性降低。</p>
         <h3>RAG 层面</h3>
         <ul>
-          <li>提供可靠检索上下文，要求「仅基于资料回答」。</li>
-          <li>输出引用来源，无依据则拒答或澄清。</li>
-          <li>Rerank + 忠实度评测（Faithfulness）。</li>
+          <li><strong>提供可靠上下文</strong>：检索质量是上限；Chunk 合理、Hybrid + Rerank、过滤低相关文档。</li>
+          <li><strong>Prompt 约束</strong>：明确要求「仅基于以下资料回答，资料未提及则说不知道」。</li>
+          <li><strong>强制引用</strong>：输出必须带 <code>doc_id</code> / 页码 / 原文片段，便于校验与溯源。</li>
+          <li><strong>拒答机制</strong>：检索分数低于阈值、Context 为空时，走固定拒答话术，不让模型硬编。</li>
+          <li><strong>忠实度评测</strong>：用 RAGAS Faithfulness、人工抽检 bad case，持续迭代检索与 Prompt。</li>
         </ul>
         <h3>生成层面</h3>
         <ul>
-          <li>降低 temperature，约束输出格式。</li>
-          <li>Structured Output / JSON Schema 减少自由发挥。</li>
+          <li><strong>降低 temperature</strong>：事实类问答用 0–0.3，减少随机「发挥」。</li>
+          <li><strong>Structured Output</strong>：JSON Schema / Function Calling 约束字段，减少自由文本胡编。</li>
+          <li><strong>分步生成</strong>：先抽取事实，再组织答案（Extract-then-Generate），比一步到位更稳。</li>
+          <li><strong>Self-RAG / CRAG</strong>：生成后自检是否与 Context 一致，不一致则重写或拒答。</li>
+          <li><strong>避免误导性 Prompt</strong>：不要暗示「一定有答案」；少问开放臆测题（「你觉得 CEO 怎么想」）。</li>
         </ul>
-        <h3>工程层面</h3>
+        <h3>工具与 Agent 层面</h3>
         <ul>
-          <li>关键业务答案规则校验或 HITL 审核。</li>
-          <li>LLM-as-Judge 或 RAGAS 持续监控。</li>
+          <li><strong>能查就不猜</strong>：数值、状态、实时信息走 API / SQL / 搜索工具，不让模型凭记忆回答。</li>
+          <li><strong>工具结果优先</strong>：Prompt 规定「工具返回为准，不得覆盖或篡改」。</li>
+          <li><strong>参数校验</strong>：Function Calling 的 schema 加 <code>enum</code>、<code>required</code>，Server 端二次校验再执行。</li>
         </ul>
-      </section>
+        <h3>工程与治理层面</h3>
+        <ul>
+          <li><strong>规则后处理</strong>：金额、日期、身份证号等关键字段用正则 / 规则引擎校验。</li>
+          <li><strong>HITL 人工审核</strong>：高风险场景（医疗、法务、金融）低置信度转人工。</li>
+          <li><strong>LLM-as-Judge</strong>：用独立模型或 RAGAS 对 Faithfulness 打分，低分拦截。</li>
+          <li><strong>监控与回归</strong>：记录幻觉反馈、低分 case，纳入评测集持续回归。</li>
+          <li><strong>权限与数据隔离</strong>：metadata 过滤，避免模型把 A 部门文档内容答给 B 部门用户。</li>
+        </ul>
+        <pre><code class="language-python">System: 你是企业知识库助手。严格遵守：
+1. 仅根据【检索资料】回答，不得使用外部知识。
+2. 每条结论必须标注来源 [doc_id]。
+3. 资料不足以回答时，回复：「根据现有资料无法确认，建议联系人工客服。」
+4. 禁止编造政策条款、数值、日期、人名。
 
-<section id="langchain-structure">
-        <h2>LangChain 常见结构有哪些？</h2>
-        <p>LangChain 按职责分层，核心是把 <strong>Model、Prompt、数据、编排</strong> 拆成可复用组件，再用 Chain / Agent 串联。</p>
+【检索资料】
+{context}
+
+【用户问题】
+{question}</code></pre>
         <table>
           <thead>
             <tr>
-              <th>结构</th>
-              <th>典型类 / API</th>
+              <th>手段</th>
+              <th>解决哪类幻觉</th>
+              <th>典型场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>RAG + 引用</td><td>事实性胡编</td><td>制度问答、产品手册</td></tr>
+            <tr><td>工具调用</td><td>实时数据编造</td><td>订单状态、库存查询</td></tr>
+            <tr><td>Structured Output</td><td>格式/字段乱填</td><td>工单分类、参数抽取</td></tr>
+            <tr><td>拒答 + 阈值</td><td>无依据硬答</td><td>检索 miss 时</td></tr>
+            <tr><td>Faithfulness 评测</td><td>上线后漂移</td><td>Prompt / Rerank 迭代</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>幻觉无法根治，核心是四层防控——RAG 给依据并强制引用与拒答；生成层降 temperature、结构化输出、生成后自检；Agent 层能查就不猜、工具结果为准；工程层规则校验、人工审核、Faithfulness 监控。记住：检索质量决定上限，Prompt 约束减少发挥，校验与拒答是最后防线。</p>
+      </section>
+
+<section id="what-is-dify">
+        <h2>Dify 是什么？</h2>
+        <p>Dify 是一个<strong>开源 LLM 应用开发平台</strong>，提供可视化编排、知识库 RAG、Agent、模型接入与 API 发布，让团队<strong>低代码 / 无代码</strong>快速搭建生产级 AI 应用，也支持自托管部署。</p>
+        <h3>核心能力</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>模块</th>
               <th>作用</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Model</td><td><code>ChatOpenAI</code>、<code>OpenAIEmbeddings</code></td><td>封装 LLM 调用与向量化</td></tr>
-            <tr><td>Prompt</td><td><code>ChatPromptTemplate</code>、<code>FewShotPromptTemplate</code></td><td>模板化拼装 System / Human 消息</td></tr>
-            <tr><td>Output Parser</td><td><code>StrOutputParser</code>、<code>JsonOutputParser</code></td><td>把模型输出解析为字符串或结构化对象</td></tr>
-            <tr><td>Document Loader</td><td><code>PyPDFLoader</code>、<code>WebBaseLoader</code></td><td>加载原始文档</td></tr>
-            <tr><td>Text Splitter</td><td><code>RecursiveCharacterTextSplitter</code></td><td>切分 Chunk，控制检索粒度</td></tr>
-            <tr><td>VectorStore</td><td><code>Chroma</code>、<code>FAISS</code>、<code>PGVector</code></td><td>存储与检索向量</td></tr>
-            <tr><td>Retriever</td><td><code>as_retriever()</code>、<code>MultiQueryRetriever</code></td><td>按 query 召回相关文档</td></tr>
-            <tr><td>Chain（LCEL）</td><td><code>prompt | llm | parser</code></td><td>用管道符组合 Runnable，线性编排</td></tr>
-            <tr><td>Tool</td><td><code>@tool</code> 装饰函数</td><td>把业务能力暴露为可调用工具</td></tr>
-            <tr><td>Agent</td><td><code>create_react_agent</code>、<code>AgentExecutor</code></td><td>模型自主选工具、多步推理</td></tr>
-            <tr><td>Memory</td><td><code>ChatMessageHistory</code>、<code>RunnableWithMessageHistory</code></td><td>维护多轮对话上下文</td></tr>
+            <tr><td>应用（App）</td><td>创建聊天助手、Agent、Workflow 工作流，一键发布 Web / API</td></tr>
+            <tr><td>知识库（Knowledge）</td><td>上传文档，自动解析、切片、Embedding、向量检索，支撑 RAG</td></tr>
+            <tr><td>工作流（Workflow）</td><td>拖拽式编排 LLM、检索、条件分支、代码节点、工具调用</td></tr>
+            <tr><td>模型供应商</td><td>统一接入 OpenAI、Azure、Anthropic、本地 Ollama 等，集中管理 Key</td></tr>
+            <tr><td>插件 / 工具</td><td>内置或自定义 API 工具，供 Agent / Workflow 调用</td></tr>
+            <tr><td>观测与日志</td><td>对话日志、Token 消耗、Tracing，便于调试与运营</td></tr>
           </tbody>
         </table>
-        <p>现代 LangChain 推荐 <strong>LCEL（LangChain Expression Language）</strong>：各组件实现 <code>Runnable</code> 接口，支持 <code>invoke</code> / <code>stream</code> / <code>batch</code> 统一调用。</p>
-      </section>
-
-<section id="langchain-build-flow">
-        <h2>LangChain 标准构建流程是什么？</h2>
-        <p>从 0 到 1 搭一个 LangChain 应用，通常按「模型 → 数据 → 提示词 → 链 → 调用」五步走；RAG 和 Agent 在此基础上加 Retriever 或 Tool。</p>
-        <h3>基础流程（5 步）</h3>
-        <ol>
-          <li><strong>选 Model</strong>：配置 LLM 和（如需 RAG）Embedding 模型。</li>
-          <li><strong>准备数据</strong>：Loader 加载 → Splitter 切分 → Embedding → 写入 VectorStore。</li>
-          <li><strong>定义 Prompt</strong>：写清角色、上下文占位符、输出格式要求。</li>
-          <li><strong>组装 Chain</strong>：用 LCEL 管道串联各组件。</li>
-          <li><strong>调用与观测</strong>：<code>invoke()</code> / <code>stream()</code>，挂 Callback 记录 Token 与延迟。</li>
-        </ol>
-        <h3>简单问答 Chain</h3>
-        <pre><code class="language-python">from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-
-llm = ChatOpenAI(model=&quot;gpt-4o&quot;)
-prompt = ChatPromptTemplate.from_messages([
-    (&quot;system&quot;, &quot;你是企业知识库助手，简洁回答。&quot;),
-    (&quot;human&quot;, &quot;{question}&quot;),
-])
-chain = prompt | llm | StrOutputParser()
-
-answer = chain.invoke({&quot;question&quot;: &quot;年假有多少天？&quot;})</code></pre>
-        <h3>RAG Chain 扩展</h3>
-        <pre><code class="language-python">from langchain_core.runnables import RunnablePassthrough
-
-def format_docs(docs):
-    return &quot;\n\n&quot;.join(d.page_content for d in docs)
-
-rag_prompt = ChatPromptTemplate.from_messages([
-    (&quot;system&quot;, &quot;仅根据以下资料回答，无依据则说不知道。\n\n{context}&quot;),
-    (&quot;human&quot;, &quot;{question}&quot;),
-])
-rag_chain = (
-    {&quot;context&quot;: retriever | format_docs, &quot;question&quot;: RunnablePassthrough()}
-    | rag_prompt
-    | llm
-    | StrOutputParser()
-)</code></pre>
-        <h3>Agent 扩展</h3>
-        <ol>
-          <li>用 <code>@tool</code> 定义搜索、查库等业务函数。</li>
-          <li><code>create_react_agent(llm, tools, prompt)</code> 创建 Agent。</li>
-          <li><code>AgentExecutor(agent, tools)</code> 执行多轮 think-act 循环。</li>
-        </ol>
-        <p>流程固定、无分支时用 Chain；需要自主选工具、多步推理时升级为 Agent；有循环、人工审批、状态持久化时再考虑 LangGraph。</p>
-      </section>
-
-<section id="langchain-vs-langgraph">
-        <h2>LangChain 和 LangGraph 区别是什么？</h2>
-        <p>LangChain 是 LLM 应用组件库；LangGraph 是有状态图工作流编排框架。</p>
+        <h3>典型应用类型</h3>
+        <ul>
+          <li><strong>Chatbot</strong>：单轮/多轮对话，可挂知识库做 RAG 问答。</li>
+          <li><strong>Agent</strong>：模型自主选工具，适合开放域任务。</li>
+          <li><strong>Workflow</strong>：固定流程编排（检索 → 生成 → 后处理），适合可控业务链路。</li>
+        </ul>
+        <pre><code class="language-python">用户提问
+  → Dify 应用（Chatbot / Agent / Workflow）
+      → 知识库检索（可选）
+      → LLM 生成
+      → 返回答案 + 引用来源
+  → 对外暴露：Web 嵌入 / REST API / SDK</code></pre>
+        <h3>与 LangChain / 自研对比</h3>
         <table>
           <thead>
             <tr>
               <th>对比项</th>
-              <th>LangChain</th>
-              <th>LangGraph</th>
+              <th>Dify</th>
+              <th>LangChain / 自研</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>定位</td><td>组件与链式编排</td><td>有状态图工作流与 Agent 编排</td></tr>
-            <tr><td>流程形态</td><td>线性链路或简单 Agent</td><td>分支、循环、路由、状态机</td></tr>
-            <tr><td>适用场景</td><td>RAG 原型、工具调用</td><td>复杂 Agent、审批流、可恢复任务</td></tr>
+            <tr><td>开发方式</td><td>可视化 + 配置为主，少量代码扩展</td><td>代码优先，灵活度高</td></tr>
+            <tr><td>上手速度</td><td>快，产品/运营也能参与</td><td>慢，需工程团队</td></tr>
+            <tr><td>定制深度</td><td>复杂逻辑、深度集成受限</td><td>任意定制，完全可控</td></tr>
+            <tr><td>知识库 RAG</td><td>内置，开箱即用</td><td>需自行搭建链路</td></tr>
+            <tr><td>部署</td><td>Docker 自托管或云服务</td><td>随应用自行部署</td></tr>
+            <tr><td>适用阶段</td><td>PoC、内部知识库、中小团队</td><td>复杂 Agent、深度业务集成</td></tr>
           </tbody>
         </table>
-        <p>简单 RAG 用 LangChain 足够；需要循环、人工介入、状态持久化时选 LangGraph。</p>
-      </section>
-
-<section id="langgraph-node">
-        <h2>LangGraph 的 Node 怎么设计？</h2>
-        <p><span class="em-warn">Node 是工作流中的可执行步骤</span>，应职责单一、输入输出清晰</p>
-        <h3>设计原则</h3>
+        <h3>企业使用注意点</h3>
         <ul>
-          <li>按能力拆分：<code>rewrite_query</code>、<code>retrieve</code>、<code>rerank</code>、<code>generate</code>、<code>call_tool</code>、<code>human_review</code>。</li>
-          <li>避免一个 Node 做太多事，便于观测、重试和替换。</li>
-          <li>只返回 State 增量更新，不覆盖整个状态。</li>
-          <li>条件分支、循环通过 conditional edge 表达。</li>
+          <li><strong>数据安全</strong>：敏感文档建议自托管，控制模型与向量库出网策略。</li>
+          <li><strong>权限隔离</strong>：多租户 / 工作空间划分，知识库与应用级访问控制。</li>
+          <li><strong>复杂逻辑</strong>：深度业务规则、异构系统集成，往往仍需 Workflow + 自定义 API 或迁移到代码方案。</li>
+          <li><strong>评测迭代</strong>：内置日志不等于完整评测，关键场景仍要接 RAGAS / 人工抽检。</li>
         </ul>
-        <pre><code class="language-python">def retrieve_node(state):
-    docs = retriever.search(state[&quot;rewritten_query&quot;])
-    return {&quot;retrieved_docs&quot;: docs}</code></pre>
-      </section>
-
-<section id="langgraph-edge">
-        <h2>LangGraph 中 Edge 怎么设计？</h2>
-        <p><span class="em-warn">Edge 决定 Node 之间的流转方向</span>，分固定边和条件边两类。</p>
-        <h3>固定边（add_edge）</h3>
-        <p>无条件跳转，适合线性流水线。</p>
-        <pre><code class="language-python">builder.add_edge(&quot;retrieve&quot;, &quot;rerank&quot;)
-builder.add_edge(&quot;rerank&quot;, &quot;generate&quot;)
-builder.add_edge(&quot;generate&quot;, END)</code></pre>
-        <h3>条件边（add_conditional_edges）</h3>
-        <p>路由函数读取 State，返回<strong>下一个 Node 名称</strong>，实现分支、循环、重试。</p>
-        <pre><code class="language-python">def route_after_generate(state):
-    if state.get(&quot;need_tool&quot;):
-        return &quot;call_tool&quot;
-    if state.get(&quot;retry_count&quot;, 0) &gt; 3:
-        return END
-    return &quot;human_review&quot;
-
-builder.add_conditional_edges(
-    &quot;generate&quot;,
-    route_after_generate,
-    {
-        &quot;call_tool&quot;: &quot;call_tool&quot;,
-        &quot;human_review&quot;: &quot;human_review&quot;,
-        END: END,
-    },
-)</code></pre>
-        <h3>常见 Edge 模式</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>场景</th>
-              <th>Edge 设计</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>线性 RAG</td><td>rewrite → retrieve → rerank → generate → END</td></tr>
-            <tr><td>Tool Calling 循环</td><td>agent → tools → agent（条件边检测是否继续调工具）</td></tr>
-            <tr><td>重试 / 降级</td><td>generate → 失败则 retry_node，超限则 fallback → END</td></tr>
-            <tr><td>人工审核</td><td><code>interrupt_before</code> + 条件边路由到 human_review</td></tr>
-            <tr><td>Agentic RAG</td><td>retrieve → grade → 质量不足则 rewrite 再检索（形成环）</td></tr>
-          </tbody>
-        </table>
-        <h3>设计原则</h3>
-        <ul>
-          <li>路由函数<strong>只读 State、无副作用</strong>，分支逻辑集中、可单测。</li>
-          <li>返回值必须在映射表中存在，避免运行时找不到 Node。</li>
-          <li>循环边务必设<strong>退出条件</strong>（步数上限、置信度阈值），防止死循环。</li>
-          <li>END 是内置终止节点，任何可结束的路径都应能到达 END。</li>
-        </ul>
-      </section>
-
-<section id="langgraph-state">
-        <h2>LangGraph 中 State 存储哪些字段？</h2>
-        <p><span class="em-warn">State 是跨节点共享的状态对象</span>，存储执行过程中需读写的数据</p>
-        <table>
-          <thead>
-            <tr>
-              <th>字段类型</th>
-              <th>常见字段</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>用户输入</td><td><code>question</code>、<code>session_id</code>、<code>user_id</code>、<code>tenant_id</code></td></tr>
-            <tr><td>对话上下文</td><td><code>messages</code>、<code>history_summary</code>、<code>memory</code></td></tr>
-            <tr><td>检索过程</td><td><code>rewritten_query</code>、<code>retrieved_docs</code>、<code>reranked_docs</code>、<code>citations</code></td></tr>
-            <tr><td>工具调用</td><td><code>tool_calls</code>、<code>tool_results</code>、<code>tool_errors</code></td></tr>
-            <tr><td>控制字段</td><td><code>route</code>、<code>step</code>、<code>retry_count</code>、<code>need_human_review</code></td></tr>
-            <tr><td>输出结果</td><td><code>answer</code>、<code>confidence</code>、<code>error</code></td></tr>
-          </tbody>
-        </table>
-        <p>State 不宜膨胀：大对象、原始全文、敏感数据只存引用 ID 或摘要。</p>
-      </section>
-
-<section id="langgraph-builder">
-        <h2>LangGraph 中 Builder 怎么设计？</h2>
-        <p><span class="em-warn">Builder 负责把 Node、Edge、State 组装成可执行的图</span>，典型流程是：定义 State → 注册 Node → 连 Edge → <code>compile()</code>。</p>
-        <h3>标准构建步骤</h3>
-        <ol>
-          <li><strong>定义 State</strong>：规定图运行有哪些字段</li>
-          <li><strong>创建图</strong>：绑定状态结构 schema</li>
-          <li><strong>注册 Node</strong>：每个 Node 只做一件事，把业务步骤注册到图</li>
-          <li><strong>连接 Edge</strong>：固定边 、条件边 ，定义节点执行顺序和分支条件</li>
-          <li><strong>编译运行</strong>：编译成可执行Graph</li>
-        </ol>
-        <pre><code class="language-python">from langgraph.graph import StateGraph, END
-# 创建一个图构建器 builder
-builder = StateGraph(AgentState)
-# 注册 Node 节点
-builder.add_node(&quot;rewrite&quot;, rewrite_node)
-builder.add_node(&quot;retrieve&quot;, retrieve_node)
-builder.add_node(&quot;generate&quot;, generate_node)
-# 设置入口节点
-builder.set_entry_point(&quot;rewrite&quot;)
-# 连接 Edge 边，定义节点之间的执行顺序
-builder.add_edge(&quot;rewrite&quot;, &quot;retrieve&quot;)
-builder.add_edge(&quot;retrieve&quot;, &quot;generate&quot;)
-builder.add_edge(&quot;generate&quot;, END)
-# 编译图，生成真正可以执行的 graph
-graph = builder.compile(checkpointer=memory)</code></pre>
-        <h3>设计要点</h3>
-        <ul>
-          <li>Builder 只做<strong>编排</strong>，业务逻辑放在 Node 函数里，便于单测。</li>
-          <li>复杂路由用 conditional edge 抽成独立 <code>route_fn</code>，Builder 保持可读。</li>
-          <li>子图（Subgraph）可封装 RAG、Tool 等模块，主 Builder 只负责拼装。</li>
-          <li>编译后再注入运行时依赖（retriever、llm），Node 通过闭包或依赖注入获取。</li>
-        </ul>
+        <p><strong>面试回答：</strong>Dify 是开源 LLM 应用平台，把 RAG、Agent、Workflow、模型管理、API 发布做成一体化产品；适合快速搭建企业知识库问答和内部 AI 应用。与 LangChain 相比，Dify 偏低代码、开箱即用，LangChain 偏代码灵活、适合复杂定制。选型上：PoC 和标准化 RAG 用 Dify 快；复杂 Agent、深度集成用 LangChain / LangGraph 自研更稳。</p>
       </section>
 
 <section id="structured-data-rag">
@@ -637,6 +519,83 @@ graph = builder.compile(checkpointer=memory)</code></pre>
         <p><strong>面试回答：</strong>RAGAS 核心看四件事——检索准不准（Precision/Recall）、答案有没有胡编（Faithfulness）、答没答到点（Relevancy）。</p>
       </section>
 
+<section id="ragas-code-eval">
+        <h2>RAGAS 在代码项目中如何评价召回率和回答准确率？</h2>
+        <p>在工程里接入 RAGAS，本质是准备评测数据集 → 跑 RAG 链路拿到 <code>contexts</code> / <code>answer</code> → 调用 <code>ragas.evaluate()</code> 批量打分 → 对比版本回归。指标与业务含义的对应关系如下：</p>
+        <table>
+          <thead>
+            <tr>
+              <th>业务关注点</th>
+              <th>RAGAS 指标</th>
+              <th>所需字段</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>检索召回率</strong></td><td><code>context_recall</code></td><td><code>question</code>、<code>contexts</code>、<code>ground_truth</code></td><td>标准答案中的信息，是否被检索到的 Context 覆盖</td></tr>
+            <tr><td><strong>检索排序质量</strong></td><td><code>context_precision</code></td><td><code>question</code>、<code>contexts</code>、<code>ground_truth</code></td><td>召回 Chunk 里无关内容占比，反映 Rerank 效果</td></tr>
+            <tr><td><strong>回答准确率</strong></td><td><code>answer_correctness</code></td><td><code>question</code>、<code>answer</code>、<code>ground_truth</code></td><td>生成答案与标准答案的语义/事实一致性</td></tr>
+            <tr><td><strong>是否胡编</strong></td><td><code>faithfulness</code></td><td><code>question</code>、<code>answer</code>、<code>contexts</code></td><td>答案是否被 Context 支撑（无标注可跑）</td></tr>
+            <tr><td><strong>是否答非所问</strong></td><td><code>answer_relevancy</code></td><td><code>question</code>、<code>answer</code></td><td>答案与问题的相关度（无标注可跑）</td></tr>
+          </tbody>
+        </table>
+        <p>注意：<strong>召回率</strong>在 RAGAS 里对应 <code>context_recall</code>，不是传统 IR 的 <code>recall@K</code>；若评测集标注了相关 <code>doc_id</code>，可同时算工程指标 <code>recall@K = 命中 doc 数 / 应命中 doc 数</code>，与 RAGAS 互补。</p>
+        <h3>评测数据集格式</h3>
+        <p>每条样本至少包含：</p>
+        <ul>
+          <li><code>question</code>：用户问题</li>
+          <li><code>contexts</code>：RAG 实际检索到的 Chunk 列表（字符串数组）</li>
+          <li><code>answer</code>：RAG 系统生成的最终答案</li>
+          <li><code>ground_truth</code>：人工标注的标准答案（算召回率、准确率时必填）</li>
+        </ul>
+        <h3>代码接入（离线评测）</h3>
+        <pre><code class="language-python"># pip install ragas datasets langchain-openai
+
+from datasets import Dataset
+from ragas import evaluate
+from ragas.metrics import context_recall, answer_correctness, faithfulness
+
+# 1. 准备评测集（可从 JSON / CSV 加载）
+eval_rows = []
+for item in eval_dataset:
+    # 2. 跑你的 RAG 链路，收集实际输出
+    contexts = retriever.retrieve(item[&quot;question&quot;])   # [&quot;chunk1&quot;, &quot;chunk2&quot;, ...]
+    answer = rag_pipeline.generate(item[&quot;question&quot;], contexts)
+
+    eval_rows.append({
+        &quot;question&quot;: item[&quot;question&quot;],
+        &quot;contexts&quot;: contexts,
+        &quot;answer&quot;: answer,
+        &quot;ground_truth&quot;: item[&quot;ground_truth&quot;],  # 人工标注
+    })
+
+dataset = Dataset.from_list(eval_rows)
+
+# 3. 批量评测：召回率 + 回答准确率 + 忠实度
+result = evaluate(
+    dataset,
+    metrics=[context_recall, answer_correctness, faithfulness],
+)
+
+print(result)  # 各指标均值，如 context_recall=0.82, answer_correctness=0.76
+print(result.to_pandas())  # 逐条明细，便于定位 bad case</code></pre>
+        <h3>工程化实践</h3>
+        <ol>
+          <li><strong>基线版本</strong>：当前线上 Prompt / Embedding / Rerank 跑一遍，记录分数作为 baseline。</li>
+          <li><strong>变更对比</strong>：改 Chunk 策略、换模型、调 Rerank 后重跑，对比 <code>context_recall</code> 和 <code>answer_correctness</code> 升降。</li>
+          <li><strong>分项排查</strong>：<code>context_recall</code> 低 → 查检索/切片/Embedding；<code>answer_correctness</code> 低但 recall 高 → 查 Prompt / 生成模型；<code>faithfulness</code> 低 → 幻觉，加强引用约束。</li>
+          <li><strong>CI 门禁</strong>：评测集固定 100+ 条，PR 合并前跑 RAGAS，核心指标不得低于 baseline 阈值（如 recall -2%、correctness -3%）。</li>
+          <li><strong>bad case 回流</strong>：<code>result.to_pandas()</code> 筛低分样本，人工复核后加入回归集。</li>
+        </ol>
+        <h3>无 ground_truth 时的替代方案</h3>
+        <ul>
+          <li>无法标注标准答案时，<strong>不能算 context_recall / answer_correctness</strong>。</li>
+          <li>可先用 <code>faithfulness</code> + <code>answer_relevancy</code> + <code>context_precision</code> 做相对对比。</li>
+          <li>有 <code>doc_id</code> 标注时，自研 <code>recall@K</code> / <code>MRR</code> 评估检索，生成侧仍用 Faithfulness。</li>
+        </ul>
+        <p><strong>面试回答：</strong>代码里用 RAGAS 评召回率看 <code>context_recall</code>（需 ground_truth），评回答准确率看 <code>answer_correctness</code>；流程是构造评测集 → 跑 RAG 收集 contexts 和 answer → <code>evaluate()</code> 批量打分 → 对比 baseline 做回归。召回低查检索，准确率低查生成，faithfulness 低查幻觉；有 doc_id 时可额外算 recall@K 与 RAGAS 互补。</p>
+      </section>
+
 <section id="eval-dataset">
         <h2>如何构造 RAG 离线评测集？</h2>
         <h3>构造步骤</h3>
@@ -665,36 +624,57 @@ graph = builder.compile(checkpointer=memory)</code></pre>
 
 <section id="few-shot">
         <h2>Few-shot Prompt 适合什么场景？</h2>
-        <p>Few-shot 在 Prompt 中提供若干<strong>输入-输出示例</strong>，引导模型模仿格式和行为。</p>
-        <h3>适合</h3>
+        <p>Few-shot 在 Prompt 中提供若干<strong>输入-输出示例</strong>（通常 2–5 个），让模型通过「照猫画虎」学习期望的格式、术语和决策边界，而不必 Fine-tuning。</p>
+        <h3>适合的场景</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>为什么用 Few-shot</th>
+              <th>示例</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>固定输出格式</td><td>示例比文字描述更能约束 JSON / 标签 / 字段结构</td><td>工单分类输出 <code>{&quot;category&quot;: &quot;退款&quot;, &quot;priority&quot;: &quot;高&quot;}</code></td></tr>
+            <tr><td>领域术语与口径</td><td>通用模型不懂企业内部叫法，示例可统一翻译/归类规则</td><td>「SLA 违约」→「服务质量」类</td></tr>
+            <tr><td>边界 case 分类</td><td>规则难写清，用正反例讲清「什么算 A、什么不算」</td><td>情感分析中「还行吧」算中性还是负向</td></tr>
+            <tr><td>信息抽取 / 结构化填槽</td><td>字段含义、空值处理、多实体拆分需一致</td><td>从客服对话抽 <code>order_id</code>、<code>issue_type</code></td></tr>
+            <tr><td>风格 / 话术模仿</td><td>语气、长度、礼貌程度用示例比形容词更好控</td><td>电商客服回复模板、摘要长度 50 字内</td></tr>
+            <tr><td>小模型 / 弱模型补齐</td><td>Zero-shot 不稳定时，少量示例显著提升准确率</td><td>7B 本地模型做意图识别</td></tr>
+          </tbody>
+        </table>
+        <h3>不适合的场景</h3>
         <ul>
-          <li>固定输出格式（JSON、分类标签）。</li>
-          <li>领域术语翻译、工单分类。</li>
-          <li>小模型能力补齐。</li>
+          <li><strong>复杂多步推理</strong>：数学、逻辑链、规划类任务优先用 CoT（或 Few-shot CoT），单纯模仿输入输出不够。</li>
+          <li><strong>示例过多</strong>：占 Token、拉高成本与延迟，还可能挤占检索上下文窗口。</li>
+          <li><strong>示例引入偏见</strong>：示例分布不均时，模型会过拟合示例模式（如示例全是「退款」就乱判退款）。</li>
+          <li><strong>强模型 + 简单通用任务</strong>：GPT-4 等做「翻译成英文」往往 Zero-shot 已足够，不必加示例。</li>
+          <li><strong>示例与指令矛盾</strong>：System Prompt 说「只输出 JSON」，示例却带解释文字，模型行为会混乱。</li>
         </ul>
-        <h3>不适合</h3>
-        <ul>
-          <li>示例过多占 Token、引入偏见。</li>
-          <li>强推理任务（用 CoT 更好）。</li>
-        </ul>
-      </section>
+        <h3>示例设计要点</h3>
+        <ol>
+          <li><strong>数量</strong>：一般 2–5 个；覆盖典型 case + 1 个边界 case 即可，不必堆砌。</li>
+          <li><strong>多样性</strong>：不同输入模式都要有（短句/长句、肯定/否定、含噪/不含噪）。</li>
+          <li><strong>一致性</strong>：所有示例的输出格式、字段名、枚举值必须完全一致。</li>
+          <li><strong>与指令对齐</strong>：示例是「标准答案」，System / User 指令不应与示例冲突。</li>
+        </ol>
+        <pre><code class="language-python">你是工单分类助手。严格按示例格式输出 JSON，不要其他文字。
 
-<section id="function-calling-schema">
-        <h2>Function Calling 和 JSON Schema 有什么关系？</h2>
-        <p>Function Calling 用 <strong>JSON Schema</strong> 描述工具的 name、description、parameters，模型据此生成结构化调用参数。</p>
-        <pre><code class="language-python">{
-  &quot;name&quot;: &quot;search_docs&quot;,
-  &quot;description&quot;: &quot;搜索企业知识库&quot;,
-  &quot;parameters&quot;: {
-    &quot;type&quot;: &quot;object&quot;,
-    &quot;properties&quot;: {
-      &quot;query&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;搜索关键词&quot;},
-      &quot;top_k&quot;: {&quot;type&quot;: &quot;integer&quot;, &quot;default&quot;: 5}
-    },
-    &quot;required&quot;: [&quot;query&quot;]
-  }
-}</code></pre>
-        <p>Schema 越清晰，模型填参越准；required 字段、enum 约束可减少幻觉参数。</p>
+示例 1：
+输入：我要退上周买的耳机，订单号 12345
+输出：{&quot;category&quot;: &quot;退款&quot;, &quot;priority&quot;: &quot;中&quot;}
+
+示例 2：
+输入：App 一直闪退，重装也没用
+输出：{&quot;category&quot;: &quot;技术故障&quot;, &quot;priority&quot;: &quot;高&quot;}
+
+示例 3：
+输入：请问会员有什么权益？
+输出：{&quot;category&quot;: &quot;咨询&quot;, &quot;priority&quot;: &quot;低&quot;}
+
+现在请分类：
+输入：{user_message}</code></pre>
+        <p><strong>面试回答：</strong>Few-shot 适合「格式固定、规则靠示例讲清、小模型需要补齐」的任务，如分类、抽取、风格模仿；不适合长推理（用 CoT）和示例过多占 Token 的场景。关键是示例少而精、格式一致、覆盖边界 case。</p>
       </section>
 
 <section id="skills-how-it-works">
@@ -830,27 +810,12 @@ except Exception: result = {&quot;error&quot;: &quot;unavailable&quot;}</code></
           </tbody>
         </table>
         <p>短期记忆超窗口时做摘要压缩；长期记忆通过 RAG 检索注入，避免全量塞入 Prompt。</p>
-        <p></p>
         <pre><code class="language-python">长期记忆存储
 ├── 向量库 Vector DB
 │   └── 存非结构化记忆：历史摘要、聊天片段、项目经历、知识片段
 │
 └── 关系数据库Mysql
     └── 存结构化画像：偏好、标签、配置、明确事实</code></pre>
-        <p></p>
-      </section>
-
-<section id="infinite-loop">
-        <h2>Agent 如何避免无限循环？</h2>
-        <h3>防护机制</h3>
-        <ul>
-          <li><code>max_iterations</code>：最多 N 轮 think-act 循环。</li>
-          <li><code>max_tool_calls</code>：单次请求工具调用上限。</li>
-          <li>重复检测：相同 action 连续出现则终止。</li>
-          <li>总 Token / 时间预算：超限强制结束。</li>
-          <li>终止条件：模型输出 <code>FINAL_ANSWER</code> 或达到目标状态。</li>
-        </ul>
-        <p>LangGraph 用 conditional edge 检测 <code>step &gt; MAX</code> 路由到 END 节点。</p>
       </section>
 
 <section id="multi-agent">
@@ -872,19 +837,6 @@ except Exception: result = {&quot;error&quot;: &quot;unavailable&quot;}</code></
         <p>分工原则：职责单一、接口清晰（共享 State 或 Message Bus）、避免循环依赖。</p>
       </section>
 
-<section id="state-persistence">
-        <h2>Agent 状态如何持久化和恢复？</h2>
-        <h3>方案</h3>
-        <ul>
-          <li>LangGraph Checkpointer：每步 State 写入 SQLite/PostgreSQL/Redis。</li>
-          <li><code>thread_id</code> 标识会话，支持中断恢复。</li>
-          <li>HITL 暂停：持久化后等待人工输入再继续。</li>
-        </ul>
-        <pre><code class="language-python">graph.compile(checkpointer=PostgresSaver(conn))
-config = {&quot;configurable&quot;: {&quot;thread_id&quot;: &quot;session-123&quot;}}
-graph.invoke(input, config)  # 可 resume</code></pre>
-      </section>
-
 <section id="token-cost">
         <h2>如何控制 LLM 应用的 Token 成本？</h2>
         <h3>优化手段</h3>
@@ -896,41 +848,6 @@ graph.invoke(input, config)  # 可 resume</code></pre>
           <li>Prompt 精简：去除冗余 System Prompt。</li>
         </ul>
         <p>按 tenant/user 设 Token 配额，超限降级或拒服；监控 input/output Token 分布。</p>
-      </section>
-
-<section id="model-routing">
-        <h2>如何做模型降级和多模型路由？</h2>
-        <h3>路由策略</h3>
-        <ul>
-          <li>按任务类型：分类用小模型，生成用大模型。</li>
-          <li>按复杂度：规则/Classifier 判断难度路由。</li>
-          <li>按 SLA：超时自动切备用模型。</li>
-        </ul>
-        <h3>降级链</h3>
-        <pre><code class="language-python">GPT-4o -&gt; GPT-4o-mini -&gt; 本地 Qwen -&gt; 缓存/static 回复</code></pre>
-        <p>模型网关统一路由、熔断、A/B 测试；降级时告知用户或静默切换视场景而定。</p>
-      </section>
-
-<section id="transformer">
-        <h2>Transformer 架构是什么？</h2>
-        <p>Transformer（2017）用<strong>Self-Attention</strong>替代 RNN，并行处理序列，成为 LLM 基础架构。</p>
-        <h3>核心组件</h3>
-        <ul>
-          <li>Multi-Head Self-Attention：捕捉 token 间依赖。</li>
-          <li>Feed-Forward Network：非线性变换。</li>
-          <li>Layer Norm + Residual：稳定训练。</li>
-          <li>Positional Encoding：注入位置信息。</li>
-        </ul>
-        <p>Decoder-only（GPT）、Encoder-only（BERT）、Encoder-Decoder（T5）三种变体。</p>
-      </section>
-
-<section id="attention">
-        <h2>Attention 和 Self-Attention 是什么？</h2>
-        <p>Attention 计算 Query 对 Key 的权重，加权求和 Value，让模型关注相关信息。</p>
-        <pre><code class="language-python">Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) · V</code></pre>
-        <h3>Self-Attention</h3>
-        <p>Q、K、V 来自同一序列，每个 token 关注序列中所有 token（含自身），捕捉长距离依赖。</p>
-        <p>Multi-Head 将 Attention 分多个头并行，学习不同子空间关系。</p>
       </section>
 
 <section id="context-window">
@@ -952,179 +869,6 @@ graph.invoke(input, config)  # 可 resume</code></pre>
         <p>超出窗口需截断、摘要或 RAG 外挂知识；长窗口不等于模型等效利用全部内容（Lost in the Middle）。</p>
       </section>
 
-<section id="sft-rlhf-dpo">
-        <h2>SFT、RLHF、DPO 有什么区别？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>方法</th>
-              <th>原理</th>
-              <th>用途</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>SFT</td><td>监督微调，instruction-output 对</td><td>教模型遵循指令、特定格式</td></tr>
-            <tr><td>RLHF</td><td>人类偏好奖励模型 + PPO 强化学习</td><td>对齐人类价值观、安全性</td></tr>
-            <tr><td>DPO</td><td>直接偏好优化，无需奖励模型</td><td>简化 RLHF，效果接近</td></tr>
-          </tbody>
-        </table>
-        <p>典型流程：预训练 -&gt; SFT -&gt; RLHF/DPO。企业应用多数直接用 API 模型 + RAG/Prompt，无需自训。</p>
-      </section>
-
-<section id="lora-qlora">
-        <h2>LoRA 和 QLoRA 是什么？</h2>
-        <p>LoRA（Low-Rank Adaptation）在冻结原模型权重基础上，插入低秩矩阵做高效微调。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>方法</th>
-              <th>特点</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>LoRA</td><td>只训练 ~1% 参数，多任务可切换 LoRA 适配器</td></tr>
-            <tr><td>QLoRA</td><td>4-bit 量化 + LoRA，单卡可微调 70B</td></tr>
-          </tbody>
-        </table>
-        <p>适合领域风格、格式遵循；不适合注入大量新事实（用 RAG 更好）。</p>
-      </section>
-
-<section id="quantization">
-        <h2>模型量化是什么？</h2>
-        <p>量化将 FP16/FP32 权重压缩为 INT8/INT4，降低显存和推理延迟。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>精度</th>
-              <th>显存</th>
-              <th>精度损失</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>FP16</td><td>基准</td><td>无</td></tr>
-            <tr><td>INT8</td><td>~50%</td><td>很小</td></tr>
-            <tr><td>INT4 (GPTQ/AWQ)</td><td>~25%</td><td>轻微，可接受</td></tr>
-          </tbody>
-        </table>
-        <p>生产自托管常用 vLLM + AWQ/GPTQ 量化模型平衡成本与质量。</p>
-      </section>
-
-<section id="moe">
-        <h2>MoE 是什么？</h2>
-        <p>MoE（Mixture of Experts）将 FFN 层替换为多个 Expert，每次推理只激活部分 Expert（如 8 选 2）。</p>
-        <ul>
-          <li>总参数量大（如 Mixtral 8x7B），但激活参数少，推理成本接近小模型。</li>
-          <li>不同 Expert 可专精不同任务/语言。</li>
-        </ul>
-        <p>代表：Mixtral、DeepSeek-V2/V3。部署需注意 Expert 负载均衡。</p>
-      </section>
-
-<section id="multimodal">
-        <h2>多模态大模型是什么？</h2>
-        <p>多模态模型同时处理<strong>文本、图像、音频、视频</strong>等多种输入模态。</p>
-        <ul>
-          <li>架构：Vision Encoder + LLM 融合（如 LLaVA、GPT-4V）。</li>
-          <li>应用：图片理解、OCR、图表分析、视频摘要。</li>
-          <li>RAG 扩展：多模态 Embedding 统一检索文本和图片。</li>
-        </ul>
-      </section>
-
-<section id="zero-shot-few-shot-cot">
-        <h2>Zero-shot、Few-shot、CoT 有什么区别？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>方法</th>
-              <th>做法</th>
-              <th>适用</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Zero-shot</td><td>仅指令，无示例</td><td>通用任务、大模型足够强</td></tr>
-            <tr><td>Few-shot</td><td>提供若干示例</td><td>格式固定、小模型</td></tr>
-            <tr><td>CoT</td><td>「逐步思考」引导推理链</td><td>数学、逻辑、多步推理</td></tr>
-          </tbody>
-        </table>
-        <p>可组合：Few-shot CoT = 示例中包含推理过程。</p>
-      </section>
-
-<section id="structured-output-prompt">
-        <h2>如何设计结构化输出 Prompt？</h2>
-        <h3>方法</h3>
-        <ul>
-          <li>JSON Schema 约束：API 层 <code>response_format: json_schema</code>。</li>
-          <li>Prompt 明确字段、类型、示例。</li>
-          <li>输出包裹在 <code>```json</code> 代码块中便于解析。</li>
-        </ul>
-        <pre><code class="language-python">请严格输出 JSON，不要其他文字:
-{&quot;answer&quot;: &quot;...&quot;, &quot;confidence&quot;: 0.0-1.0, &quot;sources&quot;: [&quot;doc_id&quot;]}</code></pre>
-        <p>解析失败时重试 + JSON repair；关键字段做 schema 校验。</p>
-      </section>
-
-<section id="rag-vs-finetuning">
-        <h2>RAG 和 Fine-tuning 有什么区别？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>对比</th>
-              <th>RAG</th>
-              <th>Fine-tuning</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>知识来源</td><td>外部检索，实时更新</td><td>写入模型参数</td></tr>
-            <tr><td>成本</td><td>索引成本低</td><td>训练 GPU 成本高</td></tr>
-            <tr><td>溯源</td><td>可引用来源</td><td>不可溯源</td></tr>
-            <tr><td>适合</td><td>频繁变更的知识库</td><td>固定风格、格式、领域表达</td></tr>
-          </tbody>
-        </table>
-        <p>可组合：RAG 供知识，微调优化风格和任务习惯。</p>
-      </section>
-
-<section id="enterprise-rag">
-        <h2>为什么企业知识库问答通常优先选择 RAG？</h2>
-        <ul>
-          <li><strong>知识更新快</strong>：制度、产品文档频繁变更，RAG 重新索引即可。</li>
-          <li><strong>可溯源审计</strong>：金融、医疗、法务需引用来源。</li>
-          <li><strong>权限隔离</strong>：metadata 过滤实现租户/部门级访问控制。</li>
-          <li><strong>成本低</strong>：无需 GPU 集群微调大模型。</li>
-          <li><strong>幻觉可控</strong>：基于检索资料生成，比纯参数记忆更可靠。</li>
-        </ul>
-        <p>微调适合固化回答风格或专业术语表达，不适合注入大量易变事实。</p>
-      </section>
-
-<section id="agent-vs-workflow">
-        <h2>Agent 和普通 Workflow 有什么区别？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>对比</th>
-              <th>Workflow</th>
-              <th>Agent</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>流程</td><td>预定义固定步骤</td><td>LLM 动态决策下一步</td></tr>
-            <tr><td>灵活性</td><td>低，可预测</td><td>高，适应开放任务</td></tr>
-            <tr><td>成本/延迟</td><td>低</td><td>高（多轮 LLM 调用）</td></tr>
-            <tr><td>适用</td><td>ETL、审批流、固定 RAG</td><td>开放域问答、复杂工具编排</td></tr>
-          </tbody>
-        </table>
-        <p>能用 Workflow 就不用 Agent；Agent 适合路径不确定的任务。</p>
-      </section>
-
-<section id="agent-components">
-        <h2>Agent 的核心组成有哪些？</h2>
-        <ul>
-          <li><strong>LLM</strong>：推理与决策大脑。</li>
-          <li><strong>Tools</strong>：搜索、API、数据库、代码执行。</li>
-          <li><strong>Memory</strong>：短期对话 + 长期知识。</li>
-          <li><strong>Planning</strong>：任务分解、ReAct、Plan-and-Execute。</li>
-          <li><strong>State</strong>：执行状态、中间结果。</li>
-        </ul>
-        <p>工程还需：超时、重试、权限、审计、HITL、可观测性。</p>
-      </section>
-
 <section id="react">
         <h2>ReAct 是什么？</h2>
         <p>ReAct（Reasoning + Acting）交替<strong>思考</strong>和<strong>行动</strong>：Thought -&gt; Action -&gt; Observation 循环。</p>
@@ -1137,62 +881,6 @@ Answer: 年假为15天</code></pre>
         <p>比纯 CoT 能获取外部信息；比纯 Tool Calling 有显式推理链。</p>
       </section>
 
-<section id="plan-and-execute">
-        <h2>Plan-and-Execute 是什么？</h2>
-        <p>先由 Planner 生成完整计划，再由 Executor 逐步执行，必要时 Replan。</p>
-        <pre><code class="language-python">Plan: 1. 查销售数据 2. 生成图表 3. 写分析报告
-Execute Step1 -&gt; Execute Step2 -&gt; ...
-Replan (if step failed)</code></pre>
-        <p>适合步骤清晰的长任务；比 ReAct 计划性更强，但灵活性稍低。</p>
-      </section>
-
-<section id="task-decomposition">
-        <h2>Agent 如何做任务拆解？</h2>
-        <h3>方法</h3>
-        <ul>
-          <li>LLM 分解：「将任务拆成可执行子任务列表」。</li>
-          <li>Map-Reduce：并行处理子任务后汇总。</li>
-          <li>层次分解：大任务 -&gt; 中任务 -&gt; 原子操作。</li>
-        </ul>
-        <p>每个子任务应有明确输入输出和完成条件；Supervisor Agent 协调子 Agent 执行。</p>
-      </section>
-
-<section id="tool-param-validation">
-        <h2>Agent 工具调用如何做参数校验？</h2>
-        <ol>
-          <li>JSON Schema 定义参数类型、required、enum。</li>
-          <li>模型输出后 Pydantic/Zod 校验。</li>
-          <li>校验失败：将错误反馈给模型重试（最多 N 次）。</li>
-          <li>业务规则：范围检查、权限检查、SQL 注入防护。</li>
-        </ol>
-        <pre><code class="language-python">class SearchParams(BaseModel):
-    query: str = Field(min_length=1, max_length=200)
-    top_k: int = Field(default=5, ge=1, le=20)</code></pre>
-      </section>
-
-<section id="tool-timeout">
-        <h2>Agent 如何处理工具调用超时？</h2>
-        <ul>
-          <li>每个 Tool 设独立 timeout（如 API 5s、SQL 10s）。</li>
-          <li>超时返回结构化错误：<code>{&quot;error&quot;: &quot;timeout&quot;, &quot;tool&quot;: &quot;search&quot;}</code>。</li>
-          <li>模型收到 error 后可换策略或告知用户。</li>
-          <li>全局 request timeout 兜底，防止 Agent 无限等待。</li>
-        </ul>
-        <p>异步 Tool 用 callback/webhook + 轮询，避免阻塞 Agent 循环。</p>
-      </section>
-
-<section id="hitl">
-        <h2>Agent 如何做人工确认 HITL？</h2>
-        <p>HITL（Human-in-the-Loop）在关键步骤暂停，等待人工审批后继续。</p>
-        <h3>场景</h3>
-        <ul>
-          <li>发送邮件/消息前确认。</li>
-          <li>金融交易、权限变更。</li>
-          <li>低置信度答案审核。</li>
-        </ul>
-        <p>LangGraph 用 <code>interrupt_before</code> 暂停图执行，持久化 State，人工输入后 <code>resume</code>。</p>
-      </section>
-
 <section id="agent-observability">
         <h2>Agent 如何做可观测性和调试？</h2>
         <ul>
@@ -1202,189 +890,6 @@ Replan (if step failed)</code></pre>
           <li><strong>指标</strong>：成功率、平均步数、Tool 失败率。</li>
         </ul>
         <p>Debug 时回放完整 Agent 轨迹，定位是哪一步决策错误。</p>
-      </section>
-
-<section id="model-gateway">
-        <h2>模型网关是什么？</h2>
-        <p>模型网关是 LLM 调用的<strong>统一入口</strong>，屏蔽多模型/多厂商差异，提供治理能力。</p>
-        <h3>功能</h3>
-        <ul>
-          <li>路由：按任务/租户/成本选模型。</li>
-          <li>鉴权：API Key 管理、配额。</li>
-          <li>限流、熔断、重试、降级。</li>
-          <li>日志、计费、A/B 测试。</li>
-        </ul>
-        <p>类似 API Gateway，代表：LiteLLM、One API、自研 Gateway。</p>
-      </section>
-
-<section id="retry-degrade-circuit">
-        <h2>如何设计模型调用重试、降级和熔断？</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>机制</th>
-              <th>策略</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>重试</td><td>429/5xx 指数退避，最多 3 次；4xx 不重试</td></tr>
-            <tr><td>降级</td><td>主模型失败切备用模型或缓存/static 回复</td></tr>
-            <tr><td>熔断</td><td>错误率超阈值暂停调用，半开探测恢复</td></tr>
-          </tbody>
-        </table>
-        <p>区分可重试错误（超时、限流）与不可重试（鉴权失败、内容违规）。</p>
-      </section>
-
-<section id="multi-tenant-llm">
-        <h2>如何设计多租户 LLM 应用？</h2>
-        <ul>
-          <li><strong>数据隔离</strong>：向量库 metadata 过滤 tenant_id；会话数据分库分表。</li>
-          <li><strong>配额隔离</strong>：每租户 Token 限额、QPS 限流。</li>
-          <li><strong>配置隔离</strong>：租户级 Prompt、模型、知识库。</li>
-          <li><strong>计费</strong>：按 Token/请求数计量。</li>
-        </ul>
-        <p>检索层必须强制 tenant 过滤，不能依赖 Prompt 约束防越权。</p>
-      </section>
-
-<section id="config-center">
-        <h2>如何设计 Prompt / Model / Tool 配置中心？</h2>
-        <h3>设计要点</h3>
-        <ul>
-          <li>统一管理 Prompt 模板、模型路由规则、Tool Schema。</li>
-          <li>版本化 + 灰度发布 + 回滚。</li>
-          <li>多环境：dev/staging/prod 隔离。</li>
-          <li>变更审计：谁改了什么、何时生效。</li>
-        </ul>
-        <p>运行时热加载配置，无需重启服务；A/B 测试按 user_id hash 分流。</p>
-      </section>
-
-<section id="ab-test">
-        <h2>如何设计 AI 应用灰度发布和 A/B 测试？</h2>
-        <ol>
-          <li>定义变量：Prompt 版本、模型、Rerank 策略等。</li>
-          <li>分流：user_id/session_id hash 分桶（如 90/10）。</li>
-          <li>采集指标：faithfulness、延迟、用户满意度、Token 成本。</li>
-          <li>统计显著性判断后全量或回滚。</li>
-        </ol>
-        <p>日志记录 <code>experiment_id</code> + <code>variant</code>，支持离线分析。</p>
-      </section>
-
-<section id="response-cache">
-        <h2>如何缓存 LLM 响应？</h2>
-        <h3>缓存层级</h3>
-        <ul>
-          <li><strong>Exact Cache</strong>：相同 Prompt hash 直接返回。</li>
-          <li><strong>Semantic Cache</strong>：Embedding 相似 query 命中（如 GPTCache）。</li>
-        </ul>
-        <h3>注意</h3>
-        <ul>
-          <li>带用户上下文/时间的 query 不宜缓存。</li>
-          <li>设 TTL，知识更新后失效。</li>
-          <li>缓存 key 含 model + prompt_version。</li>
-        </ul>
-      </section>
-
-<section id="streaming">
-        <h2>如何处理流式输出？</h2>
-        <p>Streaming 逐 Token 返回，降低首字延迟（TTFT），提升用户体验。</p>
-        <ul>
-          <li>API：<code>stream=true</code>，SSE 或 WebSocket 推送。</li>
-          <li>前端：逐字渲染，支持中断（AbortController）。</li>
-          <li>后端：流式写日志/审计需注意完整性。</li>
-          <li>Structured Output 流式需累积后 JSON 解析。</li>
-        </ul>
-      </section>
-
-<section id="history-compression">
-        <h2>如何设计会话历史压缩？</h2>
-        <h3>策略</h3>
-        <ul>
-          <li>滑动窗口：只保留最近 N 轮。</li>
-          <li>摘要压缩：旧对话 LLM 摘要后替换。</li>
-          <li>Token 预算：超阈值触发压缩。</li>
-          <li>重要信息提取：存 long-term memory，不丢关键事实。</li>
-        </ul>
-        <pre><code class="language-python">if total_tokens &gt; 8000:
-    summary = summarize(old_messages)
-    messages = [summary] + recent_messages</code></pre>
-      </section>
-
-<section id="pii-masking">
-        <h2>如何做敏感信息脱敏再送模型？</h2>
-        <ol>
-          <li>识别：正则 + NER 检测手机、身份证、银行卡、邮箱。</li>
-          <li>替换：<code>138****1234</code>、<code>[NAME_1]</code> 占位符。</li>
-          <li>映射表：占位符 -&gt; 原值，回复时还原（如需）。</li>
-          <li>日志脱敏：审计日志也不存明文 PII。</li>
-        </ol>
-        <p>第三方 API 调用前必须脱敏；自托管也需防 Prompt 注入泄露。</p>
-      </section>
-
-<section id="online-eval">
-        <h2>如何评估线上 AI 应用质量？</h2>
-        <ul>
-          <li><strong>用户反馈</strong>：点赞/踩、纠错。</li>
-          <li><strong>LLM-as-Judge</strong>：采样请求自动评分。</li>
-          <li><strong>指标监控</strong>：faithfulness 趋势、拒答率、Tool 失败率。</li>
-          <li><strong>Bad Case 队列</strong>：低分请求人工复核，加入评测集。</li>
-        </ul>
-        <p>离线评测 + 在线监控双轨；A/B 测试验证 Prompt 变更效果。</p>
-      </section>
-
-<section id="structured-output-validation">
-        <h2>如何做模型输出结构化校验？</h2>
-        <ol>
-          <li>JSON Schema / Pydantic 定义期望结构。</li>
-          <li>解析模型输出，校验类型、required 字段。</li>
-          <li>失败：JSON repair -&gt; 重试 -&gt; 降级纯文本。</li>
-          <li>API 层 <code>response_format</code> 约束（OpenAI Structured Outputs）。</li>
-        </ol>
-        <pre><code class="language-python">try:
-    data = AnswerModel.model_validate_json(llm_output)
-except ValidationError:
-    data = retry_with_fix_prompt(llm_output, error)</code></pre>
-      </section>
-
-<section id="request-timeout-cancel">
-        <h2>如何处理 LLM 请求超时和取消？</h2>
-        <ul>
-          <li>客户端 AbortController / context.cancel 取消请求。</li>
-          <li>服务端设 read timeout（如 60s），超时返回 504。</li>
-          <li>Agent 全局 deadline：所有步骤共享时间预算。</li>
-          <li>取消后清理：停止 Token 生成、释放资源。</li>
-        </ul>
-        <p>流式场景用户关闭页面应触发 cancel，避免浪费 Token。</p>
-      </section>
-
-<section id="feedback-loop">
-        <h2>如何设计 AI 应用的反馈闭环？</h2>
-        <pre><code class="language-python">用户提问 -&gt; 生成回答 -&gt; 用户反馈(👍/👎/纠错)
-    -&gt; Bad Case 入库 -&gt; 人工标注 -&gt; 评测集更新
-    -&gt; Prompt/RAG 优化 -&gt; A/B 验证 -&gt; 全量发布</code></pre>
-        <p>闭环关键：反馈数据结构化存储，定期分析 Top 失败模式，优先修复高频 bad case。</p>
-      </section>
-
-<section id="cost-budget">
-        <h2>如何设计 AI 应用的成本预算和限额？</h2>
-        <ul>
-          <li>按 tenant/user 设 Token 日/月配额。</li>
-          <li>超限：降级小模型、拒服或告警。</li>
-          <li>成本归因：日志记录 model、input/output tokens、tenant。</li>
-          <li>预算告警：80% 阈值通知，100% 熔断。</li>
-        </ul>
-        <table>
-          <thead>
-            <tr>
-              <th>优化</th>
-              <th>效果</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Semantic Cache</td><td>重复 query 零成本</td></tr>
-            <tr><td>小模型路由</td><td>简单任务降 10x 成本</td></tr>
-            <tr><td>Prompt 压缩</td><td>减少 input Token</td></tr>
-          </tbody>
-        </table>
       </section>
 </main>
   </div>

@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
-                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+                    <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -556,7 +559,7 @@ def temp_file(path):
           <li>FastAPI 接口入参和响应体校验</li>
           <li>配置文件或环境变量校验</li>
           <li>嵌套 JSON 数据校验</li>
-          <li>AI Agent / RAG 中校验大模型输出结构</li>
+          <li>AI应用 中校验大模型输出结构</li>
         </ul>
         <h3>常用功能</h3>
         <h4>1. BaseModel：定义数据模型</h4>
@@ -600,7 +603,7 @@ def temp_file(path):
               return value</code></pre>
         <h3>AI 场景示例</h3>
         <p>
-          在 AI Agent / RAG 项目中，Pydantic 常用于校验大模型返回的 JSON 结构，
+          在 AI应用 项目中，Pydantic 常用于校验大模型返回的 JSON 结构，
           避免字段缺失、类型错误或格式不稳定导致后续流程异常。
         </p>
         <pre><code class="language-python">from pydantic import BaseModel

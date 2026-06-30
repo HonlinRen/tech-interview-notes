@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
-                    <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+                    <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -193,6 +196,47 @@ public void pay() throws Exception {
 }</code></pre>
         <p>如果业务异常需要回滚，应显式配置：</p>
         <pre><code class="language-java">@Transactional(rollbackFor = Exception.class)</code></pre>
+      </section>
+
+<section id="boot-vs-spring">
+        <h2>Spring Boot 和传统 Spring 有什么区别？</h2>
+        <p>Spring Boot 不是替代 Spring Framework，而是在其之上做了<strong>开箱即用</strong>的封装。传统 Spring 强调灵活配置，Boot 强调<strong>约定优于配置</strong>，减少样板代码和部署复杂度。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>传统 Spring</th>
+              <th>Spring Boot</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>定位</td><td>基础 IoC/AOP/MVC 框架</td><td>基于 Spring 的快速开发脚手架</td></tr>
+            <tr><td>配置方式</td><td>大量 XML 或手写 <code>@Configuration</code></td><td>自动配置 + 少量 <code>application.yml</code></td></tr>
+            <tr><td>依赖管理</td><td>手动选版本、易冲突</td><td>Starter 聚合依赖 + BOM 统一版本</td></tr>
+            <tr><td>Web 部署</td><td>打 WAR 部署到外部 Tomcat</td><td>内嵌 Servlet 容器，可打 JAR 直接运行</td></tr>
+            <tr><td>启动入口</td><td><code>ClassPathXmlApplicationContext</code> 等手动创建容器</td><td><code>SpringApplication.run</code> 一键启动</td></tr>
+            <tr><td>监控运维</td><td>需自行集成</td><td>Actuator 提供健康检查、指标等端点</td></tr>
+            <tr><td>外部化配置</td><td>PropertyPlaceholder 等，多环境需额外搭建</td><td>Profile + 多源配置优先级开箱支持</td></tr>
+          </tbody>
+        </table>
+        <h3>本质关系</h3>
+        <ul>
+          <li>Boot 底层仍是 Spring 容器：Bean 生命周期、DI、AOP、事务机制完全一致。</li>
+          <li>Boot 新增的核心能力：<code>@EnableAutoConfiguration</code> 条件装配、Starter 机制、嵌入式 Web 容器、SpringApplication 启动流程。</li>
+          <li>复杂项目仍可在 Boot 中关闭部分自动配置，回退到传统显式配置。</li>
+        </ul>
+        <pre><code class="language-java">// 传统 Spring：手动装配
+ApplicationContext ctx =
+    new ClassPathXmlApplicationContext(&quot;applicationContext.xml&quot;);
+
+// Spring Boot：自动配置 + 内嵌容器
+@SpringBootApplication
+public class App {
+    public static void main(String[] args) {
+        SpringApplication.run(App.class, args);
+    }
+}</code></pre>
+        <p><strong>面试回答：</strong>传统 Spring 是核心框架，配置和部署都要自己搭；Spring Boot 在其上加了自动配置、Starter、内嵌容器和统一启动流程，实现开箱即用。底层 IoC/AOP/事务不变，Boot 解决的是「集成成本高、部署重」的问题。</p>
       </section>
 
 <section id="boot-startup-flow">
@@ -741,41 +785,6 @@ public class RedisAutoConfiguration {
     }
 }</code></pre>
         <p>正是 starter 能“按需加载配置”、自定义 Bean 能“让位”的原因，也是 Spring Boot 约定优于配置的关键实现方式。</p>
-      </section>
-
-<section id="custom-starter">
-        <h2>Spring Boot 自定义 Starter 如何设计？</h2>
-        <p>自定义 Starter 的目标，是把某块通用能力封装成“引入依赖即可使用”的模块，通常拆分 <strong>autoconfigure 模块 + starter 模块</strong>。</p>
-        <h3>设计步骤</h3>
-        <ol>
-          <li>定义配置属性类，例如 <code>@ConfigurationProperties(prefix = &quot;demo.xxx&quot;)</code>。</li>
-          <li>编写自动配置类，通过条件注解控制是否装配。</li>
-          <li>在 <code>AutoConfiguration.imports</code> 中注册自动配置类。</li>
-          <li>starter 模块聚合依赖，对使用者暴露一个坐标。</li>
-          <li>补充文档、默认值，保证开箱可用。</li>
-        </ol>
-        <pre><code class="language-java">demo-spring-boot-autoconfigure
-demo-spring-boot-starter</code></pre>
-        <p>好的 Starter 应该提供合理默认配置、允许覆盖、边界清晰，不要把业务工程细节硬编码进 Starter。</p>
-      </section>
-
-<section id="graceful-shutdown">
-        <h2>Spring Boot 如何做优雅停机？</h2>
-        <p>优雅停机的目标是：应用收到停止信号后，不再接受新请求，处理完已有请求，再释放线程池、连接池等资源，避免请求中断和数据不一致。</p>
-        <h3>关键配置</h3>
-        <pre><code class="language-yaml">server:
-  shutdown: graceful
-
-spring:
-  lifecycle:
-    timeout-per-shutdown-phase: 30s</code></pre>
-        <h3>停机流程</h3>
-        <pre><code class="language-yaml">收到 SIGTERM / 停止命令
--&gt; 停止接收新请求
--&gt; 等待已有请求处理完成
--&gt; 关闭线程池、消息消费者、数据库连接
--&gt; 进程退出</code></pre>
-        <p>在 K8S 中还要配合 <code>preStop</code> 钩子、合理设置 <code>terminationGracePeriodSeconds</code>，并注意消费者、定时任务、长连接资源是否在关闭前释放。</p>
       </section>
 
 <section id="feign-underlying">

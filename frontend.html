@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <title>前端 高频问题整理</title>
+  <link rel="stylesheet" href="assets/highlight-theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
+</head>
+<body data-category="frontend">
+  <div class="layout">
+    <aside>
+      <a class="home-link" href="index.html">返回首页</a>
+<div id="categoryStats" class="category-stats"></div>
+      <details class="toc-group active" data-filter="frontend" open>
+        <summary>前端</summary>
+      </details>
+    </aside>
+
+    <main>
+      <div class="study-tools" aria-label="学习工具">
+        <div class="tool-row">
+          <div class="search-wrap">
+            <input id="searchInput" class="search-box" type="search" placeholder="当前主题搜索关键词" autocomplete="off">
+            <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
+          </div>
+          <button id="compactBtn" class="tool-btn" type="button">核心速览</button>
+          <button id="darkBtn" class="tool-btn" type="button">深色模式</button>
+        </div>
+        <div class="tool-row" id="filterBar">
+          <button class="filter-btn" type="button" data-filter="python" data-page="python.html">Python</button>
+          <button class="filter-btn" type="button" data-filter="java" data-page="java.html">Java / JVM</button>
+          <button class="filter-btn" type="button" data-filter="spring" data-page="spring.html">Spring Boot</button>
+          <button class="filter-btn" type="button" data-filter="mysql" data-page="mysql.html">MySQL</button>
+          <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
+          <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
+          <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
+          <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
+          <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn active" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
+          <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
+          <span id="studyStats" class="study-stats"></span>
+        </div>
+      </div>
+
+      <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
+
+<section id="react-basics">
+        <h2>React 是什么？常见组件有哪些？</h2>
+        <p>React 是 Facebook 开源的<strong>用于构建用户界面的 JavaScript 库</strong>，核心思想是<strong>组件化 + 声明式 UI + 单向数据流</strong>，通过 Virtual DOM 和 Diff 算法高效更新页面。</p>
+        <h3>核心特点</h3>
+        <ul>
+          <li><strong>组件化</strong>：UI 拆成独立、可复用的组件，每个组件管理自己的状态和视图。</li>
+          <li><strong>声明式</strong>：描述「UI 应该是什么样」，React 负责更新 DOM，而非手动操作节点。</li>
+          <li><strong>Virtual DOM</strong>：内存中维护虚拟树，状态变化时 Diff 后最小化真实 DOM 更新。</li>
+          <li><strong>单向数据流</strong>：数据从父组件经 props 流向子组件，状态变更可预测。</li>
+        </ul>
+        <pre><code class="language-javascript">// 函数组件 + Hooks（现代写法）
+function Welcome({ name }) {
+  const [count, setCount] = useState(0);
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;Hello, {name}&lt;/h1&gt;
+      &lt;button onClick={() =&gt; setCount(count + 1)}&gt;{count}&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+        <h3>常见组件类型</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>说明</th>
+              <th>示例</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>函数组件</td><td>用函数定义，配合 Hooks 管理状态与副作用</td><td><code>function App() { ... }</code></td></tr>
+            <tr><td>类组件</td><td>旧写法，<code>class + render()</code>，现多用于维护老项目</td><td><code>class App extends Component</code></td></tr>
+            <tr><td>展示组件</td><td>只接收 props 渲染 UI，无业务状态</td><td>Button、Card、Table</td></tr>
+            <tr><td>容器组件</td><td>负责数据获取、状态管理，传给展示组件</td><td>UserListContainer</td></tr>
+            <tr><td>高阶组件 HOC</td><td>函数接收组件返回增强组件，复用逻辑</td><td><code>withAuth(Component)</code></td></tr>
+            <tr><td>复合组件</td><td>多个子组件组合成完整 UI 模式</td><td>Modal + Modal.Header + Modal.Body</td></tr>
+          </tbody>
+        </table>
+        <h3>常用内置 / 生态组件与 Hooks</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>useState</code></td><td>组件内部状态</td></tr>
+            <tr><td><code>useEffect</code></td><td>副作用：请求、订阅、DOM 操作</td></tr>
+            <tr><td><code>useContext</code></td><td>跨层级共享数据，避免 props 层层传递</td></tr>
+            <tr><td><code>React Router</code></td><td>单页应用路由：<code>Route</code>、<code>Link</code>、<code>Navigate</code></td></tr>
+            <tr><td>Form 组件</td><td>受控组件 <code>input value + onChange</code>，或 React Hook Form</td></tr>
+            <tr><td>List 组件</td><td><code>map</code> 渲染列表，<code>key</code> 必须唯一稳定</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>React 是构建 UI 的组件化库，声明式渲染 + Virtual DOM + 单向数据流。现代开发以函数组件 + Hooks 为主；常见组件分展示/容器组件，配合 Router、Form、List 等模式；状态用 useState/useEffect，跨层共享用 Context 或 Redux/Zustand。</p>
+      </section>
+</main>
+  </div>
+  <script src="assets/highlight.min.js"></script>
+  <script src="assets/study-legacy-map.js"></script>
+  <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
+</body>
+</html>

@@ -27,7 +27,7 @@ htmlFiles.forEach((file) => {
     return;
   }
   content = content.replace(
-    /(<button class="filter-btn[^"]*" type="button" data-filter="ai" data-page="ai\.html">AI Agent \/ RAG<\/button>\r?\n\s*)(<button class="filter-btn[^"]*" type="button" data-filter="llm")/,
+    /(<button class="filter-btn[^"]*" type="button" data-filter="ai" data-page="ai\.html">AI应用<\/button>\r?\n\s*)(<button class="filter-btn[^"]*" type="button" data-filter="llm")/,
     "$1" + FILTER_BTN + "$2"
   );
   fs.writeFileSync(filePath, content);
@@ -53,8 +53,8 @@ if (!study.includes('"rag-vector": "rag-vector.html"')) {
     '"ai": "ai.html",\n        "rag-vector": "rag-vector.html",\n        "llm": "llm.html"'
   );
   study = study.replace(
-    'ai: "AI Agent / RAG",\n        llm:',
-    'ai: "AI Agent / RAG",\n        "rag-vector": "RAG 向量检索",\n        llm:'
+    'ai: "AI应用",\n        llm:',
+    'ai: "AI应用",\n        "rag-vector": "RAG 向量检索",\n        llm:'
   );
 }
 
@@ -128,8 +128,8 @@ const indexPath = path.join(ROOT, "index.html");
 let index = fs.readFileSync(indexPath, "utf8");
 if (!index.includes("rag-vector.html")) {
   index = index.replace(
-    '<a class="home-card" href="ai.html">\n          <h2>AI Agent / RAG</h2>\n          <p>RAG、向量检索、Rerank、Tool Calling、LangGraph</p>\n        </a>',
-    '<a class="home-card" href="ai.html">\n          <h2>AI Agent / RAG</h2>\n          <p>Agent、MCP、LangGraph、Prompt、评测与生产落地</p>\n        </a>\n        <a class="home-card" href="rag-vector.html">\n          <h2>RAG 向量检索</h2>\n          <p>Chunk、Embedding、向量库、Hybrid、Rerank、数据清洗</p>\n        </a>'
+    '<a class="home-card" href="ai.html">\n          <h2>AI应用</h2>\n          <p>RAG、向量检索、Rerank、Tool Calling、LangGraph</p>\n        </a>',
+    '<a class="home-card" href="ai.html">\n          <h2>AI应用</h2>\n          <p>Agent、MCP、LangGraph、Prompt、评测与生产落地</p>\n        </a>\n        <a class="home-card" href="rag-vector.html">\n          <h2>RAG 向量检索</h2>\n          <p>Chunk、Embedding、向量库、Hybrid、Rerank、数据清洗</p>\n        </a>'
   );
   fs.writeFileSync(indexPath, index);
 }

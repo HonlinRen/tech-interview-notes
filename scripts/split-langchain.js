@@ -5,32 +5,16 @@ const ROOT = path.join(__dirname, "..");
 const aiHtml = fs.readFileSync(path.join(ROOT, "ai.html"), "utf8");
 
 const MOVE_IDS = [
-  "chunk-design",
-  "metadata",
-  "vector-retrieval",
-  "topk-recall",
-  "query-rewrite",
-  "rag-hyde",
-  "rerank",
-  "embedding-selection",
-  "vector-dimensions",
-  "similarity-metrics",
-  "vector-vs-bm25",
-  "bm25-vs-keyword",
-  "hybrid-search",
-  "pdf-table-rag",
-  "rag-image-handling",
-  "image-text-vector-same-db",
-  "incremental-update",
-  "version-conflict",
-  "citations",
-  "recall-troubleshooting",
-  "chunk-overlap",
-  "chunk-parent-child",
-  "vector-db-selection",
-  "hnsw-vs-ivf",
-  "dense-vs-sparse",
-  "bi-encoder-cross-encoder"
+  "langchain-structure",
+  "langchain-build-flow",
+  "langchain-vs-langgraph",
+  "langgraph-node",
+  "langgraph-edge",
+  "langgraph-state",
+  "langgraph-builder",
+  "infinite-loop",
+  "state-persistence",
+  "hitl"
 ];
 
 const sectionRegex = /<section id="([^"]+)">([\s\S]*?)<\/section>/g;
@@ -48,27 +32,24 @@ if (missing.length) {
 
 const movedContent = MOVE_IDS.map((id) => sections[id]).join("\n\n");
 
-const filterBtn =
-  '<button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>\n          ';
-
-const ragVectorHtml = `<!doctype html>
+const langchainHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>RAG 向量检索 / 数据工程 高频问题整理</title>
+  <title>LangChain / LangGraph 高频问题整理</title>
   <link rel="stylesheet" href="assets/highlight-theme.css">
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/editor.css">
 </head>
-<body data-category="rag-vector">
+<body data-category="langchain">
   <div class="layout">
     <aside>
       <a class="home-link" href="index.html">返回首页</a>
 <div id="categoryStats" class="category-stats"></div>
-      <details class="toc-group active" data-filter="rag-vector" open>
-        <summary>RAG 向量检索</summary>
+      <details class="toc-group active" data-filter="langchain" open>
+        <summary>LangChain / LangGraph</summary>
       </details>
     </aside>
 
@@ -91,11 +72,13 @@ const ragVectorHtml = `<!doctype html>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
           <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
-          <button class="filter-btn active" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn active" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
           <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
       </div>
@@ -115,7 +98,7 @@ ${movedContent}
 </html>
 `;
 
-fs.writeFileSync(path.join(ROOT, "rag-vector.html"), ragVectorHtml);
+fs.writeFileSync(path.join(ROOT, "langchain.html"), langchainHtml);
 
 let updatedAi = aiHtml;
 MOVE_IDS.forEach((id) => {
@@ -125,5 +108,5 @@ MOVE_IDS.forEach((id) => {
 
 fs.writeFileSync(path.join(ROOT, "ai.html"), updatedAi);
 
-console.log("Created rag-vector.html with", MOVE_IDS.length, "sections");
+console.log("Created langchain.html with", MOVE_IDS.length, "sections");
 console.log("Removed sections from ai.html");

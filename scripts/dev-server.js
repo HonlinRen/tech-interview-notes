@@ -15,11 +15,14 @@ const ALLOWED_FILES = new Set([
   "docker-k8s.html",
   "ai.html",
   "rag-vector.html",
+  "langchain.html",
   "architecture.html",
   "observability.html",
   "security.html",
   "llm.html",
-  "leetcode.html"
+  "leetcode.html",
+  "frontend.html",
+  "bigdata.html"
 ]);
 
 const CATEGORY_TO_FILE = {
@@ -32,11 +35,14 @@ const CATEGORY_TO_FILE = {
   "docker-k8s": "docker-k8s.html",
   ai: "ai.html",
   "rag-vector": "rag-vector.html",
+  langchain: "langchain.html",
   architecture: "architecture.html",
   observability: "observability.html",
   security: "security.html",
   llm: "llm.html",
-  leetcode: "leetcode.html"
+  leetcode: "leetcode.html",
+  frontend: "frontend.html",
+  bigdata: "bigdata.html"
 };
 
 function stripHtml(text) {

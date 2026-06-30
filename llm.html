@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
-                    <button class="filter-btn active" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+                    <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn active" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -171,35 +174,6 @@ Attention(Q,K,V) = softmax(QK^T / √d_k) · V</code></pre>
         <p><strong>面试回答：</strong>Attention 通过 QK 相似度对 V 加权求和，让模型动态关注相关位置；多头并行捕捉多种依赖关系，是 Transformer 性能的关键。</p>
       </section>
 
-<section id="qkv-meaning">
-        <h2>Q、K、V 分别是什么？</h2>
-        <p>Q（Query）、K（Key）、V（Value）是 Attention 中三个线性变换得到的矩阵，类比<strong>信息检索</strong>：用 Query 去匹配 Key，按匹配度取 Value。</p>
-        <h3>含义与类比</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>符号</th>
-              <th>含义</th>
-              <th>检索类比</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Q（Query）</td><td>当前 token「想要查什么」</td><td>搜索 query</td></tr>
-            <tr><td>K（Key）</td><td>每个位置「能被怎样匹配」</td><td>文档索引/标题</td></tr>
-            <tr><td>V（Value）</td><td>每个位置「实际携带的信息」</td><td>文档正文内容</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-python">Q = X @ W_q    # (seq_len, d_k)
-K = X @ W_k    # (seq_len, d_k)
-V = X @ W_v    # (seq_len, d_v)
-
-scores = Q @ K^T / sqrt(d_k)   # 相似度
-weights = softmax(scores)
-output = weights @ V            # 加权聚合</code></pre>
-        <p>同一输入 X 经不同权重矩阵 W_q、W_k、W_v 投影到不同子空间，使模型能分别学习「查询、匹配、取值」三种角色。</p>
-        <p><strong>面试回答：</strong>Q 是当前位置的查询，K 是各位置的索引，V 是各位置的内容；QK^T 算相似度，softmax 后与 V 相乘得到上下文融合结果。</p>
-      </section>
-
 <section id="attention-on2">
         <h2>为什么 Attention 是 O(n²)？</h2>
         <p>n 为序列长度。标准 Self-Attention 需计算<strong>每个 token 与所有 token 的相似度</strong>，时间和空间均随序列长度平方增长。</p>
@@ -304,48 +278,6 @@ python -m vllm.entrypoints.openai.api_server \
         <p><strong>面试回答：</strong>vLLM 是高性能 LLM 推理框架，核心是 PagedAttention + Continuous Batching，提供 OpenAI 兼容 API，适合自托管高并发推理场景。</p>
       </section>
 
-<section id="paged-attention">
-        <h2>PagedAttention 解决什么问题？</h2>
-        <p>PagedAttention 是 vLLM 提出的 KV Cache 管理方案，借鉴操作系统<strong>虚拟内存分页</strong>思想，解决 KV Cache 显存碎片和并发利用率低的问题。</p>
-        <h3>传统 KV Cache 的问题</h3>
-        <ul>
-          <li>每个请求预分配连续显存（按 max_seq_len），实际序列短则大量浪费。</li>
-          <li>请求长度不一，释放后产生碎片，无法给其他请求复用。</li>
-          <li>并发数受限于「预分配总和」，而非「实际使用量」。</li>
-        </ul>
-        <h3>PagedAttention 做法</h3>
-        <pre><code class="language-python">KV Cache 切成固定大小 block（如 16 token/block）
-逻辑 KV 地址 → 物理 block 映射表（类似页表）
-block 可不连续存放，按需分配/回收
-多个请求共享 block 池，碎片率大幅降低</code></pre>
-        <p>效果：同等显存下并发请求数可提升 2~4 倍，显存利用率从约 20%~40% 提升到 80%+。</p>
-        <p><strong>面试回答：</strong>PagedAttention 把 KV Cache 分页管理，解决预分配浪费和碎片问题，让显存利用率大幅提升，从而支持更高并发推理。</p>
-      </section>
-
-<section id="parallel-tp-pp-dp">
-        <h2>Tensor Parallel / Pipeline Parallel / Data Parallel 区别？</h2>
-        <p>大模型单卡放不下或算不动时，需<strong>模型并行</strong>。三种并行切分维度不同，可组合使用。</p>
-        <h3>对比</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>并行方式</th>
-              <th>切分维度</th>
-              <th>通信特点</th>
-              <th>适用</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Data Parallel (DP)</td><td>数据 batch 切分到多卡，每卡完整模型副本</td><td>梯度 AllReduce</td><td>训练为主；推理中每卡独立处理不同请求</td></tr>
-            <tr><td>Tensor Parallel (TP)</td><td>单层权重矩阵按列/行切到多卡</td><td>每层前向/反向需 AllReduce / AllGather</td><td>单层太大放不下；推理常 TP=2/4/8</td></tr>
-            <tr><td>Pipeline Parallel (PP)</td><td>按模型层切分，不同卡负责不同层</td><td>层间传递激活值（micro-batch 流水）</td><td>层数多、单层可放下但整模放不下</td></tr>
-          </tbody>
-        </table>
-        <pre><code class="language-python">训练常见：DP + TP + PP（3D 并行，如 Megatron-LM）
-推理常见：TP（低延迟）或 TP + PP（超大模型如 70B+）</code></pre>
-        <p><strong>面试回答：</strong>DP 切数据、每卡完整模型；TP 切单层权重、需频繁通信；PP 切层、流水线传递。推理多用 TP，超大模型 TP+PP 组合。</p>
-      </section>
-
 <section id="pp-why-separate">
         <h2>PP 分离是什么？</h2>
         <p>「PP 分离」通常指<strong>Prefill 和 Decode 分离部署</strong>（也叫 Disaggregated Prefill），或 Pipeline Parallel 中阶段分离。面试中以前者更为热点。</p>
@@ -359,8 +291,8 @@ block 可不连续存放，按需分配/回收
             </tr>
           </thead>
           <tbody>
-            <tr><td>Prefill</td><td>计算密集（大矩阵乘）</td><td>高算力 GPU（如 A100/H100）</td></tr>
-            <tr><td>Decode</td><td>访存密集（读 KV Cache）</td><td>大显存、高带宽 GPU</td></tr>
+            <tr><td>Prefill</td><td><span class="em-warn">计算密集</span>（大矩阵乘）</td><td>高算力 GPU（如 A100/H100）</td></tr>
+            <tr><td>Decode</td><td><span class="em-warn">访存密集</span>（读 KV Cache）</td><td>大显存、高带宽 GPU</td></tr>
           </tbody>
         </table>
         <p>混在一起时，长 Prefill 会阻塞 Decode 请求（拖高 TPOT），短 Decode 又浪费 Prefill 算力。分离后可独立扩缩容、专用调度。</p>
@@ -374,37 +306,6 @@ block 可不连续存放，按需分配/回收
           <li>代表方案：Mooncake、DistServe、NVIDIA NIM 等。</li>
         </ul>
         <p><strong>面试回答：</strong>Prefill 计算密集、Decode 访存密集，混在一起互相干扰；分离部署可针对性扩缩容，提升整体吞吐，但需解决 KV Cache 跨节点传输问题。</p>
-      </section>
-
-<section id="rag-llm-slow-debug">
-        <h2>RAG 系统里 LLM 推理慢怎么排查？</h2>
-        <p>RAG 链路 = 检索 + 重排 + LLM 生成，LLM 往往是<strong>最大延迟来源</strong>。需拆分各环节定位瓶颈。</p>
-        <h3>排查步骤</h3>
-        <ol>
-          <li><strong>拆分耗时</strong>：埋点记录检索、重排、Prefill、Decode、总延迟各多少。</li>
-          <li><strong>看 LLM 指标</strong>：TTFT 高 → Prefill 慢（prompt 太长）；TPOT 高 → Decode 慢或 GPU 负载高。</li>
-          <li><strong>检查 prompt 长度</strong>：RAG 注入大量 chunk 导致 Prefill 膨胀，是常见原因。</li>
-          <li><strong>看 GPU 监控</strong>：利用率低 → batch 太小或调度问题；利用率高但慢 → 模型太大或 TP 不足。</li>
-          <li><strong>看并发与队列</strong>：请求排队 → 需扩容实例或限流。</li>
-        </ol>
-        <h3>常见原因与优化</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>原因</th>
-              <th>优化</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>RAG context 过长</td><td>减少 top_k、压缩 chunk、摘要后再注入</td></tr>
-            <tr><td>Prefill 慢</td><td>FlashAttention、缩短 system prompt</td></tr>
-            <tr><td>Decode 步数多</td><td>限制 max_tokens、优化 prompt 让回答更简洁</td></tr>
-            <tr><td>GPU 资源不足</td><td>量化（INT4/AWQ）、加卡、TP 并行、多副本</td></tr>
-            <tr><td>单实例瓶颈</td><td>vLLM Continuous Batching、水平扩容 + 负载均衡</td></tr>
-            <tr><td>冷启动</td><td>模型预热、保持最小副本在线</td></tr>
-          </tbody>
-        </table>
-        <p><strong>面试回答：</strong>先拆检索和 LLM 耗时；LLM 慢看 TTFT（Prefill/prompt 长度）和 TPOT（Decode/GPU 负载）；RAG 场景优先减 context 长度，再考虑量化、扩容和 batch 调度优化。</p>
       </section>
 
 <section id="inference-acceleration">

@@ -37,12 +37,15 @@
           <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
           <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
           <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
-          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI Agent / RAG</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
           <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
           <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
           <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
           <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
           <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
           <button class="filter-btn active" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
           <span id="studyStats" class="study-stats"></span>
         </div>
@@ -52,7 +55,240 @@
 
 <section id="lc-15-3sum">
         <h2>Leetcode 15. 三数之和</h2>
-        <p><a href="https://leetcode.cn/problems/3sum/" target="_blank" rel="noopener noreferrer">https://leetcode.cn/problems/3sum/</a></p>
+        <p><strong>题目链接</strong>：https://leetcode.cn/problems/3sum/</p>
+        <p>给你一个整数数组 <code>nums</code>，找出所有和为 <code>0</code> 且不重复的三元组 <code>[nums[i], nums[j], nums[k]]</code>（<code>i != j != k</code>）。结果中不能包含重复的三元组。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>示例</th>
+              <th>输入</th>
+              <th>输出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>示例 1</td><td><code>[-1, 0, 1, 2, -1, -4]</code></td><td><code>[[-1, -1, 2], [-1, 0, 1]]</code></td></tr>
+            <tr><td>示例 2</td><td><code>[0, 1, 1]</code></td><td><code>[]</code></td></tr>
+            <tr><td>示例 3</td><td><code>[0, 0, 0]</code></td><td><code>[[0, 0, 0]]</code></td></tr>
+          </tbody>
+        </table>
+        <p>约束：<code>3 &lt;= nums.length &lt;= 3000</code>，<code>-10^5 &lt;= nums[i] &lt;= 10^5</code>。</p>
+        <h3>思路</h3>
+        <p>暴力三重循环是 <code>O(n³)</code>。经典优化是<strong>先排序，再固定一个数，剩下两个数用双指针</strong>：</p>
+        <ol>
+          <li>排序后枚举第一个数 <code>nums[i]</code>，若 <code>nums[i] &gt; 0</code> 可直接结束（后面更大，不可能凑 0）。</li>
+          <li>在 <code>[i+1, n-1]</code> 区间设 <code>left</code>、<code>right</code>，求 <code>nums[i] + nums[left] + nums[right] == 0</code>。</li>
+          <li>和大于 0 则 <code>right--</code>，和小于 0 则 <code>left++</code>，等于 0 则记录答案并移动指针。</li>
+          <li>三个位置都要<strong>跳过重复值</strong>，避免结果重复。</li>
+        </ol>
+        <p>时间复杂度 <code>O(n²)</code>，额外空间 <code>O(1)</code>（不计排序和输出）。</p>
+        <h3>Python 实现</h3>
+        <pre><code class="language-python">from typing import List
+
+
+class Solution:
+    def threeSum(self, nums: List[int]) -&gt; List[List[int]]:
+        nums.sort()
+        n = len(nums)
+        result = []
+
+        for i in range(n - 2):
+            if nums[i] &gt; 0:
+                break
+            if i &gt; 0 and nums[i] == nums[i - 1]:
+                continue
+
+            left, right = i + 1, n - 1
+            while left &lt; right:
+                total = nums[i] + nums[left] + nums[right]
+                if total == 0:
+                    result.append([nums[i], nums[left], nums[right]])
+                    left += 1
+                    right -= 1
+                    while left &lt; right and nums[left] == nums[left - 1]:
+                        left += 1
+                    while left &lt; right and nums[right] == nums[right + 1]:
+                        right -= 1
+                elif total &lt; 0:
+                    left += 1
+                else:
+                    right -= 1
+
+        return result</code></pre>
+      </section>
+
+<section id="lc-134-gas-station">
+        <h2>Leetcode 134. 加油站</h2>
+        <p><strong>题目链接</strong>：https://leetcode.cn/problems/gas-station/</p>
+        <p>在一条环路上有 <code>n</code> 个加油站，第 <code>i</code> 个加油站有 <code>gas[i]</code> 升汽油。从第 <code>i</code> 站开往第 <code>i+1</code> 站（最后一站开往第 0 站）需要消耗 <code>cost[i]</code> 升汽油。给定两个数组 <code>gas</code> 和 <code>cost</code>，若存在某个起点能<strong>顺时针绕一圈回到起点</strong>，返回该起点下标；否则返回 <code>-1</code>。题目保证若有解，则解唯一。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>示例</th>
+              <th>输入</th>
+              <th>输出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>示例 1</td><td><code>gas = [1,2,3,4,5], cost = [3,4,5,1,2]</code></td><td><code>3</code></td></tr>
+            <tr><td>示例 2</td><td><code>gas = [2,3,4], cost = [3,4,3]</code></td><td><code>-1</code></td></tr>
+            <tr><td>示例 3</td><td><code>gas = [3,1,1], cost = [1,2,2]</code></td><td><code>0</code></td></tr>
+          </tbody>
+        </table>
+        <p>约束：<code>gas.length == cost.length</code>，<code>1 &lt;= gas.length &lt;= 10^5</code>，<code>0 &lt;= gas[i], cost[i] &lt;= 10^4</code>。</p>
+        <h3>思路</h3>
+        <p>暴力枚举每个起点是 <code>O(n²)</code>。贪心可一次扫描得到答案：</p>
+        <ol>
+          <li><strong>必要条件</strong>：若 <code>sum(gas) &lt; sum(cost)</code>，总油量不够，直接返回 <code>-1</code>。</li>
+          <li><strong>贪心选起点</strong>：维护当前剩余油量 <code>tank</code> 和候选起点 <code>start</code>。从 <code>0</code> 出发累加 <code>gas[i] - cost[i]</code>。</li>
+          <li>若某站之后 <code>tank &lt; 0</code>，说明 <code>[start, i]</code> 区间内任意点都不能作为合法起点，将起点重置为 <code>i + 1</code>，<code>tank</code> 清零继续。</li>
+          <li>能走完全程时，<code>start</code> 即为唯一答案。</li>
+        </ol>
+        <p>直觉：若从 A 出发到不了 B，则 A 到 B 之间任何站出发都到不了 B（中间只会更早缺油）。时间复杂度 <code>O(n)</code>，空间 <code>O(1)</code>。</p>
+        <h3>Python 实现</h3>
+        <pre><code class="language-python">from typing import List
+
+
+class Solution:
+    def canCompleteCircuit(self, gas: List[int], cost: List[int]) -&gt; int:
+        if sum(gas) &lt; sum(cost):
+            return -1
+
+        start = 0
+        tank = 0
+        for i in range(len(gas)):
+            tank += gas[i] - cost[i]
+            if tank &lt; 0:
+                start = i + 1
+                tank = 0
+
+        return start</code></pre>
+      </section>
+
+<section id="lc-lcr127-jump-training">
+        <h2>LCR 127. 跳跃训练</h2>
+        <p><strong>题目链接</strong>：https://leetcode.cn/problems/qing-wa-tiao-tai-jie-wen-ti-lcof/description/</p>
+        <p>某体育设施实施改进计划，要在一长条形的平台上铺设 <code>num</code> 个格子。运动员可以选择每次跳 <strong>1 个格子或 2 个格子</strong>，从起点跳到第 <code>num</code> 个格子。请返回到达第 <code>num</code> 个格子时，共有多少种不同的跳跃方式。答案对 <code>10^9 + 7</code> 取模。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>示例</th>
+              <th>输入</th>
+              <th>输出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>示例 1</td><td><code>num = 2</code></td><td><code>2</code>（<code>1+1</code> 或一次跳 <code>2</code>）</td></tr>
+            <tr><td>示例 2</td><td><code>num = 5</code></td><td><code>8</code></td></tr>
+          </tbody>
+        </table>
+        <p>约束：<code>0 &lt;= num &lt;= 100</code>。</p>
+        <h3>思路</h3>
+        <p>本质是<strong>斐波那契型动态规划</strong>（与「爬楼梯」相同）：到达第 <code>i</code> 格，要么从 <code>i-1</code> 跳 1 步来，要么从 <code>i-2</code> 跳 2 步来。</p>
+        <ol>
+          <li>定义 <code>dp[i]</code> 为到达第 <code>i</code> 格的方案数，转移方程：<code>dp[i] = dp[i-1] + dp[i-2]</code>。</li>
+          <li>边界：<code>dp[0] = 1</code>（起点不动算 1 种），<code>dp[1] = 1</code>。</li>
+          <li>每一步对 <code>10^9 + 7</code> 取模，防止溢出。</li>
+          <li>可用滚动变量把空间优化到 <code>O(1)</code>。</li>
+        </ol>
+        <p>时间复杂度 <code>O(n)</code>，空间复杂度 <code>O(1)</code>。</p>
+        <h3>Python 实现</h3>
+        <pre><code class="language-python">class Solution:
+    def trainWays(self, num: int) -&gt; int:
+        MOD = 10**9 + 7
+        if num &lt;= 1:
+            return 1
+
+        prev2, prev1 = 1, 1
+        for _ in range(2, num + 1):
+            curr = (prev1 + prev2) % MOD
+            prev2, prev1 = prev1, curr
+
+        return prev1</code></pre>
+      </section>
+
+<section id="lc-300-lis">
+        <h2>Leetcode 300. 最长递增子序列</h2>
+        <p><strong>题目链接</strong>：https://leetcode.cn/problems/longest-increasing-subsequence/</p>
+        <p>给你一个整数数组 <code>nums</code>，找到其中<strong>最长严格递增子序列</strong>的长度。子序列由数组中若干元素按原顺序选取组成，不要求连续。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>示例</th>
+              <th>输入</th>
+              <th>输出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>示例 1</td><td><code>[10, 9, 2, 5, 3, 7, 101, 18]</code></td><td><code>4</code>（如 <code>[2, 3, 7, 101]</code>）</td></tr>
+            <tr><td>示例 2</td><td><code>[0, 1, 0, 3, 2, 3]</code></td><td><code>4</code></td></tr>
+            <tr><td>示例 3</td><td><code>[7, 7, 7, 7, 7, 7, 7]</code></td><td><code>1</code></td></tr>
+          </tbody>
+        </table>
+        <p>约束：<code>1 &lt;= nums.length &lt;= 2500</code>，<code>-10^4 &lt;= nums[i] &lt;= 10^4</code>。</p>
+        <h3>思路</h3>
+        <p>常见两种解法：</p>
+        <ol>
+          <li><strong>DP O(n²)</strong>：定义 <code>dp[i]</code> 为以 <code>nums[i]</code> 结尾的 LIS 长度。对每个 <code>j &lt; i</code> 且 <code>nums[j] &lt; nums[i]</code>，有 <code>dp[i] = max(dp[i], dp[j] + 1)</code>。</li>
+        </ol>
+        <h3>Python 实现</h3>
+        <pre><code class="language-python">from typing import List
+class Solution:
+    def lengthOfLIS(self,nums:List[int]) -&gt; int:
+        dp = [1]*len(nums)
+        for i in range(len(nums)):
+            for j in range(i):
+                if nums[j] &lt; nums[i]:
+                    dp[i] = max(dp[i], dp[j]+1)
+        return max(dp)</code></pre>
+      </section>
+
+<section id="lc-226-invert-tree">
+        <h2>Leetcode 226. 翻转二叉树</h2>
+        <p><strong>题目链接</strong>：https://leetcode.cn/problems/invert-binary-tree/</p>
+        <p>给你一棵二叉树的根节点 <code>root</code>，<strong>翻转这棵二叉树</strong>，并返回其根节点。翻转即交换每个节点的左右子树。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>示例</th>
+              <th>输入</th>
+              <th>输出</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>示例 1</td><td><code>root = [4,2,7,1,3,6,9]</code></td><td><code>[4,7,2,9,6,3,1]</code></td></tr>
+            <tr><td>示例 2</td><td><code>root = [2,1,3]</code></td><td><code>[2,3,1]</code></td></tr>
+            <tr><td>示例 3</td><td><code>root = []</code></td><td><code>[]</code></td></tr>
+          </tbody>
+        </table>
+        <p>约束：树中节点数目 <code>0 &lt;= n &lt;= 100</code>，<code>-100 &lt;= Node.val &lt;= 100</code>。</p>
+        <h3>思路</h3>
+        <p>典型<strong>递归/DFS</strong>题：对每个节点交换左右子树，再递归处理子节点。也可用 BFS 层序遍历，逐层交换左右孩子。</p>
+        <ol>
+          <li>递归基：节点为空直接返回 <code>None</code>。</li>
+          <li>交换当前节点的 <code>left</code> 与 <code>right</code>。</li>
+          <li>递归翻转左右子树，最后返回根节点。</li>
+        </ol>
+        <p>时间复杂度 <code>O(n)</code>，空间复杂度 <code>O(h)</code>（递归栈，<code>h</code> 为树高）。</p>
+        <h3>Python 实现</h3>
+        <pre><code class="language-python">from typing import Optional
+
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class Solution:
+    def invertTree(self, root: Optional[TreeNode]) -&gt; Optional[TreeNode]:
+        if not root:
+            return None
+
+        root.left, root.right = root.right, root.left
+        self.invertTree(root.left)
+        self.invertTree(root.right)
+        return root</code></pre>
       </section>
 </main>
   </div>

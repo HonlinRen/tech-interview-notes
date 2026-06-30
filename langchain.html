@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <title>LangChain / LangGraph 高频问题整理</title>
+  <link rel="stylesheet" href="assets/highlight-theme.css">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/editor.css">
+</head>
+<body data-category="langchain">
+  <div class="layout">
+    <aside>
+      <a class="home-link" href="index.html">返回首页</a>
+<div id="categoryStats" class="category-stats"></div>
+      <details class="toc-group active" data-filter="langchain" open>
+        <summary>LangChain / LangGraph</summary>
+      </details>
+    </aside>
+
+    <main>
+      <div class="study-tools" aria-label="学习工具">
+        <div class="tool-row">
+          <div class="search-wrap">
+            <input id="searchInput" class="search-box" type="search" placeholder="当前主题搜索关键词" autocomplete="off">
+            <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
+          </div>
+          <button id="compactBtn" class="tool-btn" type="button">核心速览</button>
+          <button id="darkBtn" class="tool-btn" type="button">深色模式</button>
+        </div>
+        <div class="tool-row" id="filterBar">
+          <button class="filter-btn" type="button" data-filter="python" data-page="python.html">Python</button>
+          <button class="filter-btn" type="button" data-filter="java" data-page="java.html">Java / JVM</button>
+          <button class="filter-btn" type="button" data-filter="spring" data-page="spring.html">Spring Boot</button>
+          <button class="filter-btn" type="button" data-filter="mysql" data-page="mysql.html">MySQL</button>
+          <button class="filter-btn" type="button" data-filter="redis" data-page="redis.html">Redis</button>
+          <button class="filter-btn" type="button" data-filter="rocketmq" data-page="rocketmq.html">RocketMQ</button>
+          <button class="filter-btn" type="button" data-filter="docker-k8s" data-page="docker-k8s.html">Docker / K8S</button>
+          <button class="filter-btn" type="button" data-filter="ai" data-page="ai.html">AI应用</button>
+          <button class="filter-btn" type="button" data-filter="rag-vector" data-page="rag-vector.html">RAG 向量检索</button>
+          <button class="filter-btn active" type="button" data-filter="langchain" data-page="langchain.html">LangChain / LangGraph</button>
+          <button class="filter-btn" type="button" data-filter="llm" data-page="llm.html">大模型 / 推理与微调</button>
+          <button class="filter-btn" type="button" data-filter="architecture" data-page="architecture.html">网关 / 架构</button>
+          <button class="filter-btn" type="button" data-filter="observability" data-page="observability.html">可观测性</button>
+          <button class="filter-btn" type="button" data-filter="security" data-page="security.html">安全 / 鉴权</button>
+          <button class="filter-btn" type="button" data-filter="frontend" data-page="frontend.html">前端</button>
+          <button class="filter-btn" type="button" data-filter="bigdata" data-page="bigdata.html">大数据</button>
+          <button class="filter-btn" type="button" data-filter="leetcode" data-page="leetcode.html">算法 LeetCode</button>
+          <span id="studyStats" class="study-stats"></span>
+        </div>
+      </div>
+
+      <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
+
+<section id="langchain-structure">
+        <h2>LangChain 常见结构有哪些？</h2>
+        <p>LangChain 按职责分层，核心是把 <strong>Model、Prompt、数据、编排</strong> 拆成可复用组件，再用 Chain / Agent 串联。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>结构</th>
+              <th>典型类 / API</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Model</td><td><code>ChatOpenAI</code>、<code>OpenAIEmbeddings</code></td><td>封装 LLM 调用与向量化</td></tr>
+            <tr><td>Prompt</td><td><code>ChatPromptTemplate</code>、<code>FewShotPromptTemplate</code></td><td>模板化拼装 System / Human 消息</td></tr>
+            <tr><td>Output Parser</td><td><code>StrOutputParser</code>、<code>JsonOutputParser</code></td><td>把模型输出解析为字符串或结构化对象</td></tr>
+            <tr><td>Document Loader</td><td><code>PyPDFLoader</code>、<code>WebBaseLoader</code></td><td>加载原始文档</td></tr>
+            <tr><td>Text Splitter</td><td><code>RecursiveCharacterTextSplitter</code></td><td>切分 Chunk，控制检索粒度</td></tr>
+            <tr><td>VectorStore</td><td><code>Chroma</code>、<code>FAISS</code>、<code>PGVector</code></td><td>存储与检索向量</td></tr>
+            <tr><td>Retriever</td><td><code>as_retriever()</code>、<code>MultiQueryRetriever</code></td><td>按 query 召回相关文档</td></tr>
+            <tr><td>Chain（LCEL）</td><td><code>prompt | llm | parser</code></td><td>用管道符组合 Runnable，线性编排</td></tr>
+            <tr><td>Tool</td><td><code>@tool</code> 装饰函数</td><td>把业务能力暴露为可调用工具</td></tr>
+            <tr><td>Agent</td><td><code>create_react_agent</code>、<code>AgentExecutor</code></td><td>模型自主选工具、多步推理</td></tr>
+            <tr><td>Memory</td><td><code>ChatMessageHistory</code>、<code>RunnableWithMessageHistory</code></td><td>维护多轮对话上下文</td></tr>
+          </tbody>
+        </table>
+        <p>现代 LangChain 推荐 <strong>LCEL（LangChain Expression Language）</strong>：各组件实现 <code>Runnable</code> 接口，支持 <code>invoke</code> / <code>stream</code> / <code>batch</code> 统一调用。</p>
+      </section>
+
+<section id="langchain-build-flow">
+        <h2>LangChain 标准构建流程是什么？</h2>
+        <p>从 0 到 1 搭一个 LangChain 应用，通常按「模型 → 数据 → 提示词 → 链 → 调用」五步走；RAG 和 Agent 在此基础上加 Retriever 或 Tool。</p>
+        <h3>基础流程（5 步）</h3>
+        <ol>
+          <li><strong>选 Model</strong>：配置 LLM 和（如需 RAG）Embedding 模型。</li>
+          <li><strong>准备数据</strong>：Loader 加载 → Splitter 切分 → Embedding → 写入 VectorStore。</li>
+          <li><strong>定义 Prompt</strong>：写清角色、上下文占位符、输出格式要求。</li>
+          <li><strong>组装 Chain</strong>：用 LCEL 管道串联各组件。</li>
+          <li><strong>调用与观测</strong>：<code>invoke()</code> / <code>stream()</code>，挂 Callback 记录 Token 与延迟。</li>
+        </ol>
+        <h3>简单问答 Chain</h3>
+        <pre><code class="language-python">from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+llm = ChatOpenAI(model=&quot;gpt-4o&quot;)
+prompt = ChatPromptTemplate.from_messages([
+    (&quot;system&quot;, &quot;你是企业知识库助手，简洁回答。&quot;),
+    (&quot;human&quot;, &quot;{question}&quot;),
+])
+chain = prompt | llm | StrOutputParser()
+
+answer = chain.invoke({&quot;question&quot;: &quot;年假有多少天？&quot;})</code></pre>
+        <h3>RAG Chain 扩展</h3>
+        <pre><code class="language-python">from langchain_core.runnables import RunnablePassthrough
+
+def format_docs(docs):
+    return &quot;\n\n&quot;.join(d.page_content for d in docs)
+
+rag_prompt = ChatPromptTemplate.from_messages([
+    (&quot;system&quot;, &quot;仅根据以下资料回答，无依据则说不知道。\n\n{context}&quot;),
+    (&quot;human&quot;, &quot;{question}&quot;),
+])
+rag_chain = (
+    {&quot;context&quot;: retriever | format_docs, &quot;question&quot;: RunnablePassthrough()}
+    | rag_prompt
+    | llm
+    | StrOutputParser()
+)</code></pre>
+        <h3>Agent 扩展</h3>
+        <ol>
+          <li>用 <code>@tool</code> 定义搜索、查库等业务函数。</li>
+          <li><code>create_react_agent(llm, tools, prompt)</code> 创建 Agent。</li>
+          <li><code>AgentExecutor(agent, tools)</code> 执行多轮 think-act 循环。</li>
+        </ol>
+        <p>流程固定、无分支时用 Chain；需要自主选工具、多步推理时升级为 Agent；有循环、人工审批、状态持久化时再考虑 LangGraph。</p>
+      </section>
+
+<section id="langchain-vs-langgraph">
+        <h2>LangChain 和 LangGraph 区别是什么？</h2>
+        <p>LangChain 是 LLM 应用组件库；LangGraph 是有状态图工作流编排框架。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>LangChain</th>
+              <th>LangGraph</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>定位</td><td>组件与链式编排</td><td>有状态图工作流与 Agent 编排</td></tr>
+            <tr><td>流程形态</td><td>线性链路或简单 Agent</td><td>分支、循环、路由、状态机</td></tr>
+            <tr><td>适用场景</td><td>RAG 原型、工具调用</td><td>复杂 Agent、审批流、可恢复任务</td></tr>
+          </tbody>
+        </table>
+        <p>简单 RAG 用 LangChain 足够；需要循环、人工介入、状态持久化时选 LangGraph。</p>
+      </section>
+
+<section id="langgraph-node">
+        <h2>LangGraph 的 Node 怎么设计？</h2>
+        <p><span class="em-warn">Node 是工作流中的可执行步骤</span>，应职责单一、输入输出清晰</p>
+        <h3>设计原则</h3>
+        <ul>
+          <li>按能力拆分：<code>rewrite_query</code>、<code>retrieve</code>、<code>rerank</code>、<code>generate</code>、<code>call_tool</code>、<code>human_review</code>。</li>
+          <li>避免一个 Node 做太多事，便于观测、重试和替换。</li>
+          <li>只返回 State 增量更新，不覆盖整个状态。</li>
+          <li>条件分支、循环通过 conditional edge 表达。</li>
+        </ul>
+        <pre><code class="language-python">def retrieve_node(state):
+    docs = retriever.search(state[&quot;rewritten_query&quot;])
+    return {&quot;retrieved_docs&quot;: docs}</code></pre>
+      </section>
+
+<section id="langgraph-edge">
+        <h2>LangGraph 中 Edge 怎么设计？</h2>
+        <p><span class="em-warn">Edge 决定 Node 之间的流转方向</span>，分固定边和条件边两类。</p>
+        <h3>固定边（add_edge）</h3>
+        <p>无条件跳转，适合线性流水线。</p>
+        <pre><code class="language-python">builder.add_edge(&quot;retrieve&quot;, &quot;rerank&quot;)
+builder.add_edge(&quot;rerank&quot;, &quot;generate&quot;)
+builder.add_edge(&quot;generate&quot;, END)</code></pre>
+        <h3>条件边（add_conditional_edges）</h3>
+        <p>路由函数读取 State，返回<strong>下一个 Node 名称</strong>，实现分支、循环、重试。</p>
+        <pre><code class="language-python">def route_after_generate(state):
+    if state.get(&quot;need_tool&quot;):
+        return &quot;call_tool&quot;
+    if state.get(&quot;retry_count&quot;, 0) &gt; 3:
+        return END
+    return &quot;human_review&quot;
+
+builder.add_conditional_edges(
+    &quot;generate&quot;,
+    route_after_generate,
+    {
+        &quot;call_tool&quot;: &quot;call_tool&quot;,
+        &quot;human_review&quot;: &quot;human_review&quot;,
+        END: END,
+    },
+)</code></pre>
+        <h3>常见 Edge 模式</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>Edge 设计</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>线性 RAG</td><td>rewrite → retrieve → rerank → generate → END</td></tr>
+            <tr><td>Tool Calling 循环</td><td>agent → tools → agent（条件边检测是否继续调工具）</td></tr>
+            <tr><td>重试 / 降级</td><td>generate → 失败则 retry_node，超限则 fallback → END</td></tr>
+            <tr><td>人工审核</td><td><code>interrupt_before</code> + 条件边路由到 human_review</td></tr>
+            <tr><td>Agentic RAG</td><td>retrieve → grade → 质量不足则 rewrite 再检索（形成环）</td></tr>
+          </tbody>
+        </table>
+        <h3>设计原则</h3>
+        <ul>
+          <li>路由函数<strong>只读 State、无副作用</strong>，分支逻辑集中、可单测。</li>
+          <li>返回值必须在映射表中存在，避免运行时找不到 Node。</li>
+          <li>循环边务必设<strong>退出条件</strong>（步数上限、置信度阈值），防止死循环。</li>
+          <li>END 是内置终止节点，任何可结束的路径都应能到达 END。</li>
+        </ul>
+      </section>
+
+<section id="langgraph-state">
+        <h2>LangGraph 中 State 存储哪些字段？</h2>
+        <p><span class="em-warn">State 是跨节点共享的状态对象</span>，存储执行过程中需读写的数据</p>
+        <table>
+          <thead>
+            <tr>
+              <th>字段类型</th>
+              <th>常见字段</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>用户输入</td><td><code>question</code>、<code>session_id</code>、<code>user_id</code>、<code>tenant_id</code></td></tr>
+            <tr><td>对话上下文</td><td><code>messages</code>、<code>history_summary</code>、<code>memory</code></td></tr>
+            <tr><td>检索过程</td><td><code>rewritten_query</code>、<code>retrieved_docs</code>、<code>reranked_docs</code>、<code>citations</code></td></tr>
+            <tr><td>工具调用</td><td><code>tool_calls</code>、<code>tool_results</code>、<code>tool_errors</code></td></tr>
+            <tr><td>控制字段</td><td><code>route</code>、<code>step</code>、<code>retry_count</code>、<code>need_human_review</code></td></tr>
+            <tr><td>输出结果</td><td><code>answer</code>、<code>confidence</code>、<code>error</code></td></tr>
+          </tbody>
+        </table>
+        <p>State 不宜膨胀：大对象、原始全文、敏感数据只存引用 ID 或摘要。</p>
+      </section>
+
+<section id="langgraph-builder">
+        <h2>LangGraph 中 Builder 怎么设计？</h2>
+        <p><span class="em-warn">Builder 负责把 Node、Edge、State 组装成可执行的图</span>，典型流程是：定义 State → 注册 Node → 连 Edge → <code>compile()</code>。</p>
+        <h3>标准构建步骤</h3>
+        <ol>
+          <li><strong>定义 State</strong>：规定图运行有哪些字段</li>
+          <li><strong>创建图</strong>：绑定状态结构 schema</li>
+          <li><strong>注册 Node</strong>：每个 Node 只做一件事，把业务步骤注册到图</li>
+          <li><strong>连接 Edge</strong>：固定边 、条件边 ，定义节点执行顺序和分支条件</li>
+          <li><strong>编译运行</strong>：编译成可执行Graph</li>
+        </ol>
+        <pre><code class="language-python">from langgraph.graph import StateGraph, END
+# 创建一个图构建器 builder
+builder = StateGraph(AgentState)
+# 注册 Node 节点
+builder.add_node(&quot;rewrite&quot;, rewrite_node)
+builder.add_node(&quot;retrieve&quot;, retrieve_node)
+builder.add_node(&quot;generate&quot;, generate_node)
+# 设置入口节点
+builder.set_entry_point(&quot;rewrite&quot;)
+# 连接 Edge 边，定义节点之间的执行顺序
+builder.add_edge(&quot;rewrite&quot;, &quot;retrieve&quot;)
+builder.add_edge(&quot;retrieve&quot;, &quot;generate&quot;)
+builder.add_edge(&quot;generate&quot;, END)
+# 编译图，生成真正可以执行的 graph
+graph = builder.compile(checkpointer=memory)</code></pre>
+        <h3>设计要点</h3>
+        <ul>
+          <li>Builder 只做<strong>编排</strong>，业务逻辑放在 Node 函数里，便于单测。</li>
+          <li>复杂路由用 conditional edge 抽成独立 <code>route_fn</code>，Builder 保持可读。</li>
+          <li>子图（Subgraph）可封装 RAG、Tool 等模块，主 Builder 只负责拼装。</li>
+          <li>编译后再注入运行时依赖（retriever、llm），Node 通过闭包或依赖注入获取。</li>
+        </ul>
+      </section>
+
+<section id="infinite-loop">
+        <h2>Agent 如何避免无限循环？</h2>
+        <h3>防护机制</h3>
+        <ul>
+          <li><code>max_iterations</code>：最多 N 轮 think-act 循环。</li>
+          <li><code>max_tool_calls</code>：单次请求工具调用上限。</li>
+          <li>重复检测：相同 action 连续出现则终止。</li>
+          <li>总 Token / 时间预算：超限强制结束。</li>
+          <li>终止条件：模型输出 <code>FINAL_ANSWER</code> 或达到目标状态。</li>
+        </ul>
+        <p>LangGraph 用 conditional edge 检测 <code>step &gt; MAX</code> 路由到 END 节点。</p>
+      </section>
+
+<section id="state-persistence">
+        <h2>Agent 状态如何持久化和恢复？</h2>
+        <p>Agent / LangGraph 执行过程中，<strong>State（状态）</strong>会在多个 Node 之间传递。持久化就是把每一步的 State 快照写入存储，以便<strong>断点续跑、多轮对话、HITL 暂停后恢复、进程崩溃不丢进度</strong>。</p>
+        <h3>为什么需要持久化</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>多轮对话</td><td>用户下次进来，Agent 能接着上一轮上下文继续</td></tr>
+            <tr><td>HITL 暂停</td><td>图执行到审批节点暂停，等人工操作后再 resume</td></tr>
+            <tr><td>长任务</td><td>检索 → 工具调用 → 生成多步链路，中途失败可从 checkpoint 恢复</td></tr>
+            <tr><td>可观测 / 审计</td><td>回放每一步 State，排查 Agent 为何走错分支</td></tr>
+          </tbody>
+        </table>
+        <h3>LangGraph Checkpointer 机制</h3>
+        <p>LangGraph 在 <code>graph.compile(checkpointer=...)</code> 时注入 Checkpointer，<strong>每执行完一个 Node 自动写入 checkpoint</strong>。通过 <code>thread_id</code> 标识一次会话线程，同一 thread 的多次 invoke 共享状态历史。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Checkpointer</th>
+              <th>存储</th>
+              <th>适用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>MemorySaver</code></td><td>内存</td><td>本地开发、单进程测试</td></tr>
+            <tr><td><code>SqliteSaver</code></td><td>SQLite 文件</td><td>轻量单机部署</td></tr>
+            <tr><td><code>PostgresSaver</code></td><td>PostgreSQL</td><td>生产多实例、高可靠</td></tr>
+            <tr><td><code>RedisSaver</code></td><td>Redis</td><td>低延迟、带 TTL 的会话</td></tr>
+          </tbody>
+        </table>
+        <h3>持久化与恢复流程</h3>
+        <ol>
+          <li><strong>编译时绑定 Checkpointer</strong>：<code>graph = builder.compile(checkpointer=checkpointer)</code></li>
+          <li><strong>调用时传 thread_id</strong>：<code>config = {"configurable": {"thread_id": "session-123"}}</code></li>
+          <li><strong>首次 invoke</strong>：从入口 Node 开始，每步 State 自动 checkpoint</li>
+          <li><strong>再次 invoke</strong>：同一 <code>thread_id</code> 下，LangGraph 加载最新 checkpoint，从断点继续（或合并新输入）</li>
+          <li><strong>指定历史版本</strong>：可通过 <code>checkpoint_id</code> 回滚到某个快照（调试 / 重试）</li>
+        </ol>
+        <h3>Python 示例</h3>
+        <pre><code class="language-python">from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.graph import StateGraph, END
+
+# 1. 创建 Checkpointer（生产用 Postgres / Redis）
+checkpointer = PostgresSaver.from_conn_string(DB_URL)
+checkpointer.setup()
+
+# 2. 编译图
+graph = builder.compile(checkpointer=checkpointer)
+
+# 3. 首次执行：创建 thread 并持久化
+config = {&quot;configurable&quot;: {&quot;thread_id&quot;: &quot;user-42-session-001&quot;}}
+result = graph.invoke({&quot;question&quot;: &quot;查一下订单 12345 状态&quot;}, config)
+
+# 4. 同 thread 续跑（多轮对话 / 恢复）
+result = graph.invoke(
+    {&quot;question&quot;: &quot;那退款进度呢？&quot;},
+    config,  # 同一 thread_id，自动加载历史 messages / tool_results
+)
+
+# 5. 查看历史 checkpoint（调试）
+states = list(graph.get_state_history(config))</code></pre>
+        <h3>State 里通常持久化什么</h3>
+        <ul>
+          <li><code>messages</code>：对话历史（多轮 Agent 必备）</li>
+          <li><code>tool_calls</code> / <code>tool_results</code>：已执行的工具及返回</li>
+          <li><code>retrieved_docs</code>、<code>answer</code>：RAG 中间结果与输出</li>
+          <li><code>step</code>、<code>retry_count</code>：控制字段，防无限循环</li>
+          <li><code>need_human_review</code>、<code>human_decision</code>：HITL 相关</li>
+        </ul>
+        <h3>生产注意点</h3>
+        <ul>
+          <li><strong>thread_id 设计</strong>：建议 <code>{tenant_id}:{user_id}:{session_id}</code>，避免跨租户串数据。</li>
+          <li><strong>TTL 清理</strong>：Redis / 定时任务清理过期 checkpoint，控制存储成本。</li>
+          <li><strong>敏感数据</strong>：State 中避免存明文密码、完整 PII；必要时加密或只存 ID。</li>
+          <li><strong>多实例部署</strong>：Checkpointer 必须走共享存储（Postgres/Redis），不能只用 MemorySaver。</li>
+        </ul>
+        <p><strong>面试回答：</strong>LangGraph 用 Checkpointer 在每个 Node 执行后自动持久化 State，通过 <code>thread_id</code> 标识会话。首次 invoke 创建 checkpoint，同 thread 再次 invoke 从断点恢复。生产用 Postgres/Redis，开发用 MemorySaver；注意 thread_id 租户隔离、TTL 和敏感数据脱敏。</p>
+      </section>
+
+<section id="hitl">
+        <h2>Agent 如何做人工确认 HITL？</h2>
+        <p>HITL（Human-in-the-Loop，人在回路）指 Agent 在<strong>关键动作执行前暂停</strong>，把待确认内容展示给人工，人工批准 / 拒绝 / 修改后，Agent 再从断点继续执行。LangGraph 通过 <code>interrupt_before</code> / <code>interrupt_after</code> + Checkpointer 原生支持。</p>
+        <h3>典型场景</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>暂停时机</th>
+              <th>人工操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>发邮件 / 发消息</td><td>调用 send_email 工具前</td><td>确认收件人、正文无误后批准</td></tr>
+            <tr><td>金融交易 / 退款</td><td>执行支付 API 前</td><td>核对金额、账户，批准或拒绝</td></tr>
+            <tr><td>权限变更</td><td>修改角色 / 授权前</td><td>安全员审批</td></tr>
+            <tr><td>低置信度 RAG 答案</td><td>生成最终回复前</td><td>客服审核后放行或改写</td></tr>
+            <tr><td>危险工具调用</td><td>删数据、写库、部署前</td><td>必须人工确认</td></tr>
+          </tbody>
+        </table>
+        <h3>LangGraph HITL 实现原理</h3>
+        <ol>
+          <li><strong>标记中断点</strong>：编译时指定 <code>interrupt_before=["human_review"]</code>，图执行到该 Node 前自动暂停。</li>
+          <li><strong>持久化 State</strong>：暂停时 Checkpointer 已保存当前 State（含待审批的 tool_call、draft_answer 等）。</li>
+          <li><strong>通知人工</strong>：后端把待审内容推送到审批 UI / 企微 / 邮件，状态设为 <code>pending_review</code>。</li>
+          <li><strong>人工决策</strong>：批准 → 写入 <code>human_decision=approved</code>；拒绝 → <code>rejected</code>；修改 → 更新 State 中 draft 字段。</li>
+          <li><strong>resume 恢复</strong>：用同一 <code>thread_id</code> 调用 <code>graph.invoke(None, config)</code> 或更新 State 后 resume，图从中断点继续。</li>
+        </ol>
+        <pre><code class="language-python">from langgraph.checkpoint.memory import MemorySaver
+
+# 1. 编译时声明中断点 + Checkpointer
+graph = builder.compile(
+    checkpointer=MemorySaver(),
+    interrupt_before=[&quot;human_review&quot;],  # 进入 human_review 节点前暂停
+)
+
+config = {&quot;configurable&quot;: {&quot;thread_id&quot;: &quot;order-123&quot;}}
+
+# 2. 首次执行：Agent 规划到发邮件，图在 human_review 前暂停
+result = graph.invoke({&quot;question&quot;: &quot;给客户发退款通知&quot;}, config)
+# 此时 result 含待审 draft_email，图状态为 interrupted
+
+# 3. 读取当前 State，展示给人工
+snapshot = graph.get_state(config)
+draft = snapshot.values.get(&quot;draft_email&quot;)
+
+# 4. 人工批准后，更新 State 并 resume
+graph.update_state(config, {&quot;human_decision&quot;: &quot;approved&quot;})
+result = graph.invoke(None, config)  # 从断点继续，执行 send_email</code></pre>
+        <h3>条件路由配合 HITL</h3>
+        <p><code>human_review</code> Node 后的 conditional edge 根据 <code>human_decision</code> 分支：</p>
+        <ul>
+          <li><code>approved</code> → 执行工具 Node（send_email / refund）</li>
+          <li><code>rejected</code> → 返回拒答或重新生成</li>
+          <li><code>timeout</code> → 超时未审，自动取消或转人工队列</li>
+        </ul>
+        <h3>工程落地要点</h3>
+        <ul>
+          <li><strong>审批 UI</strong>：展示 Agent 意图、工具参数、草稿答案，支持一键批准 / 编辑后批准。</li>
+          <li><strong>超时策略</strong>：pending 超过 N 分钟自动 reject 或 escalate，避免任务永久挂起。</li>
+          <li><strong>审计日志</strong>：记录谁、何时、批准/拒绝了什么，满足合规要求。</li>
+          <li><strong>权限控制</strong>：只有特定角色能 approve 高危操作（财务、安全员）。</li>
+          <li><strong>与 Checkpointer 绑定</strong>：HITL 必须配合持久化，否则服务重启后中断状态丢失。</li>
+        </ul>
+        <p><strong>面试回答：</strong>HITL 是在危险或低置信步骤前暂停 Agent，等人工确认再继续。LangGraph 用 <code>interrupt_before</code> 标记中断点，Checkpointer 保存 State；人工 approve/reject 后更新 State 并 <code>invoke(None, config)</code> resume。生产要配审批 UI、超时、审计和权限，且必须走共享 Checkpointer 防丢状态。</p>
+      </section>
+</main>
+  </div>
+  <script src="assets/highlight.min.js"></script>
+  <script src="assets/study-legacy-map.js"></script>
+  <script src="assets/study.js"></script>
+  <script src="assets/code-highlight.js"></script>
+  <script src="assets/html-serializer.js"></script>
+  <script src="assets/content-editor.js"></script>
+</body>
+</html>
