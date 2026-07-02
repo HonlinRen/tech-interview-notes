@@ -271,6 +271,7 @@
         "llm-finetuning": "llm",
         "llm-output-filter": "security",
         "llm-rlhf": "llm",
+        "qwen-model-intro": "llm",
         "llm-vs-ml": "ai",
         "load-balance-algorithms": "architecture",
         "load-test": "observability",
@@ -285,6 +286,8 @@
         "memory-leak": "python",
         metaclass: "python",
         metadata: "rag-vector",
+        "milvus-vs-chroma": "rag-vector",
+        "chroma-milvus-ha": "rag-vector",
         "metaspace-method-area": "java",
         "minor-vs-full-gc": "java",
         "model-gateway": "ai",
@@ -293,6 +296,7 @@
         "mq-backlog-monitoring": "observability",
         "mq-peak-shaving": "architecture",
         mro: "python",
+        "magic-methods": "python",
         "multi-agent": "ai",
         "multi-hop-rag": "ai",
         "multi-level-cache": "architecture",
@@ -357,6 +361,7 @@
         "prompt-roles": "ai",
         "prompt-versioning": "ai",
         "property-decorator": "python",
+        "python-singleton": "python",
         "static-vs-dynamic-proxy": "java",
         proxy: "java",
         "pubsub-vs-stream": "redis",
@@ -649,7 +654,8 @@ const categoryLabels = {
         "ai:langgraph-builder": "langchain:langgraph-builder",
         "ai:infinite-loop": "langchain:infinite-loop",
         "ai:state-persistence": "langchain:state-persistence",
-        "ai:hitl": "langchain:hitl"
+        "ai:hitl": "langchain:hitl",
+        "llm:pp-why-separate": "llm:prefill-decode"
       };
 
       function getLegacyQuestionMap() {

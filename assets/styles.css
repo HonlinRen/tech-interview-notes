@@ -992,7 +992,7 @@
     .home-topic-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
     }
 
     .home-card {
@@ -1010,23 +1010,26 @@
     .home-card-row {
       align-items: center;
       background: linear-gradient(90deg, var(--card-tone-bg, #f8fafc) 0%, var(--paper) 55%);
-      border-left: 4px solid var(--card-tone-border, var(--line));
+      border-left: 3px solid var(--card-tone-border, var(--line));
       display: flex;
-      gap: 20px;
-      min-height: auto;
-      padding: 14px 18px;
+      gap: 14px;
+      min-height: 0;
+      padding: 8px 14px;
     }
 
     .home-card-row h2 {
-      flex: 0 0 168px;
-      font-size: 16px;
+      flex: 0 0 132px;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.35;
       margin: 0;
     }
 
     .home-card-row p {
       flex: 1;
       font-size: 13px;
-      line-height: 1.55;
+      line-height: 1.4;
+      margin: 0;
     }
 
     .home-card-row:hover {
@@ -1060,7 +1063,8 @@
       .home-card-row {
         align-items: flex-start;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
+        padding: 8px 12px;
       }
 
       .home-card-row h2 {
@@ -1346,29 +1350,6 @@
       font-size: 22px;
       font-weight: 700;
       line-height: 1;
-    }
-
-    .mindmap-legend {
-      align-items: center;
-      border-top: 1px dashed #e2e8f0;
-      color: var(--muted);
-      display: flex;
-      flex-wrap: wrap;
-      font-size: 12px;
-      gap: 8px 12px;
-      justify-content: center;
-      margin-top: 18px;
-      padding-top: 14px;
-    }
-
-    .mindmap-legend-path {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 999px;
-      color: #1d4ed8;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 11px;
-      padding: 4px 12px;
     }
 
     body.dark .project-mindmap {

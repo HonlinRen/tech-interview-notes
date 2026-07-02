@@ -266,21 +266,96 @@ print(c)  # [[1], [2]]</code></pre>
 
 <section id="decorator">
         <h2>Python 装饰器是什么？</h2>
-        <p>装饰器是在不修改原函数代码的前提下，给函数增加日志、鉴权、缓存、计时等横切能力的高阶写法。</p>
-        <p>本质是函数接收函数、返回函数。<code>@decorator</code> 等价于 <code>func = decorator(func)</code>。</p>
+        <p>装饰器是在不修改原函数代码的前提下，给函数增加日志、鉴权、缓存、计时等横切能力的高阶写法。本质是<strong>接收 callable、返回 callable</strong> 的函数（或类）。</p>
+
+        <h3>语法糖：@ 做了什么</h3>
+        <pre><code class="language-python">@log
+def hello():
+    print(&quot;hello&quot;)
+
+# 完全等价于：
+def hello():
+    print(&quot;hello&quot;)
+hello = log(hello)   # ① 先定义原函数  ② 立刻用装饰器包装并重新绑定名字</code></pre>
+        <p>定义阶段（import / 模块加载时）就完成包装，<strong>不是每次调用时才装饰</strong>。</p>
+
+        <h3>基础装饰器：实现逻辑</h3>
         <pre><code class="language-python">from functools import wraps
 
-def log(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
+def log(func):                    # 1. 接收被装饰的原函数
+    @wraps(func)                  # 4. 复制 __name__、__doc__ 等元信息
+    def wrapper(*args, **kwargs): # 2. 定义新函数（闭包，持有 func）
         print(&quot;before&quot;)
-        return func(*args, **kwargs)
-    return wrapper
+        result = func(*args, **kwargs)  # 3. 调用原函数
+        print(&quot;after&quot;)
+        return result
+    return wrapper                # 5. 返回 wrapper，外部 hello 实际指向它
 
 @log
 def hello():
-    print(&quot;hello&quot;)</code></pre>
-        <p>建议使用 <code>functools.wraps</code> 保留原函数元信息。</p>
+    print(&quot;hello&quot;)
+
+hello()  # 实际执行 wrapper() → 内部再调原 hello</code></pre>
+        <p>调用链：<code>hello()</code> → <code>wrapper()</code> → 增强逻辑 → <code>func()</code> → 返回结果。wrapper 通过<strong>闭包</strong>记住创建时的 <code>func</code>。</p>
+
+        <h3>执行时序（以 @log 为例）</h3>
+        <pre><code class="language-python"># 定义时（只执行一次）
+hello = log(hello)
+  log 收到原 hello
+  → 创建 wrapper（闭包绑定 func=原hello）
+  → 返回 wrapper
+  → 名字 hello 重新指向 wrapper
+
+# 调用时（每次 hello() 都走 wrapper）
+hello()
+  → wrapper 打印 before
+  → wrapper 调用 func() 即原 hello
+  → wrapper 打印 after</code></pre>
+
+        <h3>为什么要 functools.wraps</h3>
+        <pre><code class="language-python"># 不用 wraps：hello.__name__ 变成 &quot;wrapper&quot;，__doc__ 丢失
+# 用 wraps：hello.__name__ 仍是 &quot;hello&quot;，便于调试、反射、FastAPI 路由注册</code></pre>
+
+        <h3>带参数的装饰器：三层嵌套</h3>
+        <p>装饰器本身需要配置项时，多一层工厂函数：<strong>外层收参数 → 中层收 func → 内层 wrapper 收调用参数</strong>。</p>
+        <pre><code class="language-python">def repeat(n):              # 外层：装饰器参数
+    def decorator(func):    # 中层：被装饰函数
+        @wraps(func)
+        def wrapper(*args, **kwargs):  # 内层：实际调用
+            for _ in range(n):
+                func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@repeat(3)
+def greet():
+    print(&quot;hi&quot;)
+
+# 等价于：greet = repeat(3)(greet)</code></pre>
+
+        <h3>类装饰器</h3>
+        <p>用类的 <code>__call__</code> 实现 callable，适合有状态的装饰器（如计数、限流）。</p>
+        <pre><code class="language-python">class CountCalls:
+    def __init__(self, func):
+        self.func = func
+        self.count = 0
+
+    def __call__(self, *args, **kwargs):
+        self.count += 1
+        print(f&quot;call #{self.count}&quot;)
+        return self.func(*args, **kwargs)
+
+@CountCalls
+def work():
+    return 42</code></pre>
+
+        <h3>常见用途</h3>
+        <ul>
+          <li><code>@staticmethod</code> / <code>@classmethod</code> / <code>@property</code>：内置描述符装饰器</li>
+          <li>Web：<code>@app.get(&quot;/users&quot;)</code>（FastAPI / Flask 路由注册）</li>
+          <li>缓存：<code>@lru_cache</code>；校验：<code>@login_required</code></li>
+        </ul>
+        <p><strong>面试回答：</strong>装饰器是语法糖，<code>@deco</code> 等价于 <code>func = deco(func)</code>。deco 接收原函数，返回 wrapper；wrapper 用闭包持有 func，在调用前后加逻辑再转发。带参数时三层嵌套 <code>deco(arg)(func)</code>；用 <code>functools.wraps</code> 保留元信息。本质是函数式 AOP，定义时完成包装。</p>
       </section>
 
 <section id="decorator-vs-aop">
@@ -751,6 +826,178 @@ D().hello()
     def __init__(self, name):
         print(&quot;init&quot;)
         self.name = name</code></pre>
+      </section>
+
+<section id="magic-methods">
+        <h2>如何理解 Python 的魔法方法？</h2>
+        <p>魔法方法（Magic Methods），也叫<strong>特殊方法（Special Methods）</strong>或<strong>双下方法（Dunder）</strong>，是名字以 <code>__</code> 开头和结尾的方法，如 <code>__init__</code>、<code>__len__</code>。它们不是给业务代码直接调用的 API，而是<strong>Python 数据模型的钩子</strong>——解释器在执行内置操作时自动回调。</p>
+
+        <h3>核心理解</h3>
+        <ul>
+          <li><strong>语法糖背后</strong>：<code>len(obj)</code> 实际调 <code>obj.__len__()</code>；<code>a + b</code> 调 <code>a.__add__(b)</code>。</li>
+          <li><strong>让自定义类「像内置类型一样行为」</strong>：实现对应魔法方法即可接入 Python 协议（可迭代、可上下文管理、可哈希等）。</li>
+          <li><strong>不要手动乱调</strong>：应通过自然语法（运算符、内置函数）触发，保持语义一致。</li>
+        </ul>
+        <pre><code class="language-python">class Vector:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+    def __add__(self, other):       # 支持 v1 + v2
+        return Vector(self.x + other.x, self.y + other.y)
+
+    def __repr__(self):             # 开发者可读表示
+        return f&quot;Vector({self.x}, {self.y})&quot;
+
+    def __len__(self):              # 支持 len(v)
+        return 2
+
+v1 = Vector(1, 2)
+v2 = Vector(3, 4)
+print(v1 + v2)   # Vector(4, 6)
+print(len(v1))   # 2</code></pre>
+
+        <h3>常见魔法方法分类</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>类别</th>
+              <th>代表方法</th>
+              <th>触发场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>创建 / 销毁</td><td><code>__new__</code>、<code>__init__</code>、<code>__del__</code></td><td>实例化、垃圾回收</td></tr>
+            <tr><td>字符串表示</td><td><code>__repr__</code>、<code>__str__</code></td><td><code>repr(obj)</code>、<code>print(obj)</code></td></tr>
+            <tr><td>比较 / 哈希</td><td><code>__eq__</code>、<code>__lt__</code>、<code>__hash__</code></td><td><code>==</code>、排序、放入 <code>set</code>/<code>dict</code></td></tr>
+            <tr><td>容器协议</td><td><code>__len__</code>、<code>__getitem__</code>、<code>__setitem__</code></td><td><code>len</code>、<code>obj[i]</code>、赋值</td></tr>
+            <tr><td>迭代协议</td><td><code>__iter__</code>、<code>__next__</code></td><td><code>for x in obj</code></td></tr>
+            <tr><td>上下文管理</td><td><code>__enter__</code>、<code>__exit__</code></td><td><code>with obj:</code></td></tr>
+            <tr><td>可调用</td><td><code>__call__</code></td><td><code>obj()</code>，装饰器类常用</td></tr>
+            <tr><td>算术运算</td><td><code>__add__</code>、<code>__sub__</code>、<code>__mul__</code></td><td><code>+</code>、<code>-</code>、<code>*</code></td></tr>
+            <tr><td>属性访问</td><td><code>__getattr__</code>、<code>__setattr__</code></td><td><code>obj.x</code>、<code>obj.x = 1</code>，代理 / ORM 常用</td></tr>
+            <tr><td>描述符</td><td><code>__get__</code>、<code>__set__</code></td><td><code>@property</code>、类属性绑定逻辑</td></tr>
+          </tbody>
+        </table>
+
+        <h3>调用机制：谁调用了魔法方法？</h3>
+        <pre><code class="language-python"># 内置函数 / 运算符 → CPython 内部 → 查类型上的特殊方法
+len(obj)     → type(obj).__len__(obj)
+obj[key]     → obj.__getitem__(key)
+for x in obj → iter(obj) → obj.__iter__()</code></pre>
+        <p>若未实现且无法降级，抛出 <code>TypeError</code>（如不可迭代对象做 <code>for</code>）。部分运算还会尝试反向方法，如 <code>a + b</code> 失败时试 <code>b.__radd__(a)</code>。</p>
+
+        <h3>与协议（Protocol）的关系</h3>
+        <p>Python 不强制继承某个接口类，而是<strong>鸭子类型 + 协议</strong>：实现了 <code>__iter__</code> 就可被迭代；实现了 <code>__enter__</code>/<code>__exit__</code> 就可用 <code>with</code>。<code>collections.abc</code> 和 <code>typing.Protocol</code> 用于静态检查和文档，运行时仍看有没有对应魔法方法。</p>
+
+        <h3>实践建议</h3>
+        <ul>
+          <li>优先实现 <code>__repr__</code>，调试友好；面向用户展示再写 <code>__str__</code>。</li>
+          <li>定义 <code>__eq__</code> 时通常也要考虑 <code>__hash__</code>（不可变对象才可哈希）。</li>
+          <li>不要为实现而实现：只在需要让类行为像内置类型时再写魔法方法。</li>
+          <li><code>@dataclass</code> 可自动生成 <code>__init__</code>、<code>__repr__</code>、<code>__eq__</code> 等。</li>
+        </ul>
+        <p><strong>面试回答：</strong>魔法方法是 Python 数据模型的钩子，双下命名，由解释器在运算符、内置函数等场景自动调用。理解方式是「语法糖 → 对应 __xxx__」：len 调 __len__，+ 调 __add__。实现它们可让自定义类支持迭代、上下文、比较等协议；不要手动乱调，按需实现 __repr__、__eq__ 等常用方法即可。</p>
+      </section>
+
+<section id="python-singleton">
+        <h2>Python 单例模式是什么？如何实现？多线程下要注意什么？</h2>
+        <p>单例模式保证一个类<strong>全局只有一个实例</strong>，并提供统一访问点。常用于配置中心、连接池、日志管理器等。</p>
+
+        <h3>常见实现方式</h3>
+        <h4>1. 模块级单例（Python 最常用、推荐）</h4>
+        <p>模块在首次 <code>import</code> 时加载一次，天然单例；且受 import 锁保护，多线程下安全。</p>
+        <pre><code class="language-python"># config.py
+class _Config:
+    def __init__(self):
+        self.debug = False
+
+config = _Config()   # 模块级唯一实例
+
+# 其他文件
+from config import config</code></pre>
+
+        <h4>2. __new__ 控制实例创建</h4>
+        <pre><code class="language-python">class Singleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, name=&quot;default&quot;):
+        self.name = name</code></pre>
+        <p>注意：<code>__init__</code> 每次 <code>Singleton()</code> 仍会执行，可能重复初始化；可加重入标志或把初始化逻辑放到 <code>__new__</code>。</p>
+
+        <h4>3. 装饰器</h4>
+        <pre><code class="language-python">def singleton(cls):
+    instances = {}
+    def get_instance(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+    return get_instance
+
+@singleton
+class Database:
+    pass</code></pre>
+
+        <h4>4. 元类</h4>
+        <pre><code class="language-python">class SingletonMeta(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class Logger(metaclass=SingletonMeta):
+    pass</code></pre>
+
+        <h3>多线程问题</h3>
+        <p>上述 <code>__new__</code> / 装饰器 / 元类写法，在<strong>并发首次创建</strong>时存在竞态：<code>if instance is None</code> 判断通过后，两个线程可能各自创建实例，导致<strong>不是单例</strong>。GIL 不能保证「检查 + 创建」原子性。</p>
+        <pre><code class="language-python"># 线程 A、B 同时通过 if cls._instance is None → 可能创建两个对象</code></pre>
+
+        <h4>线程安全写法：加锁</h4>
+        <pre><code class="language-python">import threading
+
+class ThreadSafeSingleton:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:          # 第一次检查（快路径）
+            with cls._lock:
+                if cls._instance is None:  # 第二次检查（锁内）
+                    cls._instance = super().__new__(cls)
+        return cls._instance</code></pre>
+        <p>即<strong>双重检查锁定（Double-Checked Locking）</strong>：减少锁竞争，又保证只创建一次。</p>
+
+        <h4>各方案多线程对比</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>方式</th>
+              <th>线程安全</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>模块级单例</td><td>✅</td><td>import 锁保证模块只初始化一次，首选</td></tr>
+            <tr><td>__new__ 无锁</td><td>❌</td><td>并发首次创建可能出多个实例</td></tr>
+            <tr><td>__new__ + Lock</td><td>✅</td><td>双重检查，类内单进程安全</td></tr>
+            <tr><td>装饰器无锁</td><td>❌</td><td>同上，需对 <code>instances</code> 访问加锁</td></tr>
+            <tr><td>multiprocessing</td><td>⚠️</td><td>每个进程独立内存，类单例无法跨进程共享</td></tr>
+          </tbody>
+        </table>
+
+        <h3>选型建议</h3>
+        <ul>
+          <li>普通业务：<strong>模块级对象</strong>最简单可靠。</li>
+          <li>必须类封装：用 <code>__new__</code> + <code>threading.Lock</code>，或 <code>SingletonMeta</code> 内加锁。</li>
+          <li>多进程共享状态：用 Redis / 数据库 / 专门进程服务，不要指望进程内单例。</li>
+        </ul>
+        <p><strong>面试回答：</strong>单例保证全局一个实例。Python 推荐模块级单例（import 一次、线程安全）。类实现常用 __new__、装饰器或元类；多线程下无锁写法有竞态，需双重检查 + Lock。GIL 不替代锁；多进程各自一份单例，跨进程要外部存储。</p>
       </section>
 
 <section id="property-decorator">
