@@ -53,10 +53,32 @@
 
       <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
 
-<section id="elasticsearch-bigdata-flow">
-        <h2>Elasticsearch 是什么？大数据常见流程是什么？</h2>
-        <h3>Elasticsearch 是什么</h3>
-        <p>Elasticsearch（ES）是基于 Apache Lucene 的<strong>分布式搜索与分析引擎</strong>，擅长全文检索、日志分析、聚合统计和近实时查询，常用于 ELK 栈中的检索层。</p>
+      <div class="note">
+        <strong>术语速查（没做过大数据也能读）</strong>
+        <p>下面题目里会出现一些行业简称，先有个印象即可；正文里首次出现也会附带简短说明。</p>
+        <ul>
+          <li><strong>OLAP</strong>：Online Analytical Processing（联机分析处理），面向统计/报表，可接受分钟级延迟。</li>
+          <li><strong>OLTP</strong>：Online Transaction Processing（联机事务处理），面向订单/账户等频繁增删改查。</li>
+          <li><strong>ETL</strong>：Extract-Transform-Load（抽取-转换-加载），把原始数据清洗成可用表。</li>
+          <li><strong>T+1</strong>：今天跑「昨天」数据的批任务，结果延迟约一天，但通常更准确。</li>
+          <li><strong>CDC</strong>：Change Data Capture（变更数据捕获），把数据库的增删改同步出来。</li>
+          <li><strong>入湖</strong>：把业务数据/日志写入<strong>数据湖</strong>（Data Lake，低成本存海量原始/明细数据的存储体系）。</li>
+          <li><strong>HDFS</strong>：Hadoop Distributed File System，Hadoop 的分布式文件系统，Hive 等组件的底层存储。</li>
+          <li><strong>数仓</strong>：Data Warehouse，按主题整理好的历史数据仓库，供离线分析用。</li>
+          <li><strong>ODS / DWS</strong>：ODS 是贴源层（接近原始数据）；DWS 是汇总层（已聚合的宽表/指标表）。</li>
+          <li><strong>Lambda 架构</strong>：批处理 + 流处理两路并行，最后用批结果修正实时层误差。</li>
+          <li><strong>湖仓一体</strong>：在统一存储（如 Iceberg/Hudi 表格式）上同时做批处理和流处理。</li>
+          <li><strong>列存</strong>：按列存储（ORC/Parquet），扫某几列时比行存更省 IO，适合分析。</li>
+          <li><strong>Ad-hoc</strong>：临时即席查询，分析师按需写 SQL，不是固定报表。</li>
+          <li><strong>BI</strong>：Business Intelligence（商业智能），报表/看板/自助分析工具。</li>
+          <li><strong>埋点</strong>：在前端/App 记录用户行为（点击、浏览等）并上报，供后续分析。</li>
+        </ul>
+      </div>
+
+<section id="elasticsearch-intro">
+        <h2>Elasticsearch 是什么？</h2>
+        <p>Elasticsearch（ES）是基于 Apache Lucene（开源全文检索库）的<strong>分布式搜索与分析引擎</strong>，擅长全文检索、日志分析、聚合统计和近实时查询，常用于 ELK（Elasticsearch + Logstash 日志采集 + Kibana 可视化）栈中的检索层。</p>
+        <h3>核心概念</h3>
         <table>
           <thead>
             <tr>
@@ -68,26 +90,48 @@
             <tr><td>Index</td><td>逻辑索引，类似数据库</td></tr>
             <tr><td>Document</td><td>JSON 文档，类似一行记录</td></tr>
             <tr><td>Shard</td><td>分片，数据水平拆分，支持扩展</td></tr>
+            <tr><td>Replica</td><td>副本，高可用与读扩展</td></tr>
             <tr><td>Inverted Index</td><td>倒排索引，按词项快速定位文档</td></tr>
           </tbody>
         </table>
+        <h3>特点与适用场景</h3>
         <ul>
-          <li><strong>适用</strong>：日志检索（ELK）、商品搜索、监控指标分析、RAG 混合检索中的 BM25 层。</li>
-          <li><strong>特点</strong>：近实时（NRT）、分布式、REST API、聚合能力强；不适合强事务、复杂 JOIN。</li>
+          <li><strong>擅长</strong>：日志检索（ELK）、商品/文档全文搜索、监控指标聚合、RAG 混合检索中的 BM25（经典关键词相关性打分算法）层。</li>
+          <li><strong>能力</strong>：近实时 NRT（Near Real-Time，写入后秒级可搜）、分布式、REST API、聚合（Aggregation，类似 GROUP BY + 统计）能力强。</li>
+          <li><strong>不擅长</strong>：强事务、复杂 JOIN、高频单行更新（偏分析检索，而非 OLTP 那种频繁改单行）。</li>
         </ul>
-        <h3>大数据常见流程</h3>
-        <p>典型链路是<strong>采集 → 存储 → 计算 → 服务 → 应用</strong>，各层解耦、可独立扩展。</p>
-        <pre><code class="language-bash">数据源（业务库 / 日志 / 埋点 / IoT）
+        <h3>与同类组件</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>组件</th>
+              <th>差异</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>MySQL</td><td>ES 倒排索引做搜索/聚合；MySQL B+ 树做点查与事务</td></tr>
+            <tr><td>ClickHouse</td><td>ES 偏全文与灵活表结构（schema）；ClickHouse 偏列存 OLAP（联机分析处理）</td></tr>
+            <tr><td>Hive</td><td>ES 在线低延迟检索；Hive 离线批处理数仓（存 HDFS 上的历史明细）</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>ES 是基于 Lucene 的分布式搜索分析引擎，Index-Document-Shard 模型，倒排索引支持全文检索和聚合。适合日志、搜索、监控和 RAG 的 BM25 层；不适合事务和复杂 JOIN。大数据链路里 ES 通常放在<strong>服务层</strong>（给业务/前端直接查的那一层）做近实时查询，全量历史明细仍在 Hive/HDFS。</p>
+      </section>
+
+<section id="bigdata-common-flow">
+        <h2>大数据常见流程是什么？</h2>
+        <p>典型大数据链路是<strong>采集 → 存储 → 计算 → 服务 → 应用</strong>，各层解耦、可独立扩展。Lambda（批+流双路）/ 湖仓一体（统一存储上批流计算）都是在此基础上的变体。</p>
+        <pre><code class="language-bash">数据源（业务库 / 日志 / 埋点 / IoT 物联网设备）
   ↓ 采集
-Kafka / Flume / Canal / Debezium
+Kafka / Flume（日志采集）/ Canal（MySQL 变更 CDC）/ Debezium（多数据库 CDC）
   ↓ 存储
-HDFS / 对象存储 / Hive / Iceberg
+Hive / HDFS / 对象存储 / Iceberg（数据湖表格式）
   ↓ 计算
 Spark / Flink（批处理 + 流处理）
   ↓ 服务层
 Elasticsearch / ClickHouse / MySQL / Redis
   ↓ 应用
 BI 报表 / 搜索 / 推荐 / 监控告警</code></pre>
+        <h3>各阶段说明</h3>
         <table>
           <thead>
             <tr>
@@ -97,21 +141,28 @@ BI 报表 / 搜索 / 推荐 / 监控告警</code></pre>
             </tr>
           </thead>
           <tbody>
-            <tr><td>采集</td><td>Kafka、Flume、Logstash</td><td>高吞吐接入、削峰、解耦</td></tr>
-            <tr><td>存储</td><td>HDFS、Hive、Iceberg</td><td>低成本存海量原始/明细数据</td></tr>
-            <tr><td>计算</td><td>Spark（批）、Flink（流）</td><td>ETL、聚合、实时指标、宽表构建</td></tr>
-            <tr><td>服务</td><td>Elasticsearch、ClickHouse</td><td>低延迟检索与分析查询</td></tr>
-            <tr><td>应用</td><td>Kibana、Grafana、自研 API</td><td>可视化、搜索、业务决策</td></tr>
+            <tr><td>采集</td><td>Kafka、Flume、Logstash、Canal</td><td>高吞吐接入、削峰、解耦；Canal 等做 CDC（同步数据库变更）</td></tr>
+            <tr><td>存储</td><td>Hive、HDFS、Iceberg、Hudi</td><td>低成本存海量原始/明细数据（即「入湖」）</td></tr>
+            <tr><td>计算</td><td>Spark（批）、Flink（流）</td><td>ETL（清洗转换）、聚合、实时指标、宽表（多表拼成一张大表）构建</td></tr>
+            <tr><td>服务</td><td>Elasticsearch、ClickHouse、Redis</td><td>低延迟检索与分析查询</td></tr>
+            <tr><td>应用</td><td>Kibana、Grafana、Superset、自研 API</td><td>可视化、搜索、业务决策</td></tr>
           </tbody>
         </table>
-        <h3>ES 在大数据链路中的位置</h3>
-        <p>日志/业务数据经 Kafka 接入 → Flink/Spark 清洗聚合 → 写入 ES 供检索；原始明细仍可落 Hive/HDFS 做离线分析。ES 负责<strong>在线查询</strong>，离线仓负责<strong>全量历史</strong>。</p>
-        <p><strong>面试回答：</strong>ES 是分布式搜索分析引擎，倒排索引 + 分片扩展，适合日志和全文检索。大数据流程：Kafka 采集 → HDFS/Hive 存储 → Spark/Flink 计算 → ES/ClickHouse 服务 → BI/搜索应用；ES 通常放在服务层做近实时检索。</p>
+        <h3>批流与架构模式</h3>
+        <ul>
+          <li><strong>离线批（T+1）</strong>：Kafka/HDFS → Spark → Hive 汇总层（DWS）→ BI 报表，准确但延迟高。</li>
+          <li><strong>实时流</strong>：Kafka → Flink → Redis/ClickHouse/ES，秒级指标与告警。</li>
+          <li><strong>Lambda</strong>：批层 + 速层（实时层）并行，批结果修正流层误差。</li>
+          <li><strong>湖仓一体</strong>：Kafka 入湖（写入 Iceberg/Hudi 等数据湖表）→ Spark/Flink 统一批流计算 → 多引擎查询。</li>
+        </ul>
+        <h3>ES 在链路中的位置</h3>
+        <p>日志/业务数据经 Kafka 接入 → Flink/Spark 清洗聚合 → 写入 ES 供检索；原始明细仍可落 Hive/HDFS 做离线分析。<strong>ES 负责在线查询，离线仓（Hive 等）负责全量历史。</strong></p>
+        <p><strong>面试回答：</strong>大数据流程五段：Kafka 等采集 → HDFS/Hive/Iceberg 存储 → Spark/Flink 计算 → ES/ClickHouse 服务 → BI/搜索/监控应用。批用 Spark T+1，实时用 Flink；ES 在服务层做近实时检索，Hive 存全量明细。Lambda 是批+流双路，湖仓是统一存储上批流一体。</p>
       </section>
 
 <section id="hive-cold-hot-storage">
         <h2>Hive 数据库数据冷热分离存储怎么做？</h2>
-        <p>Hive 本身不直接管理物理存储介质，冷热分离是在 <strong>HDFS / 对象存储 + Hive 分区表</strong> 之上，按数据访问频率把<strong>热数据放高性能存储、冷数据放低成本存储</strong>，兼顾查询性能与存储成本。</p>
+        <p>Hive 本身不直接管理物理存储介质，冷热分离是在 <strong>HDFS（分布式文件系统）/ 对象存储 + Hive 分区表</strong> 之上，按数据访问频率把<strong>热数据放高性能存储、冷数据放低成本存储</strong>，兼顾查询性能与存储成本。</p>
         <h3>热数据 vs 冷数据</h3>
         <table>
           <thead>
@@ -123,14 +174,14 @@ BI 报表 / 搜索 / 推荐 / 监控告警</code></pre>
             </tr>
           </thead>
           <tbody>
-            <tr><td><strong>热数据</strong></td><td>近 7～30 天、查询频繁、延迟敏感</td><td>SSD / 标准 HDFS 三副本、高 IO 节点</td><td>日报表、实时分析补数、Ad-hoc 查询</td></tr>
+            <tr><td><strong>热数据</strong></td><td>近 7～30 天、查询频繁、延迟敏感</td><td>SSD / 标准 HDFS 三副本、高 IO 节点</td><td>日报表、实时分析补数、临时即席查询（Ad-hoc）</td></tr>
             <tr><td><strong>温数据</strong></td><td>1～6 个月、偶尔查询</td><td>普通 HDD、可适度压缩</td><td>月度汇总、审计抽查</td></tr>
-            <tr><td><strong>冷数据</strong></td><td>半年以上、极少访问、合规归档</td><td>纠删码（EC）、对象存储 OSS/S3、归档目录</td><td>历史明细留存、监管审计</td></tr>
+            <tr><td><strong>冷数据</strong></td><td>半年以上、极少访问、合规归档</td><td>纠删码 EC（Erasure Coding，用编码冗余省空间）、对象存储 OSS/S3、归档目录</td><td>历史明细留存、监管审计</td></tr>
           </tbody>
         </table>
         <h3>常见实现方案</h3>
         <h4>1. 按时间分区 + 目录分级（最常用）</h4>
-        <p>Hive 表按 <code>dt</code> / <code>month</code> 分区，不同生命周期对应不同 HDFS 路径或存储策略。</p>
+        <p>Hive 表按 <code>dt</code>（日期）/ <code>month</code>（月份）分区，不同生命周期对应不同 HDFS 路径或存储策略。</p>
         <pre><code class="language-sql">-- 热数据：近 30 天分区，标准 HDFS 路径
 CREATE TABLE ods_order_hot (
   order_id STRING,
@@ -139,16 +190,16 @@ CREATE TABLE ods_order_hot (
 PARTITIONED BY (dt STRING)
 LOCATION 'hdfs://ns/hot/warehouse/ods_order';
 
--- 冷数据：历史分区，外部表指向归档路径
+-- 冷数据：历史分区，外部表（元数据在 Hive、文件路径在外部）指向归档路径
 CREATE EXTERNAL TABLE ods_order_cold (
   order_id STRING,
   amount   DECIMAL(10,2)
 )
 PARTITIONED BY (dt STRING)
 LOCATION 'hdfs://ns/cold/archive/ods_order';</code></pre>
-        <p>定时任务（Shell / Airflow / DolphinScheduler）将超过阈值的 partition 目录 <strong>DistCp</strong> 到冷存储，再 <code>ALTER TABLE ... ADD PARTITION</code> 挂载到冷表，或统一视图 <code>UNION ALL</code> 对外透明。</p>
-        <h4>2. HDFS 存储策略（Storage Policy）</h4>
-        <p>Hadoop 支持目录级存储策略，配合 <strong>CacheMover / Mover</strong> 自动迁移块到合适介质：</p>
+        <p>定时任务（Shell / Airflow / DolphinScheduler 等工作流调度）将超过阈值的 partition 目录用 <strong>DistCp</strong>（Hadoop 分布式拷贝）迁到冷存储，再 <code>ALTER TABLE ... ADD PARTITION</code> 挂载到冷表，或统一视图 <code>UNION ALL</code> 对外透明。</p>
+        <h4>2. HDFS 存储策略（Storage Policy，按目录指定 SSD/HDD/纠删码等）</h4>
+        <p>Hadoop 支持目录级存储策略，配合 <strong>CacheMover / Mover</strong>（自动迁移数据块的工具）自动迁移块到合适介质：</p>
         <table>
           <thead>
             <tr>
@@ -168,12 +219,12 @@ LOCATION 'hdfs://ns/cold/archive/ods_order';</code></pre>
 hdfs storagepolicies -setStoragePolicy -path /cold/archive -policy COLD
 hdfs ec -enablePolicy -policy RS-6-3-1024k -path /cold/archive</code></pre>
         <h4>3. 对象存储承接冷层</h4>
-        <p>冷数据 DistCp 到 <strong>OSS / S3</strong>，Hive 用 External Table 或 <strong>Hive on OSS</strong> 挂载；计算用 Presto/Spark 按需拉取，接受更高延迟换更低存储单价。</p>
+        <p>冷数据 DistCp 到 <strong>OSS / S3</strong>（对象存储，按量计费、适合归档），Hive 用 External Table 或 <strong>Hive on OSS</strong> 挂载；计算用 Presto/Trino（交互式 SQL 引擎）/ Spark 按需拉取，接受更高延迟换更低存储单价。</p>
         <h4>4. 表格式与压缩</h4>
         <ul>
-          <li>热层：<strong>ORC / Parquet</strong> + Snappy/ZSTD，列存加速扫描。</li>
+          <li>热层：<strong>ORC / Parquet</strong>（列式存储格式）+ Snappy/ZSTD 压缩，列存加速扫描。</li>
           <li>冷层：更高压缩比（ZSTD level 高）、合并小文件，减少元数据与清单成本。</li>
-          <li><strong>Iceberg / Hudi</strong> 可配置 snapshot 过期、orphan file 清理，辅助生命周期管理。</li>
+          <li><strong>Iceberg / Hudi</strong>（数据湖表格式，管快照/增量/清理）可配置 snapshot 过期、orphan file 清理，辅助生命周期管理。</li>
         </ul>
         <h3>落地流程示例</h3>
         <pre><code class="language-bash">T+1 写入热路径  /hot/warehouse/db/tbl/dt=2026-03-27
@@ -185,12 +236,212 @@ hdfs ec -enablePolicy -policy RS-6-3-1024k -path /cold/archive</code></pre>
 180 天后可选：转 OSS 归档 / 降 EC 副本 / 仅保留聚合宽表</code></pre>
         <h3>注意事项</h3>
         <ul>
-          <li><strong>小文件</strong>：冷热迁移前合并小文件，否则 NameNode 压力和冷层查询性能都差。</li>
-          <li><strong>跨层查询</strong>：用视图或联邦查询（Presto catalog）统一热冷表，避免业务改 SQL。</li>
+          <li><strong>小文件</strong>：冷热迁移前合并小文件，否则 NameNode（HDFS 元数据管理节点）压力和冷层查询性能都差。</li>
+          <li><strong>跨层查询</strong>：用视图或联邦查询（Presto catalog 把多数据源当一张表查）统一热冷表，避免业务改 SQL。</li>
           <li><strong>元数据</strong>：分区数量爆炸时考虑按月二级分区或 Iceberg 隐藏分区。</li>
-          <li><strong>SLA</strong>：冷数据查询延迟高，需在架构上区分在线报表 vs 离线归档。</li>
+          <li><strong>SLA</strong>：Service Level Agreement（服务等级协议）；冷数据查询延迟高，需在架构上区分在线报表 vs 离线归档。</li>
         </ul>
-        <p><strong>面试回答：</strong>Hive 冷热分离靠「时间分区 + 不同存储介质/路径」实现：热数据近 30 天放 HDFS 标准盘或 SSD，按 dt 分区高频查；冷数据 DistCp 到 EC 目录或 OSS，External Table 挂载。配合 HDFS Storage Policy（HOT/WARM/COLD）和定时调度做生命周期迁移。核心是降存储成本，同时保证热查询性能；注意小文件合并和跨层统一视图。</p>
+        <p><strong>面试回答：</strong>Hive 冷热分离靠「时间分区 + 不同存储介质/路径」实现：热数据近 30 天放 HDFS 标准盘或 SSD，按 dt 分区高频查；冷数据用 DistCp 迁到纠删码 EC 目录或 OSS，External Table 挂载。配合 HDFS Storage Policy（HOT/WARM/COLD）和定时调度做生命周期迁移。核心是降存储成本，同时保证热查询性能；注意小文件合并和跨层统一视图。</p>
+      </section>
+
+<section id="kafka-intro">
+        <h2>Kafka 是什么？</h2>
+        <p>Apache Kafka 是<strong>分布式流式数据平台</strong>，核心能力是<strong>高吞吐、可持久化、可回溯</strong>的消息日志（Log，按顺序追加的消息队列），在大数据链路中既做消息队列，也做数据管道（Data Pipeline，连接采集→计算→存储的通道）。</p>
+        <h3>核心概念</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>概念</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Topic</td><td>逻辑主题，消息分类</td></tr>
+            <tr><td>Partition</td><td>Topic 分片，并行与扩展单元；分区内有序</td></tr>
+            <tr><td>Offset</td><td>分区内消息位移（读到第几条），Consumer 按 offset 消费</td></tr>
+            <tr><td>Consumer Group</td><td>消费者组，组内分摊 Partition，实现负载均衡</td></tr>
+            <tr><td>Broker</td><td>存储节点，持久化 Partition 日志</td></tr>
+            <tr><td>Replica</td><td>副本，Leader 读写 + Follower 同步，保证高可用</td></tr>
+          </tbody>
+        </table>
+        <p>数据写入后<strong>持久化到磁盘</strong>，Consumer 可重复消费、按 offset 回溯历史，适合「采集层 + 流计算输入 + 多下游订阅」。</p>
+
+        <h3>与 RocketMQ 对比（技术选型）</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Kafka</th>
+              <th>RocketMQ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>定位</td><td>流数据平台 / 大数据管道</td><td>业务消息中间件</td></tr>
+            <tr><td>吞吐</td><td>极高（日志顺序写 + 零拷贝，减少内存拷贝次数）</td><td>高，但极致吞吐通常 Kafka 更强</td></tr>
+            <tr><td>延迟</td><td>毫秒～秒级，偏吞吐</td><td>毫秒级，业务 MQ 体验更成熟</td></tr>
+            <tr><td>消费模型</td><td>Pull + offset 自管，可回溯任意历史</td><td>Push/Pull，Offset 由 Broker 管理为主</td></tr>
+            <tr><td>顺序消息</td><td>分区内有序</td><td>Queue 级局部顺序，API 更贴近业务</td></tr>
+            <tr><td>事务消息</td><td>事务性 Producer（0.11+），偏流场景</td><td><strong>原生事务消息</strong>，半消息 + 回查，业务友好</td></tr>
+            <tr><td>延迟消息</td><td>无原生任意延迟（靠外部或 Tiered Storage 分层存储等）</td><td><strong>原生 delayLevel / 5.x 定时消息</strong></td></tr>
+            <tr><td>过滤</td><td>Consumer 端为主</td><td>Broker 端 Tag / SQL92 过滤</td></tr>
+            <tr><td>生态</td><td>Flink、Spark Streaming、ELK、数据湖入湖（写入 ODS 贴源层）</td><td>Java 业务解耦、订单/支付、阿里系中间件栈</td></tr>
+            <tr><td>运维</td><td>KRaft 去 ZK（新版用内置共识，不再依赖 ZooKeeper），Partition 扩缩需规划</td><td>NameServer 轻量，Broker 部署相对直观</td></tr>
+          </tbody>
+        </table>
+
+        <h3>适用场景</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>更适合 Kafka</th>
+              <th>更适合 RocketMQ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>日志 / 埋点 / 监控指标采集</td><td>订单、支付、库存等业务异步解耦</td></tr>
+            <tr><td>Flink / Spark 流批一体数据管道</td><td>事务消息（本地事务 + MQ 一致性）</td></tr>
+            <tr><td>多消费者重复读同一份历史数据</td><td>延迟消息、死信队列（多次失败转存）、精细消费重试</td></tr>
+            <tr><td>数据湖入湖（ODS 贴源层）</td><td>强依赖 Java 生态的企业内部 MQ 标准</td></tr>
+          </tbody>
+        </table>
+        <p><strong>面试回答：</strong>Kafka 是分布式日志型流平台，Topic-Partition-Offset 模型，高吞吐、可持久化、可回溯，常用于日志采集和 Flink/Spark 管道。RocketMQ 偏业务消息，事务消息、延迟消息、消费模型更贴近应用。选型：大数据链路、流计算选 Kafka；业务解耦、事务一致性选 RocketMQ。</p>
+      </section>
+
+<section id="hive-intro">
+        <h2>Hive 数据库是什么？</h2>
+        <p>Apache Hive 是构建在 <strong>Hadoop（HDFS 存数据 + YARN 调度计算资源）</strong> 之上的<strong>数据仓库工具</strong>，提供类 SQL 的 <strong>HiveQL</strong> 接口，把结构化/半结构化数据映射为表，底层数据实际存储在 HDFS / 对象存储，通过 MapReduce / Tez / Spark 引擎执行查询。</p>
+        <p><strong>注意：</strong>Hive 不是 OLTP 关系型数据库，而是<strong>离线分析型（OLAP，Online Analytical Processing 联机分析处理）</strong>仓库，高延迟、高吞吐扫描，不适合点查和频繁更新。</p>
+
+        <h3>核心架构</h3>
+        <ul>
+          <li><strong>Metastore</strong>：表结构、分区、文件路径等元数据（常存 MySQL）。</li>
+          <li><strong>HiveServer2</strong>：JDBC/ODBC 服务，提交 HiveQL。</li>
+          <li><strong>执行引擎</strong>：MapReduce（慢，早期默认）、Tez、<strong>Spark</strong>（常用，内存计算更快）。</li>
+          <li><strong>存储格式</strong>：TextFile、ORC、Parquet（列存，只读需要的列，分析友好）。</li>
+        </ul>
+        <pre><code class="language-sql">-- 典型分区表
+CREATE TABLE ods_user (
+  user_id BIGINT,
+  name    STRING
+) PARTITIONED BY (dt STRING)
+STORED AS ORC;
+
+SELECT name FROM ods_user WHERE dt = '2026-03-27';</code></pre>
+
+        <h3>与传统关系型数据库（MySQL 等）区别</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Hive（数仓）</th>
+              <th>MySQL（OLTP，Online Transaction Processing 联机事务处理）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>定位</td><td>离线分析、海量历史数据</td><td>在线事务、业务 CRUD</td></tr>
+            <tr><td>数据量</td><td>TB～PB 级（PB = Petabyte，百万 GB 量级）</td><td>GB～TB 级（单库）</td></tr>
+            <tr><td>查询延迟</td><td>分钟～小时（批任务）</td><td>毫秒～秒</td></tr>
+            <tr><td>事务</td><td>弱（分区级 ACID 有限支持）</td><td><strong>强 ACID</strong></td></tr>
+            <tr><td>更新</td><td>追加写为主，UPDATE/DELETE 成本高</td><td>频繁单行更新</td></tr>
+            <tr><td>索引</td><td>依赖分区裁剪、列存、文件格式</td><td>B+ 树索引，点查快</td></tr>
+            <tr><td>Schema</td><td>读时模式（Schema on Read，写入时不强制校验，查询时再解析）</td><td>写时模式（Schema on Write，入库前结构必须固定）</td></tr>
+            <tr><td>扩展</td><td>水平扩展（HDFS + 分布式计算）</td><td>垂直扩展 + 分库分表</td></tr>
+            <tr><td>SQL</td><td>HiveQL（类 SQL，部分语法不同）</td><td>标准 SQL</td></tr>
+          </tbody>
+        </table>
+
+        <h3>技术选型与适用场景</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>推荐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>T+1 报表、多维分析、历史明细留存</td><td><strong>Hive</strong> / Iceberg / Hudi</td></tr>
+            <tr><td>订单支付、账户余额、实时库存</td><td><strong>MySQL</strong> 等 OLTP</td></tr>
+            <tr><td>日志明细离线统计、用户行为宽表</td><td>Hive + Spark ETL</td></tr>
+            <tr><td>交互式秒级临时查询（Ad-hoc，中小数据量）</td><td>Presto / Trino / ClickHouse，而非裸 Hive + MapReduce</td></tr>
+            <tr><td>湖仓一体、流批统一元数据</td><td>Hive Metastore + Iceberg / Hudi 表格式</td></tr>
+          </tbody>
+        </table>
+        <p>与 <strong>ClickHouse / Doris</strong>：后者偏 OLAP 在线分析、低延迟；Hive 偏离线批、存储成本更低。与 <strong>HBase</strong>：HBase 适合海量 KV（键值）随机读写；Hive 适合全表/分区扫描。</p>
+        <p><strong>面试回答：</strong>Hive 是 Hadoop 上的数据仓库，HiveQL 查 HDFS 上的表，适合 PB 级离线分析，不是 OLTP。和 MySQL 比：Hive 高延迟、弱事务、追加写、靠分区和列存；MySQL 强 ACID、低延迟点查。用于 T+1 报表、明细沉淀；业务交易仍用 MySQL。执行引擎常用 Spark，存储用 ORC/Parquet + 按 dt 分区。</p>
+      </section>
+
+<section id="spark-flink-intro">
+        <h2>大数据计算 Spark、Flink 是什么？</h2>
+        <p>Spark 和 Flink 都是<strong>分布式大数据计算引擎</strong>，对海量数据做 ETL、聚合、机器学习、流式计算；通常上游接 Kafka/HDFS/Hive，下游写 Hive/ES/ClickHouse/MySQL 等。</p>
+
+        <h3>Spark 是什么</h3>
+        <p>Apache Spark 基于<strong>内存计算 + DAG 调度</strong>（DAG，有向无环图，把任务拆成可并行阶段），核心抽象是 <strong>RDD / DataFrame / Dataset</strong>（不同层次的数据集合 API），擅长<strong>批处理</strong>，Structured Streaming 和 Spark Streaming 可处理微批/流式场景。</p>
+        <ul>
+          <li><strong>批处理</strong>：ETL、T+1 宽表、离线报表（Spark SQL 最常用）。</li>
+          <li><strong>迭代计算</strong>：MLlib 机器学习，GraphX 图计算。</li>
+          <li><strong>Hive on Spark</strong>：作为 Hive 执行引擎，替代 MapReduce。</li>
+          <li><strong>Structured Streaming</strong>：微批（Micro-batch，把流切成小批次处理），延迟秒级，语义简单。</li>
+        </ul>
+        <pre><code class="language-python"># Spark SQL 批处理示例
+df = spark.read.orc(&quot;hdfs://warehouse/ods_order/dt=2026-03-27&quot;)
+df.groupBy(&quot;city&quot;).count().write.mode(&quot;overwrite&quot;).saveAsTable(&quot;dws_order_city&quot;)</code></pre>
+
+        <h3>Flink 是什么</h3>
+        <p>Apache Flink 是<strong>原生流处理（Native Streaming，来一条处理一条）</strong>引擎，基于<strong>事件时间（Event Time，按数据产生时间而非到达时间）</strong>和<strong>状态（State，如累计计数等中间结果）</strong>，擅长<strong>低延迟实时计算</strong>与精确一次（Exactly-once，故障恢复后不丢不重）语义。</p>
+        <ul>
+          <li><strong>实时指标</strong>：大屏、实时 UV/PV、风控规则。</li>
+          <li><strong>CEP</strong>：Complex Event Processing（复杂事件处理），识别连续模式（如连续登录失败、异常交易序列）。</li>
+          <li><strong>流批一体</strong>：同一套 API，批是流的特例（DataStream / Table API）。</li>
+          <li><strong>状态与 Checkpoint</strong>：Keyed State（按 key 维护状态）+ 分布式快照，故障恢复不丢不重（配合 Kafka 两阶段提交）。</li>
+        </ul>
+        <pre><code class="language-java">// Flink 消费 Kafka 实时聚合（概念示意）
+env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), &quot;kafka&quot;)
+   .keyBy(event -&gt; event.getUserId())
+   .window(TumblingEventTimeWindows.of(Time.minutes(5)))
+   .aggregate(new CountAgg())
+   .sinkTo(esSink);</code></pre>
+
+        <h3>Spark vs Flink 对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>Spark</th>
+              <th>Flink</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>核心模型</td><td>批为主，流是微批（Structured Streaming）</td><td><strong>流为主</strong>，批是有限流</td></tr>
+            <tr><td>延迟</td><td>秒～分钟（微批）</td><td><strong>毫秒～秒</strong>（真流）</td></tr>
+            <tr><td>状态管理</td><td>相对弱，Structured Streaming 有状态算子</td><td><strong>Keyed State + Checkpoint</strong> 成熟</td></tr>
+            <tr><td>事件时间 / 水位线</td><td>Structured Streaming 支持，生态偏批</td><td><strong>原生 Event Time、Watermark</strong>（Watermark 水位线，判断迟到数据是否还能参与计算）</td></tr>
+            <tr><td>Exactly-once</td><td>流场景可实现，批场景简单</td><td>与 Kafka 组合成熟（精确一次语义）</td></tr>
+            <tr><td>API 生态</td><td>Spark SQL、MLlib 极成熟，Hive 集成好</td><td>DataStream、Table API、CEP</td></tr>
+            <tr><td>适用</td><td>离线 ETL、T+1、ML、Hive 加速</td><td>实时大屏、风控、实时数仓</td></tr>
+          </tbody>
+        </table>
+
+        <h3>选型建议</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>场景</th>
+              <th>推荐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>T+1 报表、历史全量回刷</td><td><strong>Spark</strong></td></tr>
+            <tr><td>Hive 离线 SQL 加速</td><td>Spark（Hive on Spark）</td></tr>
+            <tr><td>实时 KPI、秒级告警</td><td><strong>Flink</strong>（KPI = Key Performance Indicator，关键业务指标）</td></tr>
+            <tr><td>Kafka → 实时宽表 → OLAP（联机分析查询层）</td><td>Flink 流 + 批补数用 Spark</td></tr>
+            <tr><td>团队只维护一套、延迟要求不高</td><td>Spark Structured Streaming 可够用</td></tr>
+          </tbody>
+        </table>
+        <pre><code class="language-bash">典型 Lambda 架构：
+  批层：Kafka/HDFS → Spark  → Hive 汇总层 DWS（T+1 准确）
+  速层：Kafka      → Flink  → Redis/ClickHouse（实时近似/精确）
+  服务层：统一查询 API 或 以批修正流</code></pre>
+        <p><strong>面试回答：</strong>Spark 是内存分布式计算，批处理强，Hive ETL、T+1 报表常用；Structured Streaming 是微批。Flink 是原生流引擎，事件时间和状态管理好，适合实时指标和风控。选型：离线大批量用 Spark，低延迟实时用 Flink；Lambda 架构常两者结合。二者都常消费 Kafka，结果写 Hive/ES/ClickHouse。</p>
       </section>
 </main>
   </div>

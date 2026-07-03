@@ -140,8 +140,12 @@
         "dubbo-components": "architecture",
         "dubbo-expose-reference": "architecture",
         "embedded-tomcat": "spring",
-        "elasticsearch-bigdata-flow": "bigdata",
+        "elasticsearch-intro": "bigdata",
+        "bigdata-common-flow": "bigdata",
         "hive-cold-hot-storage": "bigdata",
+        "hive-intro": "bigdata",
+        "kafka-intro": "bigdata",
+        "spark-flink-intro": "bigdata",
         "embedding-selection": "rag-vector",
         "encryption-algorithms": "security",
         "enterprise-rag": "ai",
@@ -655,7 +659,8 @@ const categoryLabels = {
         "ai:infinite-loop": "langchain:infinite-loop",
         "ai:state-persistence": "langchain:state-persistence",
         "ai:hitl": "langchain:hitl",
-        "llm:pp-why-separate": "llm:prefill-decode"
+        "llm:pp-why-separate": "llm:prefill-decode",
+        "bigdata:elasticsearch-bigdata-flow": "bigdata:elasticsearch-intro"
       };
 
       function getLegacyQuestionMap() {
