@@ -94,6 +94,45 @@
       </section>
     </section>
 
+    <section class="home-section" aria-label="LLM Infra Lab">
+      <div class="home-hero home-hero-lab">
+        <div class="home-hero-head">
+          <div class="home-hero-title-wrap">
+            <span class="home-section-label">实验专栏</span>
+            <h1>LLM Infra Lab</h1>
+          </div>
+          <a class="home-project-link-inline" href="https://github.com/HonlinRen/llm-infra-lab" target="_blank" rel="noopener noreferrer">GitHub 仓库 ↗</a>
+        </div>
+        <p>围绕大模型基础设施的动手实验笔记，覆盖推理、量化、KV Cache、Serving、微调与 Transformer 训练链路。</p>
+      </div>
+      <section class="home-lab-list" aria-label="LLM Infra Lab 实验笔记入口">
+        <a class="home-card home-card-row tone-indigo" href="llm-infra-lab/mini_transformer_training_notes.html">
+          <h2>迷你 Transformer 训练</h2>
+          <p>从小模型训练过程理解 Transformer 结构、训练循环与基础调参。</p>
+        </a>
+        <a class="home-card home-card-row tone-pink" href="llm-infra-lab/fp16_int4_quantization_notes.html">
+          <h2>FP16 vs INT4 量化推理</h2>
+          <p>对比不同精度下的推理性能、显存占用与效果取舍。</p>
+        </a>
+        <a class="home-card home-card-row tone-teal" href="llm-infra-lab/kv_cache_notes.html">
+          <h2>KV Cache 开关对比</h2>
+          <p>拆解 KV Cache 对自回归解码吞吐、延迟和显存的影响。</p>
+        </a>
+        <a class="home-card home-card-row tone-orange" href="llm-infra-lab/prefill_decode_notes.html">
+          <h2>Prefill / Decode 性能拆解</h2>
+          <p>区分首轮 Prefill 与逐 token Decode 阶段的瓶颈和优化方向。</p>
+        </a>
+        <a class="home-card home-card-row tone-cyan" href="llm-infra-lab/vllm_serving_notes.html">
+          <h2>vLLM Serving</h2>
+          <p>记录 vLLM 服务化实验、PagedAttention 和推理服务指标观察。</p>
+        </a>
+        <a class="home-card home-card-row tone-violet" href="llm-infra-lab/llm_finetune_lora_notes.html">
+          <h2>大模型 LoRA 微调</h2>
+          <p>梳理 LoRA 微调流程、训练参数、数据准备和部署前检查点。</p>
+        </a>
+      </section>
+    </section>
+
     <section class="home-section" aria-label="项目实战指南">
       <div class="home-hero home-hero-project">
         <div class="home-hero-head">

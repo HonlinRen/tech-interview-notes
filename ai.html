@@ -89,7 +89,7 @@
 
 <section id="rag-open-source-frameworks">
         <h2>RAG 搭建有哪些开源框架？</h2>
-        <p>常见有两类：<strong>代码框架</strong>灵活定制，<strong>低代码平台</strong>快速上线。面试提 1–2 个即可。</p>
+        <p>常见有三类：<strong>代码框架</strong>灵活定制，<strong>低代码平台</strong>快速上线，<strong>RAG 专项引擎</strong>侧重文档解析与检索质量。面试提 1–2 个即可。</p>
         <h3>LangChain</h3>
         <p>Python / JS 生态最流行的 LLM 应用框架，RAG 链路组件齐全：Document Loader → Text Splitter → Embedding → VectorStore → Retriever → Prompt → LLM，用 LCEL 管道串联。</p>
         <ul>
@@ -105,7 +105,13 @@ retriever | prompt | llm | parser</code></pre>
           <li><strong>适合</strong>：PoC、企业内部知识库问答、产品/运营也能参与配置。</li>
           <li><strong>特点</strong>：低代码、上线快；复杂逻辑和深度集成不如 LangChain 灵活。</li>
         </ul>
-        <p><strong>面试回答：</strong>常见 LangChain（代码灵活，组件化搭 RAG）和 Dify（低代码，知识库开箱即用）。选型：要定制用 LangChain，要快速验证用 Dify。</p>
+        <h3>RAGFlow</h3>
+        <p>InfiniFlow 开源的 <strong>RAG 引擎</strong>，把深度文档解析、知识库、混合检索、Agent 编排做成一体化平台；核心亮点是 <strong>DeepDoc</strong> 复杂 PDF/表格/版式解析与<strong>可视化 Chunk</strong>，内置 Hybrid 召回 + Rerank。</p>
+        <ul>
+          <li><strong>适合</strong>：企业知识库、大量 PDF/制度文档、需要调解析与召回质量的场景。</li>
+          <li><strong>特点</strong>：RAG 链路开箱即用，文档理解强于通用低代码平台；Agent/深度业务集成不如 LangChain 灵活。</li>
+        </ul>
+        <p><strong>面试回答：</strong>常见 LangChain（代码灵活，组件化搭 RAG）、Dify（低代码，知识库开箱即用）、RAGFlow（RAG 专项引擎，DeepDoc 复杂文档解析 + Hybrid 检索）。选型：要深度定制用 LangChain；快速 PoC 用 Dify；复杂 PDF/重视切片与召回质量用 RAGFlow。</p>
       </section>
 
 <section id="mcp-and-tool-calling">

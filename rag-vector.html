@@ -874,6 +874,74 @@ results = col.search(
         </table>
         <p>百万级以下 HNSW 常用；亿级可 IVF+PQ 压缩。无绝对最优，需 benchmark recall-latency 曲线。</p>
       </section>
+
+<section id="ragflow-intro">
+        <h2>RAGFlow 开源框架是什么？</h2>
+        <p><strong>RAGFlow</strong> 是 InfiniFlow 开源的 <strong>RAG 引擎</strong>（Retrieval-Augmented Generation Engine），把<strong>深度文档解析、知识库管理、混合检索、Agent 编排</strong>做成一体化产品，定位为 LLM 的「上下文层」，支持 Docker 自托管，也提供 API 供业务集成。</p>
+        <p>与 LangChain（代码组件库）不同，RAGFlow 更偏<strong>开箱即用的 RAG 平台</strong>；与 Dify 类似，但<strong>核心差异化在复杂文档理解（DeepDoc）</strong>——PDF/Word/表格/版式布局的解析与可视化切片是强项。</p>
+
+        <h3>核心能力</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>模块</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>DeepDoc 文档理解</td><td>OCR、版式识别、表格结构识别；支持 PDF/Word/Excel/PPT 等，MinerU、Docling 等解析器可选</td></tr>
+            <tr><td>知识库（Dataset）</td><td>上传文档 → 解析 → 切片 → Embedding → 索引；支持<strong>可视化 Chunk</strong>，人工核对切片质量</td></tr>
+            <tr><td>混合检索 + Rerank</td><td>关键词 + 向量多路召回，融合重排（Rerank），提升召回精度</td></tr>
+            <tr><td>Agent / Workflow</td><td>可视化编排 Chatbot、Agent、Workflow；支持 Agentic Workflow、MCP、代码执行节点</td></tr>
+            <tr><td>Ingestion Pipeline</td><td>可编排的数据接入流水线，从 Notion / S3 / Confluence 等同步到索引</td></tr>
+            <tr><td>模型接入</td><td>可配置 LLM、Embedding、Rerank 模型（OpenAI、DeepSeek、本地 Ollama 等）</td></tr>
+          </tbody>
+        </table>
+
+        <h3>典型技术栈（自托管）</h3>
+        <ul>
+          <li><strong>向量/全文检索</strong>：Elasticsearch 或 Infinity（InfiniFlow 自研向量引擎）</li>
+          <li><strong>对象存储</strong>：MinIO（存原始文件）</li>
+          <li><strong>元数据</strong>：MySQL</li>
+          <li><strong>缓存</strong>：Redis</li>
+          <li><strong>前后端</strong>：Python 后端 + React 管理界面，Docker Compose 一键部署</li>
+        </ul>
+
+        <pre><code class="language-python">用户提问
+  → RAGFlow 应用（Chat / Agent / Workflow）
+      → 混合检索（关键词 + 向量 + Rerank）
+      → 引用 Chunk 拼进 Prompt
+      → LLM 生成（带引用溯源）
+  → 对外：Web UI / REST API / MCP Server</code></pre>
+
+        <h3>与 Dify / LangChain 对比</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>对比项</th>
+              <th>RAGFlow</th>
+              <th>Dify</th>
+              <th>LangChain / 自研</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>定位</td><td><strong>RAG 引擎</strong>，文档解析 + 检索为核心</td><td>LLM 应用平台，编排面更全</td><td>代码框架，完全自定义</td></tr>
+            <tr><td>复杂文档</td><td><strong>DeepDoc 强</strong>，表格/版式/可视化切片</td><td>通用文档解析，复杂 PDF 需调优</td><td>需自行选 Unstructured / PyMuPDF 等</td></tr>
+            <tr><td>检索链路</td><td>内置 Hybrid + Rerank，偏 RAG 深度优化</td><td>内置知识库 RAG，够用</td><td>自行搭 Retriever + Reranker</td></tr>
+            <tr><td>Agent</td><td>Workflow + Agentic + MCP</td><td>Agent + Workflow 成熟</td><td>LangGraph 等灵活度最高</td></tr>
+            <tr><td>上手方式</td><td>Web 配置 + API，偏 RAG 专项</td><td>低代码，产品/运营友好</td><td>代码优先，工程团队</td></tr>
+            <tr><td>适用场景</td><td>企业知识库、复杂 PDF/制度文档、长文档 RAG</td><td>通用 AI 应用、快速 PoC</td><td>复杂业务集成、深度定制</td></tr>
+          </tbody>
+        </table>
+
+        <h3>选型与注意点</h3>
+        <ul>
+          <li><strong>适合 RAGFlow</strong>：大量 PDF/扫描件/表格文档；需要看切片质量、调解析与召回；希望 RAG 链路开箱即用。</li>
+          <li><strong>不太适合</strong>：纯代码深度定制、与现有微服务强耦合、只需简单 Chatbot 且文档结构简单（Dify 可能更快）。</li>
+          <li><strong>生产注意</strong>：自托管需规划 ES/MinIO/MySQL 资源；敏感数据控制出网；复杂 Agent 仍要评测与权限隔离；GraphRAG / RAPTOR 等高级能力算力开销大。</li>
+        </ul>
+        <p><strong>面试回答：</strong>RAGFlow 是 InfiniFlow 开源的 RAG 引擎，核心亮点是 DeepDoc 深度文档解析和可视化知识库管理，内置 Hybrid 检索 + Rerank + Agent/Workflow，Docker 自托管。和 Dify 比，RAGFlow 更专注 RAG 与复杂文档；和 LangChain 比，它是平台化开箱即用，LangChain 是代码灵活。选型：复杂 PDF/企业知识库、重视切片与召回质量用 RAGFlow；通用低代码 AI 应用用 Dify；深度定制用 LangChain/LangGraph 自研。</p>
+      </section>
 </main>
   </div>
   <script src="assets/highlight.min.js"></script>
