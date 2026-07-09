@@ -1163,6 +1163,7 @@
     if (error && error.name === "TypeError" && /fetch|network|failed/i.test(message)) {
       return (
         "无法连接保存服务。请确认：1) 终端已运行 npm run dev；2) 地址栏是 http://localhost:3000/" +
+        "developer/" +
         (currentPageFile() || "java.html") +
         "（不要用 Live Server 或其他端口）"
       );
@@ -1220,7 +1221,7 @@
     const pageFile = currentPageFile();
     if (!pageFile || !Object.values(CATEGORY_TO_FILE).includes(pageFile)) {
       console.warn("[editor save] 无法识别页面文件:", pageFile);
-      setStatus("无法识别当前页面文件：" + (pageFile || "(空)") + "，请从 http://localhost:3000/java.html 这类地址打开", true);
+      setStatus("无法识别当前页面文件：" + (pageFile || "(空)") + "，请从 http://localhost:3000/developer/java.html 这类地址打开", true);
       return;
     }
 
@@ -1289,7 +1290,7 @@
       verifyEditorServer().then(function (ok) {
         if (!ok) {
           setStatus(
-            "保存服务未就绪。请运行 npm run dev，并访问 http://localhost:3000/" + (currentPageFile() || "java.html"),
+            "保存服务未就绪。请运行 npm run dev，并访问 http://localhost:3000/developer/" + (currentPageFile() || "java.html"),
             true
           );
         }

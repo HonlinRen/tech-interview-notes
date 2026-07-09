@@ -5,23 +5,23 @@
   };
 
   const CATEGORY_PAGES = {
-    python: "python.html",
-    java: "java.html",
-    spring: "spring.html",
-    mysql: "mysql.html",
-    redis: "redis.html",
-    rocketmq: "rocketmq.html",
-    "docker-k8s": "docker-k8s.html",
-    ai: "ai.html",
-    "rag-vector": "rag-vector.html",
-    langchain: "langchain.html",
-    llm: "llm.html",
-    architecture: "architecture.html",
-    observability: "observability.html",
-    security: "security.html",
-    frontend: "frontend.html",
-    bigdata: "bigdata.html",
-    leetcode: "leetcode.html"
+    python: "developer/python.html",
+    java: "developer/java.html",
+    spring: "developer/spring.html",
+    mysql: "developer/mysql.html",
+    redis: "developer/redis.html",
+    rocketmq: "developer/rocketmq.html",
+    "docker-k8s": "developer/docker-k8s.html",
+    ai: "developer/ai.html",
+    "rag-vector": "developer/rag-vector.html",
+    langchain: "developer/langchain.html",
+    llm: "developer/llm.html",
+    architecture: "developer/architecture.html",
+    observability: "developer/observability.html",
+    security: "developer/security.html",
+    frontend: "developer/frontend.html",
+    bigdata: "developer/bigdata.html",
+    leetcode: "developer/leetcode.html"
   };
 
   const statsEl = document.getElementById("homeStats");

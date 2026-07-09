@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
+const DEVELOPER_DIR = path.join(ROOT, "developer");
 const PORT = Number(process.env.PORT) || 3000;
 
 const ALLOWED_FILES = new Set([
@@ -85,7 +86,7 @@ function buildStudyStats() {
   const questions = [];
   Object.keys(CATEGORY_TO_FILE).forEach(function (category) {
     const file = CATEGORY_TO_FILE[category];
-    const filePath = path.join(ROOT, file);
+    const filePath = path.join(DEVELOPER_DIR, file);
     if (!fs.existsSync(filePath)) {
       return;
     }
@@ -135,7 +136,7 @@ app.post("/api/save", function (req, res) {
       return;
     }
 
-    const filePath = path.join(ROOT, file);
+    const filePath = path.join(DEVELOPER_DIR, file);
     if (!fs.existsSync(filePath)) {
       res.status(404).json({ ok: false, error: "File not found: " + file });
       return;
