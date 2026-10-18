@@ -1,0 +1,13 @@
+{% extends "layouts/base.njk" %}
+{% block styles %}
+  <link rel="stylesheet" href="{{ assetPrefix }}assets/labs/{{ labStyle }}.css">
+  <link rel="stylesheet" href="{{ assetPrefix }}assets/highlight-theme.css">
+  <link rel="stylesheet" href="{{ assetPrefix }}assets/lab.css">
+{% endblock %}
+{% block bodyClass %} lab-page{% endblock %}
+{% block body %}
+<header class="lab-header"><div class="wrap"><span class="page-eyebrow">实验专栏 · LLM INFRA LAB</span><h1>{{ heading }}</h1><p>{{ description | safe }}</p></div></header>
+{% include "components/lab-nav.njk" %}
+<main id="main-content">{{ content | safe }}</main>
+{% endblock %}
+{% block scripts %}{% set scripts = bundles.lab %}{% include "components/scripts.njk" %}{% endblock %}

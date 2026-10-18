@@ -1,0 +1,45 @@
+<section id="knowledge-map">
+  <span class="section-label">把书连成一套知识结构</span>
+  <h2>投资知识图谱</h2>
+  <p>先沿实线走一遍研究流程，再看虚线表示的环境影响与复盘反馈。点击节点可查看概念解释、关联知识点与对应书籍。</p>
+  <figure class="investment-map">
+    <div class="map-scroll">
+      <svg class="map-svg" viewBox="0 0 900 500" role="img" aria-labelledby="map-title map-desc">
+        <title id="map-title">从企业研究到复盘的投资知识图谱</title>
+        <desc id="map-desc">企业与护城河通过财报验证进入估值，再进入组合配置；周期影响估值，行为与风险贯穿全程，复盘回到研究和行为。图后提供相同内容的文字关联与书籍入口。</desc>
+        <defs><marker id="map-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>
+        <g class="map-edges" fill="none" stroke="currentColor" marker-end="url(#map-arrow)">
+          <path d="M205 90 H259"/><path d="M415 90 H469"/><path d="M625 90 H679"/>
+          <path d="M835 90 H875 V365 H338 V341"/>
+          <path class="map-feedback" d="M548 270 V126"/><path class="map-feedback" d="M470 305 H415"/>
+          <path class="map-feedback" d="M338 270 V170 H128 V126"/>
+          <path class="map-feedback" d="M128 270 V126"/>
+          <path class="map-feedback" d="M758 270 V195 H548 V126"/>
+        </g>
+        <g class="map-edge-labels" text-anchor="middle"><text x="233" y="73">验证</text><text x="443" y="73">量化</text><text x="653" y="73">比较</text><text x="705" y="388">跟踪组合结果 → 回到复盘</text><text x="599" y="184">约束假设</text><text x="445" y="333">更新规则</text><text x="197" y="192">修正研究</text><text x="180" y="230">约束决策</text><text x="720" y="184">影响定价</text></g>
+        <g class="map-node"><a href="#concept-business"><rect x="50" y="55" width="155" height="70" rx="10"/><text x="128" y="86">企业与护城河</text><text class="map-sub" x="128" y="109">商业模式 · 竞争优势</text></a></g>
+        <g class="map-node"><a href="#concept-accounting"><rect x="260" y="55" width="155" height="70" rx="10"/><text x="338" y="86">财报与证据</text><text class="map-sub" x="338" y="109">利润 · 现金 · 资本</text></a></g>
+        <g class="map-node"><a href="#concept-valuation"><rect x="470" y="55" width="155" height="70" rx="10"/><text x="548" y="86">估值与安全边际</text><text class="map-sub" x="548" y="109">情景 · 价格 · 容错</text></a></g>
+        <g class="map-node"><a href="#concept-portfolio"><rect x="680" y="55" width="155" height="70" rx="10"/><text x="758" y="86">配置与成本</text><text class="map-sub" x="758" y="109">分散 · 期限 · 费用</text></a></g>
+        <g class="map-node"><a href="#concept-behavior"><rect x="50" y="270" width="155" height="70" rx="10"/><text x="128" y="301">行为与心态</text><text class="map-sub" x="128" y="324">偏差 · 纪律 · 耐心</text></a></g>
+        <g class="map-node"><a href="#concept-review"><rect x="260" y="270" width="155" height="70" rx="10"/><text x="338" y="301">记录与复盘</text><text class="map-sub" x="338" y="324">证据 · 反证 · 修正</text></a></g>
+        <g class="map-node"><a href="#concept-risk"><rect x="470" y="270" width="155" height="70" rx="10"/><text x="548" y="301">风险与生存</text><text class="map-sub" x="548" y="324">损失 · 杠杆 · 流动性</text></a></g>
+        <g class="map-node"><a href="#concept-cycle"><rect x="680" y="270" width="155" height="70" rx="10"/><text x="758" y="301">周期与信贷</text><text class="map-sub" x="758" y="324">融资 · 情绪 · 反馈</text></a></g>
+        <g class="map-footer" text-anchor="middle"><text x="450" y="405">研究链：理解生意 → 验证证据 → 比较价格 → 管理组合</text><text x="450" y="440">贯穿全程：行为纪律与风险约束 · 通过复盘持续修正</text><text class="map-sub" x="450" y="475">实线：研究与跟踪流程　虚线：约束、影响与反馈（为突出主线，未画出全部关联）</text></g>
+      </svg>
+    </div>
+    <figcaption>图谱是本页对书单的学习整合；关系表示分析上的联系，不是收益保证或机械买卖信号。窄屏可横向查看图，或使用下方文字节点。</figcaption>
+  </figure>
+  <div class="map-concepts">
+    {% for concept in investmentConcepts %}
+    <details id="concept-{{ concept.id }}" class="concept-detail"{% if loop.first %} open{% endif %}>
+      <summary>{{ concept.label }}<span>{{ concept.question }}</span></summary>
+      <p>{{ concept.description }}</p>
+      <h3>知识关联</h3>
+      <ul>{% for link in concept.links %}<li><a href="#concept-{{ link.target }}">{{ link.text }}</a></li>{% endfor %}</ul>
+      <h3>对应书籍</h3>
+      <ul class="map-book-links">{% for book in investmentBooks %}{% if concept.id in book.concepts %}<li><a href="#book-{{ book.id }}">《{{ book.title }}》</a></li>{% endif %}{% endfor %}</ul>
+    </details>
+    {% endfor %}
+  </div>
+</section>

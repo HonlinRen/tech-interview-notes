@@ -1,0 +1,52 @@
+.investment-reading { max-width: 960px; margin: auto; line-height: 1.85; overflow-wrap: anywhere; }
+.investment-reading .reading-links, .investment-reading .reading-toc { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.investment-reading a { color: var(--accent); }
+.investment-reading .reading-toc { padding: 18px 0 28px; }
+.investment-reading section { padding: 28px; margin: 0 0 22px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; scroll-margin-top: calc(var(--site-nav-height, 76px) + 20px); }
+.investment-reading h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.5; }
+.investment-reading h3 { margin: 0 0 7px; font-size: 18px; line-height: 1.6; }
+.investment-reading p { margin: 8px 0 14px; }
+.investment-reading .section-label { color: var(--accent); font-size: 13px; letter-spacing: .08em; }
+.investment-reading .book-list { list-style: none; padding: 0; margin: 20px 0; }
+.investment-reading .book-list > li { padding: 18px 0; border-top: 1px solid var(--line); }
+.investment-reading .book-list > li:last-child { padding-bottom: 0; }
+.investment-reading .book-list p { margin-bottom: 0; }
+.investment-reading .reading-task { padding: 14px 18px; background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; }
+.investment-reading li + li { margin-top: 8px; }
+.investment-reading .journal { padding: 18px; border: 1px dashed var(--line); border-radius: 8px; }
+.investment-reading .journal dt { font-weight: 650; margin-top: 12px; }
+.investment-reading .journal dt:first-child { margin-top: 0; }
+.investment-reading .journal dd { margin: 3px 0 0; color: var(--muted); }
+.investment-reading .book-entry, .investment-reading .concept-detail { scroll-margin-top: calc(var(--site-nav-height, 76px) + 24px); }
+.investment-reading .book-author, .investment-reading .book-source { color: var(--muted); font-size: 14px; }
+.investment-reading h4 { margin: 18px 0 6px; font-size: 16px; }
+.investment-reading .book-detail { margin-top: 16px; }
+.investment-reading summary { cursor: pointer; color: var(--accent); padding: 10px 0; }
+.investment-reading .concept-tags { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0; font-size: 13px; }
+.investment-reading .book-detail ol { padding-left: 24px; }
+.investment-reading .book-detail p { margin-bottom: 12px; }
+.investment-reading .map-scroll { max-width: 100%; overflow-x: auto; }
+.investment-reading .investment-map { margin: 20px 0; }
+.investment-reading .map-svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--accent); }
+.investment-reading .map-edges { stroke-width: 1.5; }
+.investment-reading .map-feedback { stroke-dasharray: 5 5; }
+.investment-reading .map-node rect { fill: var(--accent-soft); stroke: var(--line); }
+.investment-reading .map-node text { fill: var(--ink); font-size: 17px; text-anchor: middle; }
+.investment-reading .map-node .map-sub, .investment-reading .map-sub { fill: var(--muted); font-size: 12px; }
+.investment-reading .map-node a:hover rect, .investment-reading .map-node a[aria-current] rect { stroke: var(--accent); stroke-width: 2; }
+.investment-reading .map-edge-labels { fill: var(--muted); font-size: 13px; }
+.investment-reading .map-footer { fill: var(--ink); font-size: 17px; }
+.investment-reading figcaption { font-size: 13px; color: var(--muted); }
+.investment-reading .concept-detail { border-top: 1px solid var(--line); padding: 8px 0; }
+.investment-reading .concept-detail summary { font-weight: 650; }
+.investment-reading .concept-detail summary span { display: block; color: var(--muted); font-size: 14px; font-weight: 400; }
+.investment-reading .concept-detail h3 { margin-top: 20px; font-size: 16px; }
+.investment-reading .map-book-links { display: flex; flex-wrap: wrap; gap: 8px 24px; list-style: none; padding: 0; }
+.investment-reading .map-book-links li { margin: 0; }
+.investment-reading :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media print { .investment-reading details > * { display: block; } .investment-reading .map-svg { min-width: 0; } }
+@media (max-width: 600px) {
+  .investment-reading section { padding: 20px 18px; }
+  .investment-reading h2 { font-size: 21px; }
+  .investment-reading .reading-toc { gap: 8px 16px; }
+}

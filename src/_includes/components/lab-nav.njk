@@ -1,0 +1,7 @@
+<nav class="lab-nav" aria-label="实验笔记导航">
+  <a href="../../index.html">← 返回首页</a><span class="lab-label">LLM Infra Lab</span>
+  <details class="lab-toc"><summary>章节目录</summary><ol>
+    {% for chapter in content | chapters %}<li><a href="#{{ chapter.id }}">{{ chapter.title }}</a></li>{% endfor %}
+  </ol></details>
+  <button type="button" id="labTheme" aria-pressed="false">深色模式</button>
+</nav>

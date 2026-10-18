@@ -1,0 +1,20 @@
+<header class="topic-header">
+  <a class="topic-breadcrumb" href="../index.html">学习专栏</a>
+  <h1>{{ topic.label }}</h1><p>{{ topic.description }}</p>
+</header>
+<div class="study-tools" aria-label="学习工具">
+  <div class="tool-row primary-tools">
+    <div class="search-wrap">
+      <input id="searchInput" class="search-box" type="search" placeholder="搜索本专题" autocomplete="off">
+      <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
+    </div>
+    <div id="filterBar"><select id="topicSelect" aria-label="切换专题">
+      {% for item in topics %}<option value="{{ item.id }}"{% if item.id == category %} selected{% endif %}>{{ item.label }}</option>{% endfor %}
+    </select></div>
+    <details class="tools-more"><summary>更多</summary><div class="tools-more-panel">
+      <button id="compactBtn" class="tool-btn" type="button">核心速览</button>
+      <button id="darkBtn" class="tool-btn" type="button">深色模式</button>
+      <div class="progress-tools-host"></div>
+    </div></details>
+  </div>
+</div>

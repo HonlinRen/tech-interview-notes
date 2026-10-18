@@ -1,0 +1,19 @@
+{% extends "layouts/base.njk" %}
+{% set topic = category | topicById %}
+{% block styles %}
+  {% for name in ['highlight-theme', 'styles', 'reading', 'editor'] %}<link rel="stylesheet" href="{{ assetPrefix }}assets/{{ name }}.css">
+  {% endfor %}
+{% endblock %}
+{% block bodyAttributes %} data-category="{{ category }}"{% endblock %}
+{% block body %}
+<div class="layout">
+  {% include "components/sidebar.njk" %}
+  <main id="main-content">
+    {% include "components/toolbar.njk" %}
+    <div id="emptyState" class="study-empty">没有找到匹配的问题，换个关键词试试。</div>
+    {{ content | safe }}
+    <textarea id="markdown-source" hidden aria-hidden="true">{{ markdownSource | default('') }}</textarea>
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}{% set scripts = bundles.topic %}{% include "components/scripts.njk" %}{% endblock %}

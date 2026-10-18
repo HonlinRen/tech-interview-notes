@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ assetPrefix }}assets/favicon.svg" type="image/svg+xml">
+  <title>{{ title }}</title>
+  {% block styles %}{% endblock %}
+  <link rel="stylesheet" href="{{ assetPrefix }}assets/theme.css">
+  <script src="{{ assetPrefix }}assets/site-theme.js" defer></script>
+</head>
+<body class="site-theme{% block bodyClass %}{% endblock %}"{% block bodyAttributes %}{% endblock %}>
+{% include "components/site-nav.njk" %}
+{% block body %}{{ content | safe }}{% endblock %}
+<footer class="site-footer">读书有所得，实践有所进。<span>一点积累，一点成长。</span></footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

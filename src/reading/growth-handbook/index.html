@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>稳住 · 一件事的四阶段训练手册</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232d5f4f'/%3E%3Ccircle cx='16' cy='16' r='8.5' fill='none' stroke='%23fbfcf8' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23b44532'/%3E%3C/svg%3E">
+<style>
+/* ============ 设计变量 ============ */
+:root{
+  --bg:#e9ede8; --bg2:#e0e6df; --card:#fbfcf8; --ink:#202823; --ink2:#46524b; --muted:#59675c;
+  --line:#d3dbd2; --line2:#e3e8e1;
+  --pine:#2d5f4f; --pine-d:#21473c; --pine-l:#e4ede8;
+  --cinnabar:#b44532; --cinnabar-d:#963626; --cinnabar-l:#f7e7e3;
+  --p1:#b44532; --p2:#2f6d8a; --p3:#5d7a3a; --p4:#856321;
+  --shadow:0 1px 2px rgba(32,40,35,.05),0 10px 28px -14px rgba(32,40,35,.22);
+  --radius:14px; --serif:"Noto Serif SC",Georgia,"Songti SC","SimSun",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.75;font-size:15px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--pine);color:#fff}
+h1,h2,h3,h4{font-family:var(--serif);line-height:1.35;color:var(--ink);font-weight:700}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:var(--pine);text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ============ 顶部导航 ============ */
+.nav{position:sticky;top:0;z-index:50;background:rgba(233,237,232,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1080px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-weight:700;font-size:17px;letter-spacing:.5px;white-space:nowrap}
+.brand-mark{width:26px;height:26px;flex:none}
+.nav-links{display:flex;gap:4px;margin-left:auto}
+.nav-link{padding:7px 13px;border-radius:999px;font-size:14px;color:var(--ink2);transition:background .18s,color .18s;font-weight:500}
+.nav-link:hover{background:var(--line2)}
+.nav-link.active{background:var(--pine);color:#fff}
+.nav-sos{background:var(--cinnabar);color:#fff;padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:6px;transition:background .18s;white-space:nowrap}
+.nav-sos:hover{background:var(--cinnabar-d)}
+.nav-sos svg{width:15px;height:15px}
+
+/* ============ 视图切换 ============ */
+.view{display:none;padding:40px 0 72px;animation:viewIn .35s ease}
+.view.active{display:block}
+@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ============ 首页 Hero ============ */
+.hero{display:grid;grid-template-columns:1.55fr 1fr;gap:32px;align-items:stretch;margin-bottom:46px}
+.hero-left{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:38px 36px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.eyebrow{font-size:13px;color:var(--muted);letter-spacing:2px;margin-bottom:16px;font-weight:500}
+.hero h1{font-size:clamp(27px,3.4vw,38px);font-weight:900;margin-bottom:16px}
+.hero h1 em{font-style:normal;color:var(--pine);position:relative}
+.hero-desc{color:var(--ink2);font-size:15px;margin-bottom:26px;max-width:46ch}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:auto}
+.btn-sos{background:var(--cinnabar);color:#fff;padding:13px 24px;border-radius:11px;font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:9px;box-shadow:0 8px 20px -8px rgba(180,69,50,.6);transition:transform .15s,background .18s}
+.btn-sos:hover{background:var(--cinnabar-d);transform:translateY(-1px)}
+.btn-sos svg{width:18px;height:18px}
+.btn-ghost{border:1.5px solid var(--pine);color:var(--pine);padding:13px 22px;border-radius:11px;font-size:15px;font-weight:500;transition:background .18s,color .18s}
+.btn-ghost:hover{background:var(--pine);color:#fff}
+.hero-right{background:var(--pine-d);border-radius:var(--radius);padding:30px 28px;color:#eef4f0;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.hero-right h3{color:#fff;font-size:16px;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.ring-wrap{display:flex;align-items:center;gap:20px;margin-bottom:18px}
+.ring{width:96px;height:96px;flex:none;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.16);stroke-width:8}
+.ring-fg{fill:none;stroke:#e8b04b;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.ring-num{font-family:var(--serif);font-size:26px;font-weight:700;color:#fff;line-height:1.2}
+.ring-num small{display:block;font-size:12.5px;font-weight:400;color:#b9cbc2;font-family:var(--sans)}
+.streak-line{font-size:13.5px;color:#b9cbc2;margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
+.streak-line b{color:#e8b04b;font-weight:700}
+
+/* 区块标题 */
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:20px}
+.sec-head h2{font-size:22px}
+.sec-head .sub{color:var(--muted);font-size:13.5px}
+.sec-head .line{flex:1;height:1px;background:var(--line)}
+
+/* ============ 四阶段流程 ============ */
+.stage-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:50px}
+.stage-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px;text-align:left;position:relative;box-shadow:var(--shadow);transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;min-height:188px}
+.stage-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px -12px rgba(32,40,35,.3)}
+.stage-card:focus-visible{outline:2.5px solid var(--pine);outline-offset:2px}
+.stage-bar{height:4px;border-radius:2px;margin-bottom:14px;width:44px}
+.stage-phase{font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:6px}
+.stage-no{font-family:var(--serif);font-size:13px;color:var(--muted);margin-left:auto}
+.stage-top{display:flex;align-items:center}
+.stage-card h3{font-size:17px;margin-bottom:8px}
+.stage-card p{font-size:13.5px;color:var(--ink2);margin-bottom:14px}
+.stage-go{margin-top:auto;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.stage-go svg{width:14px;height:14px;transition:transform .18s}
+.stage-card:hover .stage-go svg{transform:translateX(3px)}
+@media(min-width:821px){.stage-card:not(:last-child)::after{content:"";position:absolute;right:-11px;top:50%;width:14px;height:1.5px;background:var(--muted);opacity:.5;z-index:2}}
+
+/* ============ 三本书条 ============ */
+.book-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:50px}
+.book-mini{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 20px;box-shadow:var(--shadow);text-align:left;transition:transform .18s;display:block}
+.book-mini:hover{transform:translateY(-2px)}
+.book-mini .tag{font-size:12px;padding:3px 10px;border-radius:999px;display:inline-block;margin-bottom:12px;font-weight:500}
+.book-mini h3{font-size:16.5px;margin-bottom:6px}
+.book-mini .en{font-size:12px;color:var(--muted);margin-bottom:10px}
+.book-mini p{font-size:13.5px;color:var(--ink2)}
+.quote-block{background:var(--pine-l);border-left:4px solid var(--pine);border-radius:0 12px 12px 0;padding:22px 26px;margin-bottom:10px}
+.quote-block p{font-family:var(--serif);font-size:clamp(17px,2vw,20px);font-weight:600;color:var(--pine-d);line-height:1.8}
+.quote-block span{display:block;margin-top:8px;font-family:var(--sans);font-size:13px;color:var(--muted)}
+
+/* ============ 问题手风琴 ============ */
+.prob-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;box-shadow:var(--shadow);overflow:hidden}
+.prob-head{width:100%;display:flex;align-items:center;gap:18px;padding:22px 24px;text-align:left;transition:background .18s}
+.prob-head:hover{background:#f4f7f2}
+.prob-no{width:46px;height:46px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:19px;font-weight:700;color:#fff}
+.prob-head-txt{flex:1}
+.prob-head-txt h3{font-size:18px;margin-bottom:3px}
+.prob-head-txt .essence{font-size:13px;color:var(--muted)}
+.prob-chev{width:22px;height:22px;flex:none;transition:transform .25s;color:var(--muted)}
+.prob-card.open .prob-chev{transform:rotate(180deg)}
+.prob-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.prob-inner{padding:4px 24px 26px 24px;border-top:1px dashed var(--line)}
+.mech{background:var(--bg);border-radius:10px;padding:16px 18px;margin:18px 0;font-size:14px;color:var(--ink2)}
+.mech b{color:var(--ink)}
+.theory-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.theory-tag{font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--pine-l);color:var(--pine-d);font-weight:500}
+.sop-title{font-family:var(--serif);font-size:15.5px;font-weight:700;margin:6px 0 12px;display:flex;align-items:center;gap:8px}
+.sop-list{list-style:none;counter-reset:sop;margin-bottom:18px}
+.sop-list li{counter-increment:sop;position:relative;padding:10px 0 10px 44px;border-bottom:1px solid var(--line2);font-size:14.5px}
+.sop-list li:last-child{border-bottom:none}
+.sop-list li::before{content:counter(sop);position:absolute;left:0;top:11px;width:28px;height:28px;border-radius:8px;background:var(--pine-l);color:var(--pine-d);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--sans)}
+.sop-list li b{color:var(--ink)}
+.signal{display:flex;gap:10px;align-items:flex-start;background:var(--cinnabar-l);border-radius:10px;padding:13px 16px;font-size:13.5px;color:#6e3027}
+.signal svg{width:17px;height:17px;flex:none;margin-top:2px}
+
+/* ============ 书籍理论 ============ */
+.book-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.book-head{padding:24px 26px;border-bottom:1px solid var(--line);display:flex;gap:18px;align-items:flex-start}
+.book-idx{font-family:var(--serif);font-size:30px;font-weight:900;line-height:1;opacity:.28}
+.book-head h3{font-size:20px;margin-bottom:4px}
+.book-head .meta{font-size:13px;color:var(--muted)}
+.book-head .role{margin-left:auto;text-align:right;font-size:12.5px;color:var(--pine-d);background:var(--pine-l);padding:6px 12px;border-radius:999px;white-space:nowrap;font-weight:500}
+.acc{border-bottom:1px solid var(--line2)}
+.acc:last-child{border-bottom:none}
+.acc-btn{width:100%;display:flex;align-items:center;gap:10px;padding:15px 26px;text-align:left;font-size:14.5px;font-weight:500;transition:background .18s}
+.acc-btn:hover{background:#f4f7f2}
+.acc-btn .chev{margin-left:auto;width:18px;height:18px;color:var(--muted);transition:transform .25s}
+.acc.open .acc-btn .chev{transform:rotate(180deg)}
+.acc-panel{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.acc-inner{padding:2px 26px 20px;color:var(--ink2);font-size:14.5px}
+.acc-inner ul{padding-left:20px}
+.acc-inner li{margin-bottom:9px}
+.acc-inner li b{color:var(--ink)}
+.acc-inner .en{color:var(--muted);font-size:12.5px}
+
+/* ============ 计划页 ============ */
+.timeline{margin-bottom:46px}
+.tl-row{display:grid;grid-template-columns:104px 28px 1fr;gap:0 14px;align-items:stretch}
+.tl-time{padding-top:14px;text-align:right;font-family:var(--serif);font-weight:700;font-size:15px;color:var(--pine-d)}
+.tl-axis{position:relative;display:flex;justify-content:center}
+.tl-axis::before{content:"";position:absolute;top:0;bottom:-16px;width:2px;background:var(--line)}
+.tl-row:last-child .tl-axis::before{bottom:50%}
+.tl-dot{width:14px;height:14px;border-radius:50%;background:var(--pine);border:3px solid var(--bg);z-index:1;margin-top:17px;box-shadow:0 0 0 2px var(--pine)}
+.tl-content{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.tl-content h4{font-size:15.5px;margin-bottom:6px}
+.tl-content p{font-size:13.5px;color:var(--ink2)}
+.plan-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:18px}
+.panel h3{font-size:17px;margin-bottom:4px}
+.panel .hint{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.check-item{display:flex;gap:13px;align-items:flex-start;padding:13px 4px;border-bottom:1px solid var(--line2);cursor:pointer}
+.check-item:last-of-type{border-bottom:none}
+.check-box{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .18s;background:#fff}
+.check-item.done .check-box{background:var(--pine);border-color:var(--pine)}
+.check-box svg{width:13px;height:13px;color:#fff;opacity:0;transition:opacity .15s}
+.check-item.done .check-box svg{opacity:1}
+.check-item.done .ci-txt{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.ci-txt{font-size:14.5px}
+.ci-txt small{display:block;font-size:12.5px;color:var(--muted);text-decoration:none}
+.daily-progress{height:8px;border-radius:4px;background:var(--line2);overflow:hidden;margin-top:16px}
+.daily-progress i{display:block;height:100%;background:var(--pine);border-radius:4px;transition:width .5s ease}
+.daily-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:8px}
+/* 自评滑杆 */
+.eval-row{margin-bottom:15px}
+.eval-row label{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}
+.eval-row label b{color:var(--pine-d);font-family:var(--serif)}
+input[type=range]{width:100%;accent-color:var(--pine);height:26px}
+.eval-text{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13.5px;margin-bottom:10px;background:#fdfefb;resize:vertical}
+.eval-text:focus{outline:2px solid var(--pine-l);border-color:var(--pine)}
+.btn-solid{background:var(--pine);color:#fff;padding:10px 20px;border-radius:9px;font-size:14px;font-weight:500;transition:background .18s}
+.btn-solid:hover{background:var(--pine-d)}
+.btn-line{border:1px solid var(--line);padding:10px 16px;border-radius:9px;font-size:13.5px;color:var(--ink2);transition:all .18s}
+.btn-line:hover{border-color:var(--cinnabar);color:var(--cinnabar)}
+.eval-hist{margin-top:14px;font-size:13px;color:var(--ink2)}
+.eval-hist-item{padding:9px 0;border-bottom:1px dashed var(--line2);font-size:13px}
+.eval-hist-item .wk{font-weight:700;color:var(--pine-d);font-family:var(--serif)}
+.matrix{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+.matrix th,.matrix td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+.matrix th{background:var(--pine-l);color:var(--pine-d);font-weight:600}
+table{table-layout:fixed}
+
+/* ============ 应急弹层 ============ */
+.modal-mask{position:fixed;inset:0;background:rgba(26,34,30,.5);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-mask.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--card);border-radius:18px;max-width:560px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 30px 70px -20px rgba(0,0,0,.45);animation:popIn .28s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes popIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-head{padding:24px 26px 16px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--line2);position:sticky;top:0;background:var(--card);z-index:2}
+.modal-head h3{font-size:19px}
+.modal-head p{font-size:13px;color:var(--muted)}
+.modal-close{margin-left:auto;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex:none}
+.modal-close:hover{background:var(--line2)}
+.modal-body{padding:22px 26px 26px}
+.sos-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sos-opt{border:1.5px solid var(--line);border-radius:12px;padding:16px;text-align:left;transition:all .18s;background:#fdfefb}
+.sos-opt:hover{border-color:var(--pine);transform:translateY(-1px)}
+.sos-opt .n{font-family:var(--serif);font-weight:700;font-size:15px;margin-bottom:5px;display:block}
+.sos-opt small{color:var(--muted);font-size:12.5px}
+.sos-steps{list-style:none;counter-reset:s}
+.sos-steps li{counter-increment:s;display:flex;gap:13px;padding:11px 0;border-bottom:1px solid var(--line2);cursor:pointer;font-size:14.5px}
+.sos-steps li:last-child{border-bottom:none}
+.sos-steps li .k{width:26px;height:26px;flex:none;border-radius:50%;border:2px solid var(--cinnabar);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:var(--cinnabar);transition:all .18s}
+.sos-steps li.done .k{background:var(--cinnabar);color:#fff}
+.sos-steps li.done{color:var(--muted)}
+.sos-back{margin-top:16px;font-size:13.5px;color:var(--pine);font-weight:500}
+.sos-back:hover{text-decoration:underline}
+
+/* ============ Toast / 页脚 ============ */
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:200}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.footer{border-top:1px solid var(--line);padding:28px 0;font-size:12.5px;color:var(--muted);text-align:center;line-height:2}
+.footer .wrap{max-width:1080px}
+
+/* ============ 响应式 ============ */
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .stage-flow{grid-template-columns:1fr 1fr}
+  .stage-card:not(:last-child)::after{display:none}
+  .book-strip{grid-template-columns:1fr}
+  .plan-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .wrap{padding:0 16px}.nav-inner{padding:0 16px;gap:10px}
+  .brand span.lbl{display:none}
+  .nav-link{padding:6px 9px;font-size:13px}
+  .nav-sos{padding:6px 10px;font-size:12.5px}
+  .stage-flow{grid-template-columns:1fr}
+  .hero-left{padding:26px 22px}
+  .sos-grid{grid-template-columns:1fr}
+  .prob-head{padding:18px;gap:13px}.prob-inner{padding:4px 18px 20px}
+  .book-head{flex-wrap:wrap}.book-head .role{margin-left:0}
+  .tl-row{grid-template-columns:76px 22px 1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+.reading-breadcrumb{max-width:1080px;margin:0 auto;padding:9px 24px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px}.reading-breadcrumb a:focus-visible{outline:2px solid var(--pine);outline-offset:3px}
+@media(max-width:620px){.nav-inner{height:auto;min-height:60px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap;gap:8px}.nav-links{order:3;flex-basis:100%;margin-left:0;justify-content:space-between}.nav-link{white-space:nowrap}.nav-sos{margin-left:auto}}
+</style>
+<link rel="stylesheet" href="../../assets/theme.css">
+</head>
+<body>
+<nav class="reading-breadcrumb" aria-label="站点导航"><a href="../../index.html">← 返回首页</a><a href="../index.html">读书目录</a></nav>
+
+<!-- ============ 导航 ============ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2d5f4f"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="#fbfcf8" stroke-width="2"/><circle cx="16" cy="16" r="3" fill="#b44532"/></svg>
+      <span class="lbl">稳住 · 四阶段训练手册</span>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link active" href="#/home" data-route="home">总览</a>
+      <a class="nav-link" href="#/problems" data-route="problems">四个卡点</a>
+      <a class="nav-link" href="#/books" data-route="books">三本书</a>
+      <a class="nav-link" href="#/plan" data-route="plan">21天计划</a>
+    </div>
+    <button class="nav-sos" id="navSos" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      我卡住了
+    </button>
+  </div>
+</nav>
+
+<!-- ============ 视图：首页 ============ -->
+<section class="view active" id="view-home">
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">三本书 × 四个卡点 × 一套标准动作</div>
+        <h1>一件事从进入到收尾，<br>每个环节都有<em>稳住的方法</em></h1>
+        <p class="hero-desc">培训暴露出的四个问题，不是四个孤立的毛病，而是同一件事的四个阶段：进入状态、临场情绪、观点表达、事后复盘。本手册把《强大内心的自我对话》《重新思考》《深度工作》的理论，变成每个卡点上照着做的动作。</p>
+        <div class="hero-actions">
+          <button class="btn-sos" id="heroSos" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+            我现在就卡住了
+          </button>
+          <a class="btn-ghost" href="#/problems">查看四个卡点的动作</a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8b04b" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          今日训练
+        </h3>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="42"/>
+            <circle class="ring-fg" id="ringFg" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+          </svg>
+          <div class="ring-num" id="ringNum">0/4<small>今日微动作完成</small></div>
+        </div>
+        <div class="streak-line" id="streakLine">连续打卡：从今天的第一个动作开始。</div>
+      </div>
+    </div>
+
+    <div class="sec-head"><h2>一件事的四个阶段</h2><span class="sub">点击任一阶段，直接看对应动作</span><span class="line"></span></div>
+    <div class="stage-flow">
+      <button class="stage-card" data-goto="p3" type="button">
+        <div class="stage-top"><span class="stage-bar" style="background:var(--p3)"></span><span class="stage-no">01</span></div>
+        <div class="stage-phase">进入阶段</div>
+        <h3>切换不了状态</h3>
+        <p>上一件事忧心忡忡，半天进入不了新事情，培训前尤其明显。</p>
+        <span class="stage-go" style="color:var(--p3)">看切换动作 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="stage-card" data-goto="p1" type="button">
+        <div class="stage-top"><span class="stage-bar" style="background:var(--p1)"></span><span class="stage-no">02</span></div>
+        <div class="stage-phase">进行 · 情绪</div>
+        <h3>遇事着急</h3>
+        <p>情况紧急糟糕时心态不稳，越急越容易做出错误决策。</p>
+        <span class="stage-go" style="color:var(--p1)">看稳心动作 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="stage-card" data-goto="p2" type="button">
+        <div class="stage-top"><span class="stage-bar" style="background:var(--p2)"></span><span class="stage-no">03</span></div>
+        <div class="stage-phase">进行 · 表达</div>
+        <h3>被反对就放弃</h3>
+        <p>好想法一被反对就不再坚持，把观点被挑战当成自己被否定。</p>
+        <span class="stage-go" style="color:var(--p2)">看坚持动作 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+      <button class="stage-card" data-goto="p4" type="button">
+        <div class="stage-top"><span class="stage-bar" style="background:var(--p4)"></span><span class="stage-no">04</span></div>
+        <div class="stage-phase">收尾阶段</div>
+        <h3>事后反复回味</h3>
+        <p>做完总觉得还能更好，反复回放。反思一次是进步，多次是纠结。</p>
+        <span class="stage-go" style="color:var(--p4)">看收尾动作 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </button>
+    </div>
+
+    <div class="sec-head"><h2>三本书各管一段</h2><span class="line"></span></div>
+    <div class="book-strip">
+      <a class="book-mini" href="#/books">
+        <span class="tag" style="background:var(--cinnabar-l;color:var(--cinnabar)">管内心声音</span>
+        <h3>强大内心的自我对话</h3>
+        <div class="en">Chatter · Ethan Kross</div>
+        <p>负责情绪失稳与事后反刍：抽离式自我对话、时间抽离、反思与反刍的分界。</p>
+      </a>
+      <a class="book-mini" href="#/books">
+        <span class="tag" style="background:#e3edf2;color:var(--p2)">管信念立场</span>
+        <h3>重新思考</h3>
+        <div class="en">Think Again · Adam Grant</div>
+        <p>负责被反对时如何自处：科学家模式、自信的谦逊、任务冲突与关系冲突。</p>
+      </a>
+      <a class="book-mini" href="#/books">
+        <span class="tag" style="background:#eef1e0;color:#4d692e">管注意力</span>
+        <h3>深度工作</h3>
+        <div class="en">Deep Work · Cal Newport</div>
+        <p>负责状态切换与专注：注意力残留、收工仪式、深度工作四规则。</p>
+      </a>
+    </div>
+
+    <div class="quote-block">
+      <p>“反思一次是进步，反思多次是纠结。”</p>
+      <span>—— 第二次以后的回放，一律写进本子、定时处理，不在脑子里循环。</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 视图：四个卡点 ============ -->
+<section class="view" id="view-problems">
+  <div class="wrap">
+    <div class="sec-head"><h2>四个卡点 · 机制与标准动作</h2><span class="sub">点开卡片查看；顺序即一件事的完整闭环</span><span class="line"></span></div>
+
+    <!-- 卡点③ -->
+    <div class="prob-card" id="p3">
+      <button class="prob-head" type="button">
+        <span class="prob-no" style="background:var(--p3)">03</span>
+        <span class="prob-head-txt"><h3>切换不了状态：上一件事忧心忡忡，半天进不了新事情</h3><span class="essence">本质：注意力无法从任务 A 切换到任务 B</span></span>
+        <svg class="prob-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="prob-body"><div class="prob-inner">
+        <div class="mech"><b>机制解释（Deep Work）：</b>注意力残留（attention residue，Sophie Leroy 的研究）——任务 A 没有正式闭环就切到 B，部分注意力会一直挂在 A 上；A 越没做完、没交代，蔡格尼克效应越强，未完成任务持续占用认知带宽。"至少半天进不了状态"不是定力问题，是没给大脑"已存档"信号。</div>
+        <div class="theory-tags">
+          <span class="theory-tag">注意力残留</span><span class="theory-tag">收工仪式</span><span class="theory-tag">蔡格尼克效应</span><span class="theory-tag">环境秩序（Chatter）</span>
+        </div>
+        <div class="sop-title">切换「闭环 SOP」——目标：把半天压缩到 15 分钟</div>
+        <ol class="sop-list">
+          <li><b>闭环三件套（5 分钟，必须写下来）：</b>A 已经完成什么 / A 的下一步具体动作与时间 / A 悬而未决的担忧清单。写下来，大脑才相信事情被外部系统接管。</li>
+          <li><b>固定结束口令：</b>出声说一句固定的话，如"这件事先到这，下次从 X 开始"（纽波特本人会说 shutdown complete）。</li>
+          <li><b>物理换挡：</b>关掉 A 的窗口文档、收拾桌面、换个位置或倒杯水——环境秩序是给大脑的换挡信号。</li>
+          <li><b>新任务启动仪式（2 分钟）：</b>写下 B 的目标和第一个动作，把启动门槛降到"只做第一步"。</li>
+          <li><b>日程分块：</b>给 A、B 明确时间边界，杜绝"人在 B、心在 A"的悬置并行。</li>
+          <li><b>忧心寄存处：</b>A 的担忧再冒头不在脑子里重播，写进"忧心清单"，每天固定 15 分钟集中处理。</li>
+        </ol>
+        <div class="mech"><b>培训场景特别版：</b>出发前一天做一次正式收工（清单＋回来后第一件事＋工作委托/兜底人），培训期间物理关闭工作消息入口，开训前用 2 分钟写下本次培训目标。</div>
+        <div class="signal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><span>检验信号：切换后 15 分钟内能开始 B 的第一个动作，而不是耗掉半天。</span></div>
+      </div></div>
+    </div>
+
+    <!-- 卡点① -->
+    <div class="prob-card" id="p1">
+      <button class="prob-head" type="button">
+        <span class="prob-no" style="background:var(--p1)">01</span>
+        <span class="prob-head-txt"><h3>遇事着急：紧急糟糕时心态不稳，决策容易失误</h3><span class="essence">本质：焦虑占满工作记忆，理性思考空间被挤掉</span></span>
+        <svg class="prob-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="prob-body"><div class="prob-inner">
+        <div class="mech"><b>机制解释（Chatter 为主）：</b>情况越紧急，内心声音越容易从"解决问题"滑向"灾难化循环"：焦虑占满工作记忆、执行功能下降，于是仓促决策、事后后悔。此时人还容易本能进入传教士/政客模式（自保、求快），而不是科学家模式。</div>
+        <div class="theory-tags">
+          <span class="theory-tag">抽离式自我对话（Chatter）</span><span class="theory-tag">科学家模式（Think Again）</span><span class="theory-tag">仪式化流程（Deep Work）</span>
+        </div>
+        <div class="sop-title">「急事六步」SOP——提前背熟，急时照做</div>
+        <ol class="sop-list">
+          <li><b>先停 60 秒：</b>不说话、不拍板，放慢呼吸——生理唤起先降下来，认知才跟得上。</li>
+          <li><b>叫自己的名字：</b>"XX，先把情况拆开"，而不是"我完了"——用抽离式自我对话一步退出沉浸视角。</li>
+          <li><b>苍蝇视角：</b>像趴在墙上的旁观者，看"那个人现在面对什么、手里有什么"。</li>
+          <li><b>时间抽离三问：</b>一周后这事还有多大？最坏结果能不能承受？兜底方案是什么？</li>
+          <li><b>科学家三问（写在纸上）：</b>现在已知什么？未知什么？最小的下一步是什么？把救火变成做实验。</li>
+          <li><b>决策分两级：</b>能缓的决定强制缓 30 分钟再定；必须当场定的，只给"可逆的最小动作"，不做不可逆的大决策。</li>
+        </ol>
+        <div class="mech"><b>日常训练：</b>通勤/走路时做生产力冥想，只推演一个问题；每次着急过后记录"触发场景＋哪一步没做到"，一周回看，你会发现触发点高度重复，可以提前预案。</div>
+        <div class="signal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><span>检验信号：下次紧急时，能否在开口或拍板之前先完成前三步。</span></div>
+      </div></div>
+    </div>
+
+    <!-- 卡点② -->
+    <div class="prob-card" id="p2">
+      <button class="prob-head" type="button">
+        <span class="prob-no" style="background:var(--p2)">02</span>
+        <span class="prob-head-txt"><h3>坚持己见：好想法一被反对就放弃，不再坚持</h3><span class="essence">本质：把"观点被挑战"误读成"我这个人被否定"</span></span>
+        <svg class="prob-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="prob-body"><div class="prob-inner">
+        <div class="mech"><b>机制解释（Think Again）：</b>被反对时本能退让，是观点与身份绑定，为逃避冲突不适而撤退（政客模式：求认同），并误把健康的<b>任务冲突</b>当成<b>关系冲突</b>。格兰特的结论正相反：任务冲突让决策更好，关系冲突才伤人；观点是待检验的假设，不是你的脸面。</div>
+        <div class="theory-tags">
+          <span class="theory-tag">任务冲突 vs 关系冲突</span><span class="theory-tag">观点 ≠ 身份</span><span class="theory-tag">挑战网络</span><span class="theory-tag">抽离视角（Chatter）</span>
+        </div>
+        <div class="sop-title">被反对时的「七步应对」</div>
+        <ol class="sop-list">
+          <li><b>事前解绑身份：</b>用"我有个假设 / 我倾向于"代替"我认为必须"——观点是拿出来检验的样品，不是本人。</li>
+          <li><b>第一反应先复述：</b>"你反对的是 X 这一点，对吗？"——先精确定位分歧，也给自己争取思考时间，而不是整个人退下来。</li>
+          <li><b>分歧三分类再打法：</b>事实分歧拿数据；信息差补背景；偏好分歧谈评判标准，而不是争输赢。</li>
+          <li><b>双向举证：</b>"出现什么证据你会改变看法？出现什么证据我该改？"——把对峙变成共同寻找答案。</li>
+          <li><b>把争论变成实验：</b>提议小范围试点、事后看数据——不当场认输，也不当场硬刚。</li>
+          <li><b>区分反对的强度与质量：</b>对方声音大、态度急，不代表他更正确。</li>
+          <li><b>写判断日志：</b>会后记录原始意见、理由、被否原因，事后回看哪些被验证——同时治好"该坚持时没坚持"和"不该坚持时瞎坚持"。</li>
+        </ol>
+        <div class="signal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><span>检验信号：被反对后，能不能做到"不放弃观点，但多问一轮"。记住：别人反对我 ≠ 我要放弃；我坚持观点 ≠ 我拒绝改变。</span></div>
+      </div></div>
+    </div>
+
+    <!-- 卡点④ -->
+    <div class="prob-card" id="p4">
+      <button class="prob-head" type="button">
+        <span class="prob-no" style="background:var(--p4)">04</span>
+        <span class="prob-head-txt"><h3>事后反刍：做完反复回味"我还能做得更好"</h3><span class="essence">本质：第二次以后的回放，是反刍不是反思</span></span>
+        <svg class="prob-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="prob-body"><div class="prob-inner">
+        <div class="mech"><b>机制解释（Chatter 为主）：</b>第一次复盘通常是<b>自我抽离</b>（具体、面向行动）；第二次以后的回放大多变成<b>自我沉浸</b>（笼统评价自我、重复同一段情绪、不产生任何新信息）。反刍不会让你下次做得更好，只会消耗对下一件事的注意力。叠加 Think Again 的视角："我"是一件持续迭代的作品，发现可改进点是正常迭代，不是失败证据。</div>
+        <div class="theory-tags">
+          <span class="theory-tag">自我抽离 vs 自我沉浸</span><span class="theory-tag">表达性书写</span><span class="theory-tag">"进行中的作品"身份观（Think Again）</span>
+        </div>
+        <div class="sop-title">「一次复盘法」</div>
+        <ol class="sop-list">
+          <li><b>每件事只做一次书面复盘，固定三栏：</b>做得好的 1–3 条（必须写，防止只盯不足）/ 可改进的最多 3 条（具体到环节，不写"我不够好"）/ 下次的一个具体动作。写完即关闭。</li>
+          <li><b>限时 15 分钟，</b>闹钟响就停。</li>
+          <li><b>回放再冒头时，不压制也不跟随：</b>叫自己名字说"XX，已经复盘过，结论是……"；真有新想法补进复盘本，绝不在脑子里重放。</li>
+          <li><b>分流处理：</b>还能补救的立刻转成行动项（走卡点③的闭环三件套）；无法改变的用时间抽离放行——"三天后这还重要吗？"</li>
+          <li><b>语言对事不对人：</b>把"我怎么没做好"换成"这件事的哪个环节可以改"，连内心独白都只谈环节、不谈人格。</li>
+          <li><b>每周翻一次复盘本：</b>多数担心的结果根本没发生，真正反复出现的改进点只有几个——前者直接放下，后者才值得系统性解决。</li>
+        </ol>
+        <div class="signal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg><span>检验信号：同一件事书面复盘只出现一次；第二次起的回放，全部走"写进本子＋定时处理"。</span></div>
+      </div></div>
+    </div>
+
+    <div class="panel" style="margin-top:26px">
+      <h3>问题—理论—动作 对应矩阵</h3>
+      <div class="hint">一张表看清每个卡点用什么理论、做什么动作</div>
+      <table class="matrix">
+        <colgroup><col style="width:20%"><col style="width:42%"><col style="width:38%"></colgroup>
+        <thead><tr><th>卡点</th><th>主用理论（出处）</th><th>最核心的一个动作</th></tr></thead>
+        <tbody>
+          <tr><td>① 遇事着急</td><td>抽离式自我对话、时间抽离（Chatter）；科学家模式（Think Again）</td><td>停 60 秒，叫自己名字，再拆问题</td></tr>
+          <tr><td>② 被反对就放弃</td><td>任务冲突 vs 关系冲突、观点≠身份（Think Again）</td><td>先复述分歧点，再分类应对，不当场退让</td></tr>
+          <tr><td>③ 进不了状态</td><td>注意力残留、收工仪式、蔡格尼克效应（Deep Work）</td><td>写下"已完成/下一步/担忧"并说结束口令</td></tr>
+          <tr><td>④ 事后反刍</td><td>自我抽离 vs 自我沉浸、表达性书写（Chatter）</td><td>一次 15 分钟书面复盘，此后回放只写不想</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 视图：三本书 ============ -->
+<section class="view" id="view-books">
+  <div class="wrap">
+    <div class="sec-head"><h2>三本书的核心理论</h2><span class="sub">点开小节细读；只讲内容与方法</span><span class="line"></span></div>
+
+    <div class="book-card">
+      <div class="book-head">
+        <span class="book-idx">壹</span>
+        <div><h3>强大内心的自我对话</h3><div class="meta">Chatter: The Voice in Our Head… ｜ 伊桑·克罗斯 Ethan Kross，密歇根大学心理学教授，情绪与自我控制实验室主任</div></div>
+        <span class="role">主攻卡点 ① ④</span>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">内心声音是工具，失控时叫“喋喋不休（Chatter）”<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li>人用语言对自己说话，用于计划、复盘、自我调节，这是人类独有的优势。</li>
+          <li>当负面思绪反复盘旋、形成闭环，工具就变成枷锁：<b>喋喋不休会占用工作记忆、削弱执行功能、放大焦虑</b>，思考空间变窄、更易做出糟糕判断。</li>
+          <li>这正是"越急越错"（卡点①）和"反复回味停不下来"（卡点④）的共同机制。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">全书最关键的分界线：反思 ≠ 反刍<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>自我沉浸（反刍）：</b>"我怎么搞成这样？为什么总是我？"——笼统、重复、评价自我，越想情绪越差，且不产生新信息。</li>
+          <li><b>自我抽离（反思）：</b>"刚才发生了什么？下一步具体怎么做？"——具体、限时、面向行动，想完就能放下。</li>
+          <li>目标不是停止内心对话，而是<b>把它从沉浸模式切换到抽离模式</b>。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">工具箱（对自己）：抽离、视角、书写<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>抽离式自我对话 <span class="en">distanced self-talk</span>：</b>不用"我"，改用自己的名字或"你"称呼自己。语法上的一步后退带来真实心理距离，研究显示它会激活负责理性调控的脑区，情绪回落更快。</li>
+          <li><b>墙上苍蝇视角 <span class="en">fly-on-the-wall</span>：</b>像趴在墙上的旁观者一样看自己正在经历的事。</li>
+          <li><b>时间抽离 <span class="en">temporal distancing</span>：</b>"一周、一个月、一年后，我会怎么看这件事？"</li>
+          <li><b>表达性书写 <span class="en">expressive writing</span>：</b>每天 15–20 分钟、连续 1–3 天，以"叙述者"视角写下困扰，不求文采——写的过程就是把混乱情绪整理成叙事。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">工具箱（对环境、对他人）<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>秩序感：</b>整理周围环境能恢复掌控感；<b>仪式</b>给大脑明确的开始/结束信号；<b>时间里程碑</b>（周一、月初、节点之后）提供心理重启点。</li>
+          <li><b>要高质量连接，不要共同反刍：</b>拉着人反复吐槽会让双方情绪一起变差（co-rumination）；最好的支持有时是不把话题聚焦在情绪本身的"隐形支持"。</li>
+        </ul></div></div>
+      </div>
+    </div>
+
+    <div class="book-card">
+      <div class="book-head">
+        <span class="book-idx">贰</span>
+        <div><h3>重新思考：知所未知的力量</h3><div class="meta">Think Again: The Power of Knowing What You Don't Know ｜ 亚当·格兰特 Adam Grant，沃顿商学院组织心理学教授</div></div>
+        <span class="role">主攻卡点 ②，兼 ①</span>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">四种思维模式：传教士、检察官、政客、科学家<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>传教士：</b>信念受威胁时，拼命布道、捍卫自己的"教义"。</li>
+          <li><b>检察官：</b>找对方漏洞，搜集证据证明"我对你错"。</li>
+          <li><b>政客：</b>察言观色，说能赢得认同的话。</li>
+          <li><b>科学家（目标模式）：</b>把观点当假设而非身份，看到反证不觉得被冒犯，而是觉得"又能更新一次"。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">自信的谦逊 与 犯错的喜悦<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>自信的谦逊 <span class="en">confident humility</span>：</b>对自己的学习能力自信，对当前的结论保持怀疑——既不是盲目自信，也不是一被质疑就退让。</li>
+          <li><b>犯错的喜悦 <span class="en">the joy of being wrong</span>：</b>发现自己错了，意味着现在比刚才更接近真相。不要让观点成为身份的一部分——观点被推翻时，"我"并没有被推翻。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">建设性冲突：任务冲突 ≠ 关系冲突<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>任务冲突：</b>围绕方案、路径、事实的争论，对事不对人，会让决策质量更高。</li>
+          <li><b>关系冲突：</b>针对人、态度、情绪的摩擦，会摧毁信任。</li>
+          <li>成熟协作 = <b>保持任务冲突、阻止它滑向关系冲突</b>：可以为观点激烈交锋，但不攻击人，也不因怕伤和气而提前认输。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">另外两件工具：挑战网络 与 动机式访谈<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>挑战网络 <span class="en">challenge network</span>：</b>除了支持你的人，还要有敢说真话反驳你的人。</li>
+          <li><b>动机式访谈 <span class="en">motivational interviewing</span>：</b>想推进观点时少用说服、多用提问，让对方（和自己）在回答中把逻辑走完。</li>
+        </ul></div></div>
+      </div>
+    </div>
+
+    <div class="book-card">
+      <div class="book-head">
+        <span class="book-idx">叁</span>
+        <div><h3>深度工作：如何有效使用每一点脑力</h3><div class="meta">Deep Work: Rules for Focused Success in a Distracted World ｜ 卡尔·纽波特 Cal Newport，乔治城大学计算机科学教授</div></div>
+        <span class="role">主攻卡点 ③，兼 ①</span>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">深度工作 vs 浅层工作<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>深度工作：</b>在无干扰状态下、把认知能力推向极限的状态，产出不可替代的价值。</li>
+          <li><b>浅层工作：</b>不需要高认知投入、分心时也能做的事务性工作。知识工作中真正拉开差距的是深度工作时长。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">注意力残留：卡点③的直接答案<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li>来自 Sophie Leroy 的研究：<b>从任务 A 切到 B 时，注意力不会立刻转移，一部分会残留在 A 上；A 没做完，残留更重、更久。</b></li>
+          <li>底层是蔡格尼克效应：未完成的任务持续占据认知带宽。你在 B 上表现打折，不是状态差，是带宽被 A 欠费占用。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">四大规则<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li><b>① 工作要深入：</b>选定深度哲学（修道院式/双峰式/节奏式/记者式），用固定仪式降低启动成本，用"大动作"强化投入。</li>
+          <li><b>② 拥抱无聊：</b>专注是需要训练的肌肉。不要"从分心中抽空休息"，而要"从专注中抽空休息"；用生产力冥想（走路只推演一个问题）锻炼持续思考。</li>
+          <li><b>③ 谨慎选择工具：</b>工匠式标准——只有当工具对真正在意的目标有显著净收益时才留下，而不是"有点用就留着"。</li>
+          <li><b>④ 摒弃浅层：</b>给每一分钟做计划，固定收工时间，批量处理消息、让自己难以被随时找到，量化深浅工作比例。</li>
+        </ul></div></div>
+      </div>
+      <div class="acc">
+        <button class="acc-btn" type="button">收工仪式：对付"残留"的核心动作<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="acc-panel"><div class="acc-inner"><ul>
+          <li>纽波特本人每天结束工作的固定四步：检查任务清单确认无紧急遗漏 → 检查未来日程、标出需要提前准备的事项 → 更新计划、<b>写明下一次开始的第一件事</b> → 出声说一句 "shutdown complete"。</li>
+          <li>原理：仪式给大脑一个明确信号——<b>事情已存档，可以安全释放了。</b></li>
+        </ul></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 视图：21天计划 ============ -->
+<section class="view" id="view-plan">
+  <div class="wrap">
+    <div class="sec-head"><h2>21 天落地计划</h2><span class="sub">不贪多，逐个固化；记录自动保存在本机浏览器</span><span class="line"></span></div>
+
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-time">第 1 周</div>
+        <div class="tl-axis"><span class="tl-dot"></span></div>
+        <div class="tl-content"><h4>先拿回脑子的清净</h4><p>主攻 ④一次复盘法 ＋ ③闭环三件套。这两个成本最低、当天见效，先让"事前挂着、事后转着"停下来。</p></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-time">第 2 周</div>
+        <div class="tl-axis"><span class="tl-dot"></span></div>
+        <div class="tl-content"><h4>练「急事六步」</h4><p>加入卡点①的 SOP，每次着急后记录触发场景，周末整理出自己的高频触发点和预案。</p></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-time">第 3 周</div>
+        <div class="tl-axis"><span class="tl-dot"></span></div>
+        <div class="tl-content"><h4>练建设性坚持</h4><p>实践卡点②的七步应对、写判断日志，本周至少做到 2 次"被反对后不撤退、多问一轮"。</p></div>
+      </div>
+    </div>
+
+    <div class="plan-grid">
+      <div>
+        <div class="panel">
+          <h3>今日四个微动作</h3>
+          <div class="hint" id="todayLabel">每天四个时机，各做一个动作；勾选后自动保存</div>
+          <div id="dailyList"></div>
+          <div class="daily-progress"><i id="dailyBar" style="width:0"></i></div>
+          <div class="daily-meta"><span id="dailyCount">0 / 4</span><span id="dailyStreak"></span></div>
+        </div>
+        <div class="panel">
+          <h3>记录管理</h3>
+          <div class="hint">所有打卡与自评只存在本机，可随时导出或清空</div>
+          <button class="btn-line" id="btnExport" type="button">导出我的记录（JSON）</button>
+          <button class="btn-line" id="btnClear" type="button">清空全部记录</button>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>每周自评（1–5 分）</h3>
+          <div class="hint" id="weekLabel"></div>
+          <div class="eval-row"><label>① 着急时先稳再决策 <b id="v1">3</b></label><input type="range" min="1" max="5" value="3" data-k="p1"></div>
+          <div class="eval-row"><label>② 被反对后多问一轮 <b id="v2">3</b></label><input type="range" min="1" max="5" value="3" data-k="p2"></div>
+          <div class="eval-row"><label>③ 切换后 15 分钟进入状态 <b id="v3">3</b></label><input type="range" min="1" max="5" value="3" data-k="p3"></div>
+          <div class="eval-row"><label>④ 每件事只复盘一次 <b id="v4">3</b></label><input type="range" min="1" max="5" value="3" data-k="p4"></div>
+          <input class="eval-text" id="winText" placeholder="本周一个成功案例">
+          <input class="eval-text" id="failText" placeholder="本周一个失败案例 + 下周修正点">
+          <button class="btn-solid" id="btnSaveEval" type="button">保存本周自评</button>
+          <div class="eval-hist" id="evalHist"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    稳住 · 四阶段训练手册 ｜ 理论来自《强大内心的自我对话》《重新思考》《深度工作》<br>
+    打卡与自评记录仅保存在本机浏览器（localStorage），不上传、不登录；清除浏览器数据会一并清除记录。
+  </div>
+</footer>
+
+<!-- ============ 应急弹层（C：我现在就卡住了） ============ -->
+<div class="modal-mask" id="sosMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sosTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="sosTitle">我现在就卡住了</h3>
+        <p id="sosSub">先选你此刻的状态，拿到最简动作，一步一步勾着做</p>
+      </div>
+      <button class="modal-close" id="sosClose" type="button" aria-label="关闭">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="sosChoose">
+        <div class="sos-grid">
+          <button class="sos-opt" data-sos="p1" type="button"><span class="n" style="color:var(--p1)">① 我现在很着急</span><small>情况紧急、脑子发乱、马上要决策</small></button>
+          <button class="sos-opt" data-sos="p2" type="button"><span class="n" style="color:var(--p2)">② 我刚被反对/质疑</span><small>想法被否，想退让或顶回去</small></button>
+          <button class="sos-opt" data-sos="p3" type="button"><span class="n" style="color:var(--p3)">③ 我切换不了状态</span><small>上一件事放不下，新事进不去</small></button>
+          <button class="sos-opt" data-sos="p4" type="button"><span class="n" style="color:var(--p4)">④ 我又在反复回味</span><small>事情结束了，脑子停不下来</small></button>
+        </div>
+      </div>
+      <div id="sosSteps" style="display:none">
+        <ol class="sos-steps" id="sosStepList"></ol>
+        <button class="sos-back" id="sosBack" type="button">← 重新选择状态</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 数据 ============ */
+var DAILY=[
+  {k:'p3',t:'任务切换前：闭环三件套＋结束口令',s:'写下「已完成 / 下一步 / 担忧」，说出结束口令'},
+  {k:'p1',t:'着急时：停 60 秒，叫自己名字',s:'先稳生理，再用名字把自己抽离出来'},
+  {k:'p2',t:'被反对时：先复述分歧，再分类应对',s:'不当场退让，多问一轮'},
+  {k:'p4',t:'事情结束后：15 分钟一次书面复盘',s:'三栏写完即关闭，第二次回放只写不想'}
+];
+var SOS={
+  p1:{t:'我现在很着急——「急事六步」极简版',steps:[
+    '停 60 秒：不说话、不拍板，先慢呼吸',
+    '叫自己的名字："XX，先拆情况"，不要说"我完了"',
+    '抽离：像墙上的旁观者看自己现在面对什么',
+    '三问写在纸上：已知什么？未知什么？最小下一步？',
+    '决策分级：能缓的缓 30 分钟；必须定的只做可逆小动作']},
+  p2:{t:'我刚被反对——「七步应对」极简版',steps:[
+    '默念：观点是样品，不是我本人',
+    '先复述："你反对的是 X 这一点，对吗？"',
+    '分类分歧：事实问题拿数据 / 信息差补背景 / 偏好谈标准',
+    '双向举证："什么证据会让你、让我改变看法？"',
+    '提议小范围验证，不当场认输也不硬刚']},
+  p3:{t:'我切换不了状态——「闭环 SOP」极简版',steps:[
+    '花 5 分钟写：A 已完成什么 / 下一步是什么 / 担忧清单',
+    '出声说固定结束口令："这件事先到这，下次从 X 开始"',
+    '物理换挡：关窗口、收拾桌面、换个位置',
+    '花 2 分钟写 B 的目标和第一个动作',
+    '担忧再冒头：写进忧心清单，不在脑子里重播']},
+  p4:{t:'我又在反复回味——「一次复盘法」极简版',steps:[
+    '先问：这件事书面复盘过了吗？',
+    '没有 → 现在做一次 15 分钟三栏复盘（好的/改进/下次一个动作）',
+    '复盘过 → 叫名字："已经复盘过，结论是……"',
+    '有新念头补进本子，绝不在脑内重放',
+    '分流：能补救的转行动；不能改的问"三天后还重要吗"']}
+};
+
+/* ============ 存储 ============ */
+var SK='gzm.v1', state={daily:{},weekly:{}};
+try{var s=JSON.parse(localStorage.getItem(SK));if(s&&typeof s==='object'){state.daily=s.daily||{};state.weekly=s.weekly||{};}}catch(e){}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
+function $(q,el){return (el||document).querySelector(q);}
+function $$(q,el){return Array.prototype.slice.call((el||document).querySelectorAll(q));}
+function pad(n){return (n<10?'0':'')+n;}
+function dayKey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function mondayKey(d){var x=new Date(d);x.setDate(d.getDate()-((d.getDay()+6)%7));return dayKey(x);}
+var TODAY=dayKey(new Date()), WEEK=mondayKey(new Date());
+
+/* ============ Toast ============ */
+var toastTimer;
+function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2200);}
+
+/* ============ 路由 ============ */
+var ROUTES=['home','problems','books','plan'];
+function route(){
+  var h=(location.hash||'#/home').replace(/^#\//,'').split('/');
+  var name=ROUTES.indexOf(h[0])>=0?h[0]:'home', sub=h[1];
+  $$('.view').forEach(function(v){v.classList.toggle('active',v.id==='view-'+name);});
+  $$('.nav-link').forEach(function(a){a.classList.toggle('active',a.dataset.route===name);});
+  window.scrollTo({top:0});
+  if(name==='problems'&&sub){
+    var card=document.getElementById(sub);
+    if(card&&!card.classList.contains('open'))accordion(card.querySelector('.prob-head'));
+    setTimeout(function(){var el=document.getElementById(sub);if(el){var y=el.getBoundingClientRect().top+window.scrollY-72;window.scrollTo({top:y,behavior:'smooth'});}},120);
+  }
+}
+window.addEventListener('hashchange',route);
+
+/* ============ 手风琴 ============ */
+function accordion(btn){
+  var card=btn.closest('.prob-card,.acc'),panel=card.querySelector('.prob-body,.acc-panel'),open=card.classList.contains('open');
+  if(open){card.classList.remove('open');panel.style.maxHeight='0';}
+  else{card.classList.add('open');panel.style.maxHeight=panel.scrollHeight+'px';}
+}
+$$('.prob-head,.acc-btn').forEach(function(b){b.addEventListener('click',function(){accordion(b);});});
+window.addEventListener('resize',function(){$$('.prob-card.open .prob-body,.acc.open .acc-panel').forEach(function(p){p.style.maxHeight=p.scrollHeight+'px';});});
+
+/* 首页阶段卡跳转 */
+$$('.stage-card').forEach(function(c){c.addEventListener('click',function(){location.hash='#/problems/'+c.dataset.goto;});});
+
+/* ============ 应急弹层 ============ */
+var mask=$('#sosMask'),sosDone={};
+function openSos(){mask.classList.add('show');showChoose();document.body.style.overflow='hidden';}
+function closeSos(){mask.classList.remove('show');document.body.style.overflow='';}
+function showChoose(){$('#sosChoose').style.display='';$('#sosSteps').style.display='none';$('#sosTitle').textContent='我现在就卡住了';$('#sosSub').textContent='先选你此刻的状态，拿到最简动作，一步一步勾着做';sosDone={};}
+function showSteps(id){
+  var d=SOS[id];$('#sosTitle').textContent=d.t;$('#sosSub').textContent='做完一步勾一步，勾完你就稳住了';
+  $('#sosChoose').style.display='none';$('#sosSteps').style.display='';
+  var list=$('#sosStepList');list.innerHTML='';
+  d.steps.forEach(function(txt,i){
+    var li=document.createElement('li');li.innerHTML='<span class="k">'+(i+1)+'</span><span>'+txt+'</span>';
+    li.addEventListener('click',function(){li.classList.toggle('done');sosDone[i]=li.classList.contains('done');
+      if($$('#sosStepList li').length===$$('#sosStepList li.done').length)toast('全部完成，你已经稳住了');});
+    list.appendChild(li);
+  });
+}
+$('#navSos').addEventListener('click',openSos);$('#heroSos').addEventListener('click',openSos);
+$('#sosClose').addEventListener('click',closeSos);$('#sosBack').addEventListener('click',showChoose);
+mask.addEventListener('click',function(e){if(e.target===mask)closeSos();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSos();});
+$$('.sos-opt').forEach(function(b){b.addEventListener('click',function(){showSteps(b.dataset.sos);});});
+
+/* ============ 今日打卡 ============ */
+function todayDone(){return state.daily[TODAY]||[];}
+function renderDaily(){
+  var done=todayDone(),list=$('#dailyList');list.innerHTML='';
+  DAILY.forEach(function(item){
+    var on=done.indexOf(item.k)>=0;
+    var label=document.createElement('label');label.className='check-item'+(on?' done':'');
+    label.innerHTML='<span class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="ci-txt">'+item.t+'<small>'+item.s+'</small></span>';
+    label.addEventListener('click',function(){toggleDaily(item.k);});
+    list.appendChild(label);
+  });
+  var n=done.length,pct=Math.round(n/4*100);
+  $('#dailyBar').style.width=pct+'%';$('#dailyCount').textContent=n+' / 4';
+  $('#ringNum').innerHTML=n+'/4<small>今日微动作完成</small>';
+  var C=263.9;$('#ringFg').style.strokeDashoffset=C*(1-n/4);
+  var st=calcStreak();$('#dailyStreak').textContent=st?('连续 '+st+' 天全完成'):'';
+  $('#streakLine').textContent=st?('连续 '+st+' 天完成全部微动作，继续保持。'):'连续打卡：从今天的第一个动作开始。';
+  var d=new Date();$('#todayLabel').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · 每天四个时机，勾选后自动保存';
+}
+function toggleDaily(k){
+  var arr=todayDone().slice(),i=arr.indexOf(k);
+  if(i>=0)arr.splice(i,1);else arr.push(k);
+  state.daily[TODAY]=arr;save();renderDaily();
+  if(arr.length===4)toast('今日四个微动作全部完成');
+}
+function calcStreak(){
+  var n=0,d=new Date();
+  if((state.daily[dayKey(d)]||[]).length<4)d.setDate(d.getDate()-1);
+  while((state.daily[dayKey(d)]||[]).length===4){n++;d.setDate(d.getDate()-1);}
+  return n;
+}
+
+/* ============ 每周自评 ============ */
+function renderEval(){
+  var d=new Date(),mon=new Date();mon.setDate(d.getDate()-((d.getDay()+6)%7));
+  $('#weekLabel').textContent='本周（'+(mon.getMonth()+1)+'月'+mon.getDate()+'日起）；1 分=没做到，5 分=已稳定';
+  var cur=state.weekly[WEEK];
+  $$('input[type=range]').forEach(function(r){r.value=cur?cur.scores[r.dataset.k]:3;$('#v'+r.dataset.k.slice(1)).textContent=r.value;});
+  if(cur){$('#winText').value=cur.win||'';$('#failText').value=cur.fail||'';}
+  var keys=Object.keys(state.weekly).sort().reverse(),hist=$('#evalHist');
+  if(!keys.length){hist.innerHTML='';return;}
+  hist.innerHTML='<div style="margin:14px 0 6px;font-weight:600">历史自评</div>';
+  keys.forEach(function(wk){
+    var e=state.weekly[wk],sc=e.scores;
+    var div=document.createElement('div');div.className='eval-hist-item';
+    div.innerHTML='<span class="wk">'+wk.replace('-','年').slice(0,8).replace('-','月')+'周</span>　①'+sc.p1+' ②'+sc.p2+' ③'+sc.p3+' ④'+sc.p4+(e.win?'　成功：'+e.win:'')+(e.fail?'　修正：'+e.fail:'');
+    hist.appendChild(div);
+  });
+}
+$$('input[type=range]').forEach(function(r){r.addEventListener('input',function(){$('#v'+r.dataset.k.slice(1)).textContent=r.value;});});
+$('#btnSaveEval').addEventListener('click',function(){
+  var scores={};$$('input[type=range]').forEach(function(r){scores[r.dataset.k]=+r.value;});
+  state.weekly[WEEK]={scores:scores,win:$('#winText').value.trim(),fail:$('#failText').value.trim(),ts:Date.now()};
+  save();renderEval();toast('本周自评已保存');
+});
+
+/* ============ 记录管理 ============ */
+$('#btnExport').addEventListener('click',function(){
+  var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='训练手册记录-'+TODAY+'.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);toast('记录已导出');
+});
+$('#btnClear').addEventListener('click',function(){
+  if(confirm('确定清空本机保存的全部打卡与自评记录吗？此操作不可恢复。')){
+    state={daily:{},weekly:{}};save();$$('input[type=range]').forEach(function(r){r.value=3;$('#v'+r.dataset.k.slice(1)).textContent='3';});
+    $('#winText').value='';$('#failText').value='';renderDaily();renderEval();toast('记录已清空');
+  }
+});
+
+/* ============ 初始化 ============ */
+renderDaily();renderEval();route();
+</script>
+</body>
+</html>

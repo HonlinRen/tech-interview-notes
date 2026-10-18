@@ -1,0 +1,903 @@
+{
+  "date": "2026-10-18",
+  "profile": "五年开发经验 / Java 后端社招，AI 应用为扩展方向",
+  "topics": [
+    {
+      "category": "python",
+      "before": 37,
+      "after": 24,
+      "merged": 11,
+      "removed": 2
+    },
+    {
+      "category": "java",
+      "before": 57,
+      "after": 32,
+      "merged": 20,
+      "removed": 5
+    },
+    {
+      "category": "spring",
+      "before": 28,
+      "after": 17,
+      "merged": 11,
+      "removed": 0
+    },
+    {
+      "category": "mysql",
+      "before": 32,
+      "after": 22,
+      "merged": 10,
+      "removed": 0
+    },
+    {
+      "category": "redis",
+      "before": 25,
+      "after": 17,
+      "merged": 8,
+      "removed": 0
+    },
+    {
+      "category": "rocketmq",
+      "before": 23,
+      "after": 14,
+      "merged": 9,
+      "removed": 0
+    },
+    {
+      "category": "docker-k8s",
+      "before": 18,
+      "after": 12,
+      "merged": 5,
+      "removed": 1
+    },
+    {
+      "category": "ai",
+      "before": 25,
+      "after": 14,
+      "merged": 9,
+      "removed": 2
+    },
+    {
+      "category": "rag-vector",
+      "before": 28,
+      "after": 19,
+      "merged": 7,
+      "removed": 2
+    },
+    {
+      "category": "langchain",
+      "before": 10,
+      "after": 6,
+      "merged": 4,
+      "removed": 0
+    },
+    {
+      "category": "llm",
+      "before": 14,
+      "after": 8,
+      "merged": 5,
+      "removed": 1
+    },
+    {
+      "category": "architecture",
+      "before": 18,
+      "after": 12,
+      "merged": 6,
+      "removed": 0
+    },
+    {
+      "category": "observability",
+      "before": 11,
+      "after": 9,
+      "merged": 2,
+      "removed": 0
+    },
+    {
+      "category": "security",
+      "before": 23,
+      "after": 18,
+      "merged": 5,
+      "removed": 0
+    },
+    {
+      "category": "frontend",
+      "before": 1,
+      "after": 1,
+      "merged": 0,
+      "removed": 0
+    },
+    {
+      "category": "bigdata",
+      "before": 7,
+      "after": 3,
+      "merged": 4,
+      "removed": 0
+    },
+    {
+      "category": "leetcode",
+      "before": 5,
+      "after": 5,
+      "merged": 0,
+      "removed": 0
+    }
+  ],
+  "merged": [
+    {
+      "category": "python",
+      "id": "multiprocessing",
+      "title": "multiprocessing 怎么绕过 GIL？",
+      "target": "python:concurrency"
+    },
+    {
+      "category": "python",
+      "id": "nonlocal",
+      "title": "nonlocal 关键字是什么？",
+      "target": "python:closure"
+    },
+    {
+      "category": "python",
+      "id": "coroutine",
+      "title": "Python 协程是什么？",
+      "target": "python:async-await"
+    },
+    {
+      "category": "python",
+      "id": "is-vs-equals",
+      "title": "Python 中 is 和 == 有什么区别？",
+      "target": "python:mutable-immutable"
+    },
+    {
+      "category": "python",
+      "id": "parameter-passing",
+      "title": "Python 参数传递是值传递还是引用传递？",
+      "target": "python:mutable-immutable"
+    },
+    {
+      "category": "python",
+      "id": "new-vs-init",
+      "title": "Python __new__ 和 __init__ 有什么区别？",
+      "target": "python:dataclass"
+    },
+    {
+      "category": "python",
+      "id": "magic-methods",
+      "title": "如何理解 Python 的魔法方法？",
+      "target": "python:context-manager"
+    },
+    {
+      "category": "python",
+      "id": "property-decorator",
+      "title": "Python 中 property 装饰器是什么？",
+      "target": "python:decorator"
+    },
+    {
+      "category": "python",
+      "id": "what-is-FastAPI",
+      "title": "FastAPI 主要能力有什么？",
+      "target": "python:fastapi-di"
+    },
+    {
+      "category": "python",
+      "id": "fastapi-vs-flask-django",
+      "title": "FastAPI 与 Flask / Django 的差异是什么？",
+      "target": "python:wsgi-asgi"
+    },
+    {
+      "category": "python",
+      "id": "async-vs-sync-database",
+      "title": "异步数据库和同步数据库有什么区别？",
+      "target": "python:fastapi-sync-async"
+    },
+    {
+      "category": "java",
+      "id": "jvm-heap",
+      "title": "JVM 堆里面年轻代、老年代是什么？",
+      "target": "java:jvm-memory"
+    },
+    {
+      "category": "java",
+      "id": "static-vs-dynamic-proxy",
+      "title": "动态代理和静态代理有什么区别？",
+      "target": "java:proxy"
+    },
+    {
+      "category": "java",
+      "id": "thread-pool-flow",
+      "title": "Java 线程池执行流程是什么？",
+      "target": "java:thread-pool-params"
+    },
+    {
+      "category": "java",
+      "id": "classloaders",
+      "title": "类加载器有哪些？",
+      "target": "java:class-loading"
+    },
+    {
+      "category": "java",
+      "id": "parent-delegation",
+      "title": "双亲委派模型解决什么问题？",
+      "target": "java:class-loading"
+    },
+    {
+      "category": "java",
+      "id": "gc-roots",
+      "title": "Java 常见 GC Roots 有哪些？",
+      "target": "java:minor-vs-full-gc"
+    },
+    {
+      "category": "java",
+      "id": "aot-pros-cons",
+      "title": "AOT 有什么优点？为什么 Java 不全部使用 AOT？",
+      "target": "java:jit-vs-aot"
+    },
+    {
+      "category": "java",
+      "id": "wrapper-cache",
+      "title": "包装类型的缓存机制是什么？",
+      "target": "java:autoboxing"
+    },
+    {
+      "category": "java",
+      "id": "list-set-queue-map",
+      "title": "List、Set、Queue、Map 分别适合什么场景？",
+      "target": "java:collection-framework"
+    },
+    {
+      "category": "java",
+      "id": "arraylist-expansion",
+      "title": "ArrayList 扩容机制是什么？",
+      "target": "java:collection-framework"
+    },
+    {
+      "category": "java",
+      "id": "arraylist-unsafe",
+      "title": "ArrayList 为什么线程不安全？",
+      "target": "java:collection-framework"
+    },
+    {
+      "category": "java",
+      "id": "linkedlist-insert",
+      "title": "LinkedList 为什么不一定比 ArrayList 插入删除快？",
+      "target": "java:collection-framework"
+    },
+    {
+      "category": "java",
+      "id": "hashset-hashmap",
+      "title": "HashSet 底层为什么基于 HashMap？",
+      "target": "java:hashmap-principle"
+    },
+    {
+      "category": "java",
+      "id": "treemap-vs-hashmap",
+      "title": "TreeMap 和 HashMap 有什么区别？",
+      "target": "java:collection-framework"
+    },
+    {
+      "category": "java",
+      "id": "notify-vs-notifyall",
+      "title": "notify() 和 notifyAll() 有什么区别？",
+      "target": "java:sleep-vs-wait"
+    },
+    {
+      "category": "java",
+      "id": "create-thread",
+      "title": "Java 多线程有哪些实现方式？",
+      "target": "java:runnable-callable"
+    },
+    {
+      "category": "java",
+      "id": "executors-why-not",
+      "title": "线程池为什么不建议使用 Executors 快捷方法？",
+      "target": "java:thread-pool-params"
+    },
+    {
+      "category": "java",
+      "id": "stop-the-world",
+      "title": "什么是 Stop The World？",
+      "target": "java:minor-vs-full-gc"
+    },
+    {
+      "category": "java",
+      "id": "jvm-tools",
+      "title": "jps、jstack、jmap、jstat 分别用来做什么？",
+      "target": "java:jvm-params"
+    },
+    {
+      "category": "java",
+      "id": "sync-async-block-nonblock",
+      "title": "同步、异步、阻塞、非阻塞有什么区别？",
+      "target": "java:bio-nio-aio"
+    },
+    {
+      "category": "spring",
+      "id": "boot-vs-spring",
+      "title": "Spring Boot 和传统 Spring 有什么区别？",
+      "target": "spring:auto-config"
+    },
+    {
+      "category": "spring",
+      "id": "starter",
+      "title": "Spring Boot Starter 是什么？",
+      "target": "spring:auto-config"
+    },
+    {
+      "category": "spring",
+      "id": "bean-scope",
+      "title": "Spring Bean 作用域有哪些？",
+      "target": "spring:bean-lifecycle"
+    },
+    {
+      "category": "spring",
+      "id": "spring-ioc",
+      "title": "Spring IoC 是什么？",
+      "target": "spring:spring-di"
+    },
+    {
+      "category": "spring",
+      "id": "spring-annotations",
+      "title": "Spring 中有哪些常用注解？",
+      "target": "spring:stereotype-annotations"
+    },
+    {
+      "category": "spring",
+      "id": "autowired-vs-resource",
+      "title": "@Autowired 和 @Resource 有什么区别？",
+      "target": "spring:spring-di"
+    },
+    {
+      "category": "spring",
+      "id": "spring-design-patterns",
+      "title": "Spring 中用到了哪些设计模式？",
+      "target": "spring:spring-aop"
+    },
+    {
+      "category": "spring",
+      "id": "embedded-tomcat",
+      "title": "Spring Boot 为什么可以内嵌 Tomcat？",
+      "target": "spring:boot-startup-flow"
+    },
+    {
+      "category": "spring",
+      "id": "external-config",
+      "title": "Spring Boot 如何加载外部配置？",
+      "target": "spring:config-priority"
+    },
+    {
+      "category": "spring",
+      "id": "conditional-assembly",
+      "title": "Spring Boot 如何实现条件装配？",
+      "target": "spring:auto-config"
+    },
+    {
+      "category": "spring",
+      "id": "feign-vs-rpc",
+      "title": "Feign 和 RPC 区别？",
+      "target": "spring:feign-underlying"
+    },
+    {
+      "category": "mysql",
+      "id": "isolation-lock-relation",
+      "title": "数据库隔离级别与锁机制关系是什么？",
+      "target": "mysql:isolation"
+    },
+    {
+      "category": "mysql",
+      "id": "current-read-snapshot",
+      "title": "当前读和快照读有什么区别？",
+      "target": "mysql:mvcc"
+    },
+    {
+      "category": "mysql",
+      "id": "innodb-engine",
+      "title": "InnoDB 为什么常作为默认存储引擎？",
+      "target": "mysql:mysql-layer-and-logs"
+    },
+    {
+      "category": "mysql",
+      "id": "sql-execution-flow",
+      "title": "SQL 语句在 MySQL 中的执行流程是什么？",
+      "target": "mysql:mysql-layer-and-logs"
+    },
+    {
+      "category": "mysql",
+      "id": "sql-optimization",
+      "title": "SQL 优化有哪些常见手段？",
+      "target": "mysql:slow-query"
+    },
+    {
+      "category": "mysql",
+      "id": "replication-lag",
+      "title": "主从延迟如何解决？",
+      "target": "mysql:read-write-split"
+    },
+    {
+      "category": "mysql",
+      "id": "connection-pool-full",
+      "title": "数据库连接池满了怎么办？",
+      "target": "mysql:connection-pool"
+    },
+    {
+      "category": "mysql",
+      "id": "bplus-vs-btree",
+      "title": "B+Tree 和 B Tree 有什么区别？",
+      "target": "mysql:index-speed"
+    },
+    {
+      "category": "mysql",
+      "id": "why-bplus-tree",
+      "title": "为什么 MySQL 索引通常使用 B+Tree？",
+      "target": "mysql:index-speed"
+    },
+    {
+      "category": "mysql",
+      "id": "explain-fields-to-check",
+      "title": "MySQL explain 看哪些字段？",
+      "target": "mysql:slow-query"
+    },
+    {
+      "category": "redis",
+      "id": "maxmemory",
+      "title": "Redis maxmemory 有什么作用？",
+      "target": "redis:eviction-policy"
+    },
+    {
+      "category": "redis",
+      "id": "redis-use-cases",
+      "title": "Redis 除了缓存还能做什么？",
+      "target": "redis:data-structures"
+    },
+    {
+      "category": "redis",
+      "id": "string-scenarios",
+      "title": "Redis String 适合哪些场景？",
+      "target": "redis:data-structures"
+    },
+    {
+      "category": "redis",
+      "id": "zset-structure",
+      "title": "Redis ZSet 底层结构是什么？",
+      "target": "redis:data-structures"
+    },
+    {
+      "category": "redis",
+      "id": "big-key-governance",
+      "title": "如何发现和治理 Big Key？",
+      "target": "redis:big-hot-key"
+    },
+    {
+      "category": "redis",
+      "id": "hot-key-governance",
+      "title": "如何发现和治理 Hot Key？",
+      "target": "redis:big-hot-key"
+    },
+    {
+      "category": "redis",
+      "id": "hash-slot",
+      "title": "Redis Cluster hash slot 是什么？",
+      "target": "redis:replication-modes"
+    },
+    {
+      "category": "redis",
+      "id": "redis-coroutine-connection",
+      "title": "Redis 连接如何管理，避免多协程连接冲突？",
+      "target": "redis:redis-pool-management"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-order-vs-normal",
+      "title": "RocketMQ 顺序消息和普通消息的区别？",
+      "target": "rocketmq:rocketmq-ordered-message"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-nameserver",
+      "title": "RocketMQ 的 NameServer 有什么作用？",
+      "target": "rocketmq:rocketmq-components"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-producer-modes",
+      "title": "RocketMQ Producer 发送消息有哪些模式？",
+      "target": "rocketmq:rocketmq-send-modes"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-dlq",
+      "title": "RocketMQ 死信消息如何处理？",
+      "target": "rocketmq:rocketmq-retry"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-broadcast",
+      "title": "RocketMQ 广播消费适合什么场景？",
+      "target": "rocketmq:rocketmq-consumer-group"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-cluster-consume",
+      "title": "RocketMQ 集群消费适合什么场景？",
+      "target": "rocketmq:rocketmq-consumer-group"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-sync-async-replication",
+      "title": "RocketMQ 主从同步和异步复制有什么区别？",
+      "target": "rocketmq:rocketmq-broker-ha"
+    },
+    {
+      "category": "rocketmq",
+      "id": "rocketmq-horizontal-scaling",
+      "title": "RocketMQ 如何做水平扩容？",
+      "target": "rocketmq:rocketmq-message-backlog"
+    },
+    {
+      "category": "rocketmq",
+      "id": "consumer-retry-on-error",
+      "title": "MQ 消费方异常后怎么保证重试？",
+      "target": "rocketmq:rocketmq-retry"
+    },
+    {
+      "category": "docker-k8s",
+      "id": "docker-compose",
+      "title": "Docker Compose 是什么？",
+      "target": "docker-k8s:container-networking"
+    },
+    {
+      "category": "docker-k8s",
+      "id": "image-optimization",
+      "title": "Docker 镜像怎么优化？",
+      "target": "docker-k8s:dockerfile"
+    },
+    {
+      "category": "docker-k8s",
+      "id": "k8s-intro",
+      "title": "Kubernetes 是什么？解决了什么问题？",
+      "target": "docker-k8s:pod"
+    },
+    {
+      "category": "docker-k8s",
+      "id": "pod-vs-container",
+      "title": "Pod 和 Container 有什么区别？",
+      "target": "docker-k8s:pod"
+    },
+    {
+      "category": "docker-k8s",
+      "id": "K8S-Node-Pod",
+      "title": "K8S层级关系是什么？",
+      "target": "docker-k8s:pod"
+    },
+    {
+      "category": "ai",
+      "id": "rag-basics",
+      "title": "RAG 是什么？",
+      "target": "ai:rag-pipeline"
+    },
+    {
+      "category": "ai",
+      "id": "structured-data-rag",
+      "title": "RAG 中如何处理结构化数据查询？",
+      "target": "ai:text-to-sql"
+    },
+    {
+      "category": "ai",
+      "id": "faithfulness-eval",
+      "title": "RAG 如何评估答案忠实度？",
+      "target": "ai:eval-dataset"
+    },
+    {
+      "category": "ai",
+      "id": "llm-as-judge",
+      "title": "LLM-as-a-Judge 是什么？",
+      "target": "ai:eval-dataset"
+    },
+    {
+      "category": "ai",
+      "id": "ragas",
+      "title": "RAGAS 可以评估哪些指标？",
+      "target": "ai:eval-dataset"
+    },
+    {
+      "category": "ai",
+      "id": "ragas-code-eval",
+      "title": "RAGAS 在代码项目中如何评价召回率和回答准确率？",
+      "target": "ai:eval-dataset"
+    },
+    {
+      "category": "ai",
+      "id": "few-shot",
+      "title": "Few-shot Prompt 适合什么场景？",
+      "target": "ai:prompt-versioning"
+    },
+    {
+      "category": "ai",
+      "id": "skills-vs-function-calling",
+      "title": "Skills 和 Function Calling 有什么区别？",
+      "target": "ai:skills-how-it-works"
+    },
+    {
+      "category": "ai",
+      "id": "context-window",
+      "title": "上下文窗口是什么？",
+      "target": "ai:token-cost"
+    },
+    {
+      "category": "rag-vector",
+      "id": "bm25-vs-keyword",
+      "title": "BM25 和普通关键词匹配有什么区别？",
+      "target": "rag-vector:vector-vs-bm25"
+    },
+    {
+      "category": "rag-vector",
+      "id": "rag-image-handling",
+      "title": "RAG 方案中图片是怎么处理的？",
+      "target": "rag-vector:pdf-table-rag"
+    },
+    {
+      "category": "rag-vector",
+      "id": "image-text-vector-same-db",
+      "title": "图片向量和文字向量适合放到同一个向量数据库吗？",
+      "target": "rag-vector:pdf-table-rag"
+    },
+    {
+      "category": "rag-vector",
+      "id": "version-conflict",
+      "title": "RAG 如何处理文档版本冲突？",
+      "target": "rag-vector:incremental-update"
+    },
+    {
+      "category": "rag-vector",
+      "id": "chunk-overlap",
+      "title": "Chunk overlap 如何设置？",
+      "target": "rag-vector:chunk-design"
+    },
+    {
+      "category": "rag-vector",
+      "id": "milvus-vs-chroma",
+      "title": "Milvus 和 Chroma 技术选型比较？",
+      "target": "rag-vector:vector-db-selection"
+    },
+    {
+      "category": "rag-vector",
+      "id": "chroma-milvus-ha",
+      "title": "Chroma vs Milvus：是否支持主从/副本/HA？",
+      "target": "rag-vector:vector-db-selection"
+    },
+    {
+      "category": "langchain",
+      "id": "langchain-build-flow",
+      "title": "LangChain 标准构建流程是什么？",
+      "target": "langchain:langchain-structure"
+    },
+    {
+      "category": "langchain",
+      "id": "langgraph-edge",
+      "title": "LangGraph 中 Edge 怎么设计？",
+      "target": "langchain:langgraph-node"
+    },
+    {
+      "category": "langchain",
+      "id": "langgraph-state",
+      "title": "LangGraph 中 State 存储哪些字段？",
+      "target": "langchain:state-persistence"
+    },
+    {
+      "category": "langchain",
+      "id": "langgraph-builder",
+      "title": "LangGraph 中 Builder 怎么设计？",
+      "target": "langchain:langchain-vs-langgraph"
+    },
+    {
+      "category": "llm",
+      "id": "inference-flow",
+      "title": "大模型推理流程是什么？",
+      "target": "llm:inference-vs-training"
+    },
+    {
+      "category": "llm",
+      "id": "token-by-token",
+      "title": "为什么大模型逐 token 生成？",
+      "target": "llm:prefill-decode"
+    },
+    {
+      "category": "llm",
+      "id": "attention-on2",
+      "title": "为什么 Attention 是 O(n²)？",
+      "target": "llm:attention-mechanism"
+    },
+    {
+      "category": "llm",
+      "id": "kv-cache-memory",
+      "title": "KV Cache 为什么占显存？",
+      "target": "llm:kv-cache"
+    },
+    {
+      "category": "llm",
+      "id": "llm-finetuning",
+      "title": "大模型微调是什么？",
+      "target": "llm:sft-finetuning"
+    },
+    {
+      "category": "architecture",
+      "id": "k8s-service",
+      "title": "K8S Service 解决什么问题？",
+      "target": "docker-k8s:service"
+    },
+    {
+      "category": "architecture",
+      "id": "arch-hpa-vs-vpa",
+      "title": "HPA 和 VPA 有什么区别？",
+      "target": "docker-k8s:hpa-vs-vpa"
+    },
+    {
+      "category": "architecture",
+      "id": "circuit-breaker-half-open",
+      "title": "熔断器半开状态是什么？",
+      "target": "architecture:rate-limit-circuit-degrade"
+    },
+    {
+      "category": "architecture",
+      "id": "degrade-strategy",
+      "title": "降级策略如何设计？",
+      "target": "architecture:rate-limit-circuit-degrade"
+    },
+    {
+      "category": "architecture",
+      "id": "retry-with-idempotency",
+      "title": "重试为什么要配合幂等？",
+      "target": "architecture:retry-risks"
+    },
+    {
+      "category": "architecture",
+      "id": "service-load-balance-strategy",
+      "title": "服务调用负载均衡策略是什么？",
+      "target": "architecture:load-balance-algorithms"
+    },
+    {
+      "category": "observability",
+      "id": "trace-span",
+      "title": "Trace 和 Span 是什么关系？",
+      "target": "observability:otel-intro"
+    },
+    {
+      "category": "observability",
+      "id": "trace-id-propagation",
+      "title": "TraceId 如何在微服务间传递？",
+      "target": "observability:logs-metrics-trace-correlation"
+    },
+    {
+      "category": "security",
+      "id": "orm-sql-injection",
+      "title": "ORM 是否一定能防止 SQL 注入？",
+      "target": "security:prevent-sql-injection"
+    },
+    {
+      "category": "security",
+      "id": "JWT-auth",
+      "title": "JWT是什么？",
+      "target": "security:jwt-basics"
+    },
+    {
+      "category": "security",
+      "id": "frontend-backend-validation",
+      "title": "前后端为什么都要做数据校验？",
+      "target": "security:request-security-checks"
+    },
+    {
+      "category": "security",
+      "id": "button-data-permission",
+      "title": "接口权限如何做到按钮级、数据级控制？",
+      "target": "security:permission-system"
+    },
+    {
+      "category": "security",
+      "id": "replay-attack",
+      "title": "重放攻击是什么？如何防止？",
+      "target": "security:api-signing"
+    },
+    {
+      "category": "bigdata",
+      "id": "hive-cold-hot-storage",
+      "title": "Hive 数据库数据冷热分离存储怎么做？",
+      "target": "bigdata:bigdata-common-flow"
+    },
+    {
+      "category": "bigdata",
+      "id": "hadoop-intro",
+      "title": "Hadoop 是什么？",
+      "target": "bigdata:bigdata-common-flow"
+    },
+    {
+      "category": "bigdata",
+      "id": "hive-intro",
+      "title": "Hive 数据库是什么？",
+      "target": "bigdata:bigdata-common-flow"
+    },
+    {
+      "category": "bigdata",
+      "id": "spark-flink-intro",
+      "title": "大数据计算 Spark、Flink 是什么？",
+      "target": "bigdata:bigdata-common-flow"
+    }
+  ],
+  "deleted": [
+    {
+      "category": "python",
+      "id": "mro",
+      "title": "Python 中 MRO 是什么？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "python",
+      "id": "python-singleton",
+      "title": "Python 单例模式是什么？如何实现？多线程下要注意什么？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "java",
+      "id": "break-parent-delegation",
+      "title": "如何打破双亲委派模型？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "java",
+      "id": "pattern-matching",
+      "title": "Pattern Matching 解决什么问题？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "java",
+      "id": "jvm-jdk-jre",
+      "title": "JVM、JDK、JRE 有什么区别？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "java",
+      "id": "java-bytecode",
+      "title": "Java 字节码是什么？为什么 Java 可以跨平台？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "java",
+      "id": "compile-and-interpret",
+      "title": "为什么说 Java 是编译与解释并存的语言？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "docker-k8s",
+      "id": "Slurm",
+      "title": "Slurm和K8S区别是什么？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "ai",
+      "id": "rag-open-source-frameworks",
+      "title": "RAG 搭建有哪些开源框架？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "ai",
+      "id": "what-is-dify",
+      "title": "Dify 是什么？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "rag-vector",
+      "id": "text-embedding-v3-spec",
+      "title": "text-embedding-v3 参数量和最大上下文是多少？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "rag-vector",
+      "id": "ragflow-intro",
+      "title": "RAGFlow 开源框架是什么？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    },
+    {
+      "category": "llm",
+      "id": "qwen-model-intro",
+      "title": "Qwen 模型介绍？",
+      "reason": "偏离 Java 后端五年社招主线，或属于过细的术语/型号背诵；其通用能力保留在相关主题中。"
+    }
+  ]
+}

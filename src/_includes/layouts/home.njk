@@ -1,0 +1,4 @@
+{% extends "layouts/base.njk" %}
+{% block bodyClass %} home-page{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ assetPrefix }}assets/styles.css">{% endblock %}
+{% block scripts %}{% set scripts = bundles.home %}{% include "components/scripts.njk" %}{% endblock %}

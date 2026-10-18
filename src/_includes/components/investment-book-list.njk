@@ -1,0 +1,19 @@
+<ul class="book-list">
+{% for book in investmentBooks %}{% if book.group == bookGroup %}
+  <li id="book-{{ book.id }}" class="book-entry">
+    <h3>《{{ book.title }}》</h3>
+    <p class="book-author">{{ book.author }}</p>
+    <p><strong>主题思想：</strong>{{ book.theme }}</p>
+    <div class="concept-tags" aria-label="关联知识点">{% for concept in investmentConcepts %}{% if concept.id in book.concepts %}<a href="#concept-{{ concept.id }}">{{ concept.label }}</a>{% endif %}{% endfor %}</div>
+    <details class="book-detail">
+      <summary>展开核心内容与阅读方法</summary>
+      <h4>核心内容</h4>
+      <ol>{% for idea in book.ideas %}<li>{{ idea }}</li>{% endfor %}</ol>
+      <h4>阅读重点</h4><p>{{ book.focus }}</p>
+      <h4>实践练习 · 本页整理</h4><p>{{ book.exercise }}</p>
+      <h4>理解边界</h4><p>{{ book.boundary }}</p>
+      <p class="book-source">核对资料：<a href="{{ book.source }}" target="_blank" rel="noopener noreferrer">{{ book.sourceLabel }}</a></p>
+    </details>
+  </li>
+{% endif %}{% endfor %}
+</ul>

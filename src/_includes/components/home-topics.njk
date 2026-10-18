@@ -1,0 +1,6 @@
+<section class="home-topic-list" aria-label="主题入口">
+  {% for item in topics %}<a class="home-card home-card-row {{ item.tone }}" href="{{ item.path }}">
+    <h2>{{ item.label }}</h2>
+    <p>{{ item.description }}</p>
+  </a>{% endfor %}
+</section>

@@ -1,0 +1,10 @@
+[
+  {"id":"behavior","label":"行为与心态","question":"我能否按规则行动？","description":"识别损失厌恶、锚定、过度自信与心理账户，用事先承诺和书面记录降低情绪对决策的影响。","links":[{"target":"risk","text":"风险接受 → 决定可承受的损失"},{"target":"review","text":"记录偏差 → 改进决策流程"}]},
+  {"id":"business","label":"企业与护城河","question":"企业靠什么持续赚钱？","description":"理解客户、竞争、定价权、资本需求与管理层，再判断优势是否可持续。企业增长必须转化为有经济意义的回报。","links":[{"target":"accounting","text":"商业判断 → 用财报交叉验证"},{"target":"valuation","text":"竞争优势 → 影响利润与增长持续期"}]},
+  {"id":"accounting","label":"财报与证据","question":"经营叙述能否被数字验证？","description":"联读资产负债表、利润表、现金流量表与附注，区分利润、现金、资本投入和一次性项目。异常应触发调查，不直接等于造假。","links":[{"target":"valuation","text":"现金流与投入资本 → 估值输入"},{"target":"risk","text":"债务与财务异常 → 永久损失风险"}]},
+  {"id":"valuation","label":"估值与安全边际","question":"当前价格补偿了哪些风险？","description":"将经营假设转成现金流和情景区间，比较价格与价值，并用安全边际应对估计误差；模型口径必须保持一致。","links":[{"target":"portfolio","text":"价格与预期收益 → 比较配置机会"},{"target":"risk","text":"估值不确定性 → 需要容错空间"}]},
+  {"id":"cycle","label":"周期与信贷","question":"环境如何改变机会和风险？","description":"观察融资条件、债务结构、风险偏好与价格预期之间的反馈。判断当下条件，不把周期叙事当成精确日期预测。","links":[{"target":"valuation","text":"融资与预期 → 影响折现与定价"},{"target":"portfolio","text":"流动性压力 → 检查组合脆弱性"}]},
+  {"id":"portfolio","label":"配置与成本","question":"组合能否支持长期目标？","description":"结合资金用途、期限、相关性与费用管理组合，预先定义再平衡条件，并用可比基准评估主动投资的机会成本。","links":[{"target":"risk","text":"分散与仓位 → 限制单点损失"},{"target":"review","text":"回报、费用与回撤 → 组合复盘"}]},
+  {"id":"risk","label":"风险与生存","question":"判断错了还能继续吗？","description":"风险贯穿全流程：可能来自企业恶化、支付过高价格、杠杆、流动性错配和行为失控。波动只是风险的一种表现。","links":[{"target":"behavior","text":"可承受的规则 → 支持稳定执行"},{"target":"portfolio","text":"损失承受力 → 约束仓位与资金期限"}]},
+  {"id":"review","label":"记录与复盘","question":"哪些判断应该被修正？","description":"把当时理由、预期、行动和反证条件留痕，再与实际结果比较。分开评价决策质量、执行质量与运气，持续更新检查清单。","links":[{"target":"business","text":"新事实与反证 → 更新企业判断"},{"target":"behavior","text":"反复出现的偏差 → 修改行为规则"}]}
+]
