@@ -1,0 +1,56 @@
+<section id="master-map">
+  <span class="section-label">从人物进入思想，再回到研究方法</span>
+  <h2>投资大师 · 思想关联图</h2>
+  <p>沿人物查看方法、思想与对读书籍，或切换全景比较共享概念。关系按公开材料整理，不表示观点完全相同、师承关系或人物排名。</p>
+  <div class="master-tools" hidden data-master-tools>
+    <div class="master-modes" role="group" aria-label="图谱模式"><button type="button" data-master-mode="focus" aria-pressed="true">人物聚焦</button><button type="button" data-master-mode="overview" aria-pressed="false">共享思想全景</button></div>
+    <label>选择人物 <select id="master-select">{% for master in investmentMasters %}<option value="{{ master.id }}">{{ master.name }}</option>{% endfor %}</select></label>
+    <p id="master-status" aria-live="polite"></p>
+  </div>
+  <div class="master-focus" data-master-focus>
+    {% for master in investmentMasters %}
+    <article id="master-{{ master.id }}" class="master-profile" data-master="{{ master.id }}">
+      <header><span class="section-label">人物 → 思想 → 对读与实践</span><h3>{{ master.name }}</h3><p>{{ master.method }}</p></header>
+      <div class="master-chain">
+        <div><h4>方法与边界</h4><ul>{% for point in master.core %}<li>{{ point }}</li>{% endfor %}</ul><p><strong>时间尺度：</strong>{{ master.horizon }}</p><p><strong>使用边界：</strong>{{ master.boundary }}</p></div>
+        <div><h4>关联思想 →</h4><div class="master-idea-links">{% for idea in investmentIdeas %}{% if master.id in idea.masters %}<a href="#idea-{{ idea.id }}">{{ idea.name }}</a>{% endif %}{% endfor %}</div></div>
+        <div><h4>关联对读</h4><p class="book-source">含本人著作与主题相近的其他作者书籍。</p><ul>{% for book in investmentBooks %}{% if book.id in master.books %}<li><a href="#book-{{ book.id }}">《{{ book.title }}》</a><span class="book-source"> · {{ book.author }}</span></li>{% endif %}{% endfor %}</ul></div>
+      </div>
+      <p class="reading-task"><strong>可练的一招：</strong>{{ master.practice }}</p>
+      {% if master.resources.length %}<details class="master-resources"><summary>延伸书籍与一手资料</summary><ul>{% for resource in master.resources %}<li><a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer">{{ resource.title }}</a>：{{ resource.description }}</li>{% endfor %}</ul></details>{% endif %}
+      <p class="book-source">核对入口：<a href="{{ master.source }}" target="_blank" rel="noopener noreferrer">公开原文／出版资料</a>。观点为转述，练习为本页整理。</p>
+    </article>
+    {% endfor %}
+  </div>
+  <div class="master-overview" data-master-overview>
+    <h3>共享思想全景</h3>
+    <p>每一行连接“概念—相关人物—已有知识主线”。只表达本页的选取，未列出不代表某位作者没有讨论该思想。</p>
+    <div class="master-table-scroll"><table><caption>18 个概念的跨人物关联</caption><thead><tr><th scope="col">思想概念</th><th scope="col">相关人物</th><th scope="col">知识主线</th></tr></thead><tbody>
+    {% for idea in investmentIdeas %}<tr><th scope="row"><a href="#idea-{{ idea.id }}">{{ idea.name }}</a></th><td>{% for master in investmentMasters %}{% if master.id in idea.masters %}<a href="#master-{{ master.id }}">{{ master.name }}</a> {% endif %}{% endfor %}</td><td>{% for concept in investmentConcepts %}{% if idea.domain == concept.id %}<a href="#concept-{{ concept.id }}">{{ concept.label }}</a>{% endif %}{% endfor %}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <h3 class="master-subheading">概念释义与行动</h3>
+  <div class="investment-ideas">
+    {% for idea in investmentIdeas %}
+    <details id="idea-{{ idea.id }}" class="idea-detail">
+      <summary>{{ idea.name }}<span>{% for master in investmentMasters %}{% if master.id in idea.masters %}{{ master.name }}　{% endif %}{% endfor %}</span></summary>
+      <p>{{ idea.meaning }}</p><p class="reading-task"><strong>练习：</strong>{{ idea.action }}</p>
+      <p>相关人物：{% for master in investmentMasters %}{% if master.id in idea.masters %}<a href="#master-{{ master.id }}">{{ master.name }}</a>　{% endif %}{% endfor %}</p>
+      {% for concept in investmentConcepts %}{% if idea.domain == concept.id %}<a href="#concept-{{ concept.id }}">进入 {{ concept.label }}，查看关联书籍 →</a>{% endif %}{% endfor %}
+    </details>
+    {% endfor %}
+  </div>
+</section>
+<section id="method-comparison">
+  <span class="section-label">按问题选方法</span><h2>方法对照与学习标准</h2>
+  <p>同样重视纪律，不等于可以混用买卖依据。先定义自己要解决的问题、证据和退出条件。</p>
+  <div class="master-table-scroll"><table><caption>四条研究路径及其使用条件</caption><thead><tr><th scope="col">路径</th><th scope="col">核心问题</th><th scope="col">需要的证据</th><th scope="col">容易混淆</th></tr></thead><tbody>
+    <tr><th scope="row">企业价值</th><td>未来现金回报是否值得当前价格？</td><td>竞争优势、财报、资本配置与估值情景。</td><td>公司好 ≠ 任何价格都值得买；持有久 ≠ 判断一定正确。</td></tr>
+    <tr><th scope="row">指数与配置</th><td>怎样匹配目标、期限和可承受风险？</td><td>资产暴露、相关性、总成本、再平衡规则。</td><td>低成本 ≠ 没有风险；资产多 ≠ 风险真正分散。</td></tr>
+    <tr><th scope="row">周期与反馈</th><td>融资、预期与经营如何相互放大？</td><td>信贷条件、负债结构、风险补偿及反馈链。</td><td>宏观叙事 ≠ 拐点日期；长期趋势 ≠ 必然投资回报。</td></tr>
+    <tr><th scope="row">规则交易</th><td>规则是否有可检验的概率优势？</td><td>样本外验证、成本、回撤、仓位与执行记录。</td><td>亏损后临时改称长期投资，会破坏原来的风险约束。</td></tr>
+  </tbody></table></div>
+  <h3 class="master-subheading">学习一种方法前，检查四件事</h3>
+  <ol><li><strong>说得清：</strong>收益逻辑、成本与失败条件能否解释？</li><li><strong>经得起检验：</strong>跨环境证据是否充分，是否只选成功样本？</li><li><strong>迁移得了：</strong>所需资金、信息、工具和时间是否在自己的条件内？</li><li><strong>允许纠错：</strong>何种证据会推翻判断，何时复核，损失如何限制？</li></ol>
+  <p class="reading-task"><strong>把共识落到行动：</strong>更新投资检查清单时，分别记录“研究原则”“仓位约束”“交易规则”；每条写明触发条件、例外与反证。与<a href="#practice">判断日志</a>和<a href="../growth-handbook/index.html">成长行动手册</a>一起复盘。</p>
+</section>

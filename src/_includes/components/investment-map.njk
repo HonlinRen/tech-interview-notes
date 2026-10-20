@@ -35,6 +35,8 @@
     <details id="concept-{{ concept.id }}" class="concept-detail"{% if loop.first %} open{% endif %}>
       <summary>{{ concept.label }}<span>{{ concept.question }}</span></summary>
       <p>{{ concept.description }}</p>
+      <h3>相关思想</h3>
+      <div class="concept-tags">{% for idea in investmentIdeas %}{% if idea.domain == concept.id %}<a href="#idea-{{ idea.id }}">{{ idea.name }}</a>{% endif %}{% endfor %}</div>
       <h3>知识关联</h3>
       <ul>{% for link in concept.links %}<li><a href="#concept-{{ link.target }}">{{ link.text }}</a></li>{% endfor %}</ul>
       <h3>对应书籍</h3>

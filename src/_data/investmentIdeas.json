@@ -1,0 +1,20 @@
+[
+  {"id":"circle","name":"能力圈","domain":"business","masters":["buffett","munger","duan"],"meaning":"能解释关键经营变量，也能说清无法判断的部分；边界比覆盖多少行业更重要。","action":"写出当前不懂的三个问题，未核验前不把猜测写成结论。"},
+  {"id":"ownership","name":"买股票就是买公司","domain":"business","masters":["buffett","duan"],"meaning":"把股票当作企业权益，关注未来可分配现金、治理和支付价格。","action":"暂时遮住股价，用一段话解释企业如何持续创造现金。"},
+  {"id":"moat","name":"护城河","domain":"business","masters":["buffett","munger"],"meaning":"分析阻挡竞争的经济机制，而非只列品牌、规模或优秀管理者。","action":"记录竞争优势如何改变客户选择与资本回报。"},
+  {"id":"margin","name":"安全边际","domain":"valuation","masters":["buffett","marks","duan"],"meaning":"保守价值与支付价格之间的缓冲，需要覆盖估计误差和不利情景，不能固定成某个折扣。","action":"写明缓冲已经覆盖什么，以及仍无法覆盖什么。"},
+  {"id":"inversion","name":"逆向思考","domain":"risk","masters":["munger"],"meaning":"先列失败路径与不可恢复的损失，再设计行动。与逆向投资的“偏离市场共识”不同。","action":"先做事前验尸：假设失败，列出最可能的三个原因。"},
+  {"id":"models","name":"多元思维模型","domain":"review","masters":["munger"],"meaning":"用概率、经济、心理与组织等视角交叉检验同一问题，各模型都需要证据。","action":"为一个结论找两种不同解释，并写出能区分它们的观察。"},
+  {"id":"incentives","name":"激励结构","domain":"behavior","masters":["munger","bogle"],"meaning":"分析谁因何种行为获益、谁承担损失，识别建议与自身利益是否一致。","action":"列出管理层、销售者与投资者各自的收益和责任。"},
+  {"id":"second-level","name":"第二层思维","domain":"valuation","masters":["marks"],"meaning":"在企业判断之外，进一步检查共识、定价及自己分歧的依据。","action":"并列写自己的预期、市场预期和差异证据。"},
+  {"id":"loss","name":"永久损失与生存","domain":"risk","masters":["buffett","marks","duan"],"meaning":"关注企业损坏、价格过高与被迫卖出的风险；波动也可能通过杠杆和期限错配变成实际损失。","action":"分别检查经营、估值、杠杆和流动性四条亏损路径。"},
+  {"id":"cycles","name":"周期位置","domain":"cycle","masters":["marks","dalio"],"meaning":"观察信贷、利润与风险偏好的状态，不把周期模板当作拐点日历。","action":"记录当前证据、反向证据和无法确定的因素。"},
+  {"id":"cost","name":"成本与指数化","domain":"portfolio","masters":["bogle"],"meaning":"先设低成本可比基准，再判断主动投入是否带来足够价值。","action":"用终值比较费用差异，并计入研究耗时。"},
+  {"id":"classification","name":"六类公司","domain":"business","masters":["lynch"],"meaning":"缓慢增长、稳定增长、快速增长、周期、困境反转、隐蔽资产需要不同的研究重点。","action":"先分类，再列最重要的三项指标和失效条件。"},
+  {"id":"information","name":"生活线索与信息核验","domain":"accounting","masters":["lynch"],"meaning":"工作和消费观察能发现线索，但必须检验其代表性、利润贡献与价格预期。","action":"把观察分别归入事实、推测和需要补证三栏。"},
+  {"id":"debt","name":"债务与经济反馈","domain":"cycle","masters":["dalio","soros"],"meaning":"融资、支出、资产价格和抵押能力会相互影响；不同货币和政策条件改变路径。","action":"为一个历史案例标出反馈的起点、放大器与中断点。"},
+  {"id":"principles","name":"原则化决策","domain":"review","masters":["dalio"],"meaning":"把经验转成有触发条件、例外和复核方式的规则，避免不可检验的口号。","action":"每次复盘只更新一条规则，并安排下次检验。"},
+  {"id":"stop","name":"不做清单","domain":"risk","masters":["duan","munger"],"meaning":"根据理解能力和损失承受力，事先排除容易造成严重后果的行动。","action":"给每条禁区写明风险原因，而非照抄他人的偏好。"},
+  {"id":"reflexivity","name":"反身性","domain":"cycle","masters":["soros"],"meaning":"认知不只是反映现实，也可能通过行动改变现实，形成强化或逆转的反馈。","action":"区分价格上涨带来的融资改善与真正独立的经营增长。"},
+  {"id":"patience","name":"耐心与纠错","domain":"behavior","masters":["buffett","munger","duan","bogle"],"meaning":"减少无证据的动作，同时保持反证条件；长期坚持与及时认错并不冲突。","action":"给等待设条件，给退出设证据，避免用耐心为错误辩护。"}
+]

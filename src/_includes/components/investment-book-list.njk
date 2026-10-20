@@ -12,6 +12,7 @@
       <h4>阅读重点</h4><p>{{ book.focus }}</p>
       <h4>实践练习 · 本页整理</h4><p>{{ book.exercise }}</p>
       <h4>理解边界</h4><p>{{ book.boundary }}</p>
+      <p class="book-source">人物主题对读：{% set hasMaster = false %}{% for master in investmentMasters %}{% if book.id in master.books %}{% set hasMaster = true %}<a href="#master-{{ master.id }}">{{ master.name }}</a>　{% endif %}{% endfor %}{% if not hasMaster %}可从上方关联知识点继续探索。{% endif %}</p>
       <p class="book-source">核对资料：<a href="{{ book.source }}" target="_blank" rel="noopener noreferrer">{{ book.sourceLabel }}</a></p>
     </details>
   </li>
