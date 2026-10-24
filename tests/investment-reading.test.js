@@ -21,6 +21,10 @@ test('投资书单开发预览与静态输出完整一致，全部书籍与图�
   assert.equal(doc.querySelectorAll('.concept-detail').length, 8);
   assert.equal(doc.querySelectorAll('.master-profile').length, 8);
   assert.equal(doc.querySelectorAll('.idea-detail').length, 18);
+  assert.equal(doc.querySelectorAll('#path .path-order > li').length, 4);
+  assert.equal(doc.querySelectorAll('#path .path-svg title').length, 1);
+  assert.equal(doc.querySelectorAll('.layer-figure').length, 6);
+  for (const id of ['starting', 'framework', 'valuation', 'allocation']) assert(doc.querySelector('#' + id + ' .layer-figure'));
   assert(!doc.querySelector('script[src^="http"]'), '阅读内容不依赖在线组件');
   for (const book of books) {
     const entry = doc.getElementById('book-' + book.id);
